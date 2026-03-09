@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Accounts</title>
+
+  <link rel="stylesheet" href="style.css" />
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#0f2447" />
+  <link rel="apple-touch-icon" href="icon-192.png" />
+</head>
+<body>
+  <div class="app">
+
+    <header class="topbar">
+      <div class="title-row">
+        <button class="icon-btn" id="menuBtn" aria-label="Menu">☰</button>
+
+        <button class="theme-switch" id="themeToggleBtn" aria-label="Toggle theme">
+        <span class="theme-icon">☀️</span>
+        <span class="theme-separator">/</span>
+        <span class="theme-icon">🌙</span>
+      </button>
+    </div>
+
+      <div class="search-box">
+        <span class="search-icon">🔍</span>
+        <input
+          type="text"
+          id="searchInput"
+          placeholder="Search by name..."
+          autocomplete="off"
+        />
+      </div>
+    </header>
+
+    <main>
+         <div class="stats-bar" id="statsBar"></div>
+       <section class="people-list" id="peopleList">
+        <div class="empty-state" id="emptyState">
+          <div class="empty-icon">📒</div>
+          <div class="empty-title">No records yet</div>
+          <div class="empty-text">Tap the plus button below and start by adding a person.</div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <button class="fab" id="fab" aria-label="Add">+</button>
+
+  <div class="overlay" id="menuOverlay">
+    <div class="sheet menu-sheet">
+      <div class="sheet-header">
+        <h2>Menu</h2>
+      </div>
+
+      <div class="sheet-body">
+         
+        <button class="sheet-item" id="menuEditStages">
+         <span class="sheet-item-title">Edit</span>
+         <span class="sheet-item-sub">Manage and update stages</span>
+       </button>
+
+        <button class="sheet-item" id="menuTransfer">
+          <span class="sheet-item-title">Import / Export</span>
+          <span class="sheet-item-sub">Choose the action you want</span>
+        </button>
+
+        <button class="sheet-item danger-sheet-item" id="menuDelete">
+          <span class="sheet-item-title">Delete</span>
+          <span class="sheet-item-sub">Delete all data</span>
+        </button>
+
+        <input type="file" id="importFile" accept="application/json" hidden />
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay" id="modalOverlay">
+    <div class="sheet modal-sheet">
+      <div class="sheet-header">
+        <h2 id="modalTitle">Form</h2>
+      </div>
+
+      <div class="sheet-body" id="modalContent">
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay" id="confirmOverlay">
+    <div class="sheet confirm-sheet">
+      <div class="sheet-header">
+        <h2>Confirm</h2>
+      </div>
+
+      <div class="sheet-body">
+        <p class="confirm-text" id="confirmText">Are you sure?</p>
+      </div>
+
+      <div class="sheet-footer confirm-actions">
+        <button class="secondary-btn" id="confirmCancel">Cancel</button>
+        <button class="danger-btn" id="confirmOk">Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
