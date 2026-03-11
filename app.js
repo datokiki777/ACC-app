@@ -7,7 +7,12 @@ const state = {
   confirmAction: null,
   reopenEditAfterConfirm: false,
   overviewClosedExpanded: {},
-  statsExpanded: false
+  overviewOpenExpanded: {},
+  statsExpanded: false,
+  personBalancePrev: {},
+  totalBalancePrev: 0,
+  longPressTimer: null,
+  longPressTriggered: false
 };
 
 const peopleListEl = document.getElementById("peopleList");
@@ -34,6 +39,15 @@ const confirmText = document.getElementById("confirmText");
 const confirmCancel = document.getElementById("confirmCancel");
 const confirmOk = document.getElementById("confirmOk");
 
+const installPromptOverlay = document.getElementById("installPromptOverlay");
+const installPromptLaterBtn = document.getElementById("installPromptLaterBtn");
+const installPromptInstallBtn = document.getElementById("installPromptInstallBtn");
+
+const updatePromptOverlay = document.getElementById("updatePromptOverlay");
+const updateExportBtn = document.getElementById("updateExportBtn");
+const updateCancelBtn = document.getElementById("updateCancelBtn");
+const updateApplyBtn = document.getElementById("updateApplyBtn");
+
 /* =========================
    Helpers
 ========================= */
@@ -48,6 +62,22 @@ function todayStr() {
   const m = String(d.getMonth() + 1).padStart(2, "0");
   const day = String(d.getDate()).padStart(2, "0");
   return `${y}-${m}-${day}`;
+}
+
+function exportDataAsJson() {
+  const blob = new Blob([JSON.stringify(state.people, null, 2)], { type: "application/json" });
+  const a = document.createElement("a");
+  const fileName = `accounts-backup-${todayStr()}.json`;
+
+  a.href = URL.createObjectURL(blob);
+  a.download = fileName;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+
+  setTimeout(() => {
+    URL.revokeObjectURL(a.href);
+  }, 1000);
 }
 
 function formatDate(dateStr) {
@@ -142,6 +172,27 @@ function stageCurrency(stage) {
   return stage?.currency || "EUR";
 }
 
+function closedStagesSummary(person) {
+  const closedStages = (person.stages || []).filter(stage => stage.closed);
+
+  if (!closedStages.length) {
+    return { count: 0, balance: 0, currency: "EUR" };
+  }
+
+  const currency = stageCurrency(closedStages[0]);
+  const balance = closedStages.reduce((sum, stage) => sum + stageBalance(stage), 0);
+
+  return { count: closedStages.length, balance, currency };
+}
+
+function shouldIgnoreGestureTarget(target) {
+  return !!target.closest("button, input, textarea, select, a, .swipe-delete-action");
+}
+
+function getNearestSwipeCard(target) {
+  return target.closest(".swipe-card");
+}
+
 /* =========================
    Storage
 ========================= */
@@ -207,6 +258,10 @@ function findOpenStage(personId) {
   return (person.stages || []).find(stage => !stage.closed) || null;
 }
 
+/* =========================
+   Animations
+========================= */
+
 function animateValue(el, start, end, duration = 450, currency = "EUR") {
   const startTime = performance.now();
   const diff = end - start;
@@ -233,11 +288,649 @@ function runBalanceAnimations() {
     const target = Number(el.dataset.value || 0);
     const currency = el.dataset.currency || "EUR";
     const previous = Number(el.dataset.prevValue || 0);
+    const personId = el.closest(".person-card")?.dataset.personId || null;
+    const isStatsTotal = el.classList.contains("stats-value");
 
-    animateValue(el, previous, target, 420, currency);
+    if (previous === target) {
+      el.textContent = formatMoney(target, currency);
+    } else {
+      animateValue(el, previous, target, 420, currency);
+    }
+
+    if (personId) state.personBalancePrev[personId] = target;
+    if (isStatsTotal) state.totalBalancePrev = target;
 
     el.dataset.prevValue = String(target);
   });
+}
+
+/* =========================
+   Swipe + long press
+========================= */
+
+function closeAllSwipes(exceptCard = null) {
+  document.querySelectorAll(".swipe-card").forEach(card => {
+    if (exceptCard && card === exceptCard) return;
+    const content = card.querySelector(".swipe-content");
+    if (content) content.style.transform = "";
+    card.classList.remove("swipe-open");
+  });
+}
+
+function setupLongPress(element, callback) {
+  let timer = null;
+  let startX = 0;
+  let startY = 0;
+
+  const hostSwipe = element.closest(".swipe-card");
+
+  const start = e => {
+    if (shouldIgnoreGestureTarget(e.target)) return;
+
+    const nearestSwipe = getNearestSwipeCard(e.target);
+    if (hostSwipe && nearestSwipe && nearestSwipe !== hostSwipe) return;
+
+    const point = e.touches ? e.touches[0] : e;
+    startX = point.clientX;
+    startY = point.clientY;
+
+    timer = setTimeout(() => {
+      state.longPressTriggered = true;
+      callback();
+    }, 600);
+
+    state.longPressTimer = timer;
+  };
+
+  const move = e => {
+    if (!timer) return;
+    const point = e.touches ? e.touches[0] : e;
+    const dx = Math.abs(point.clientX - startX);
+    const dy = Math.abs(point.clientY - startY);
+
+    if (dx > 10 || dy > 10) {
+      clearTimeout(timer);
+      timer = null;
+    }
+  };
+
+  const cancel = () => {
+    if (timer) {
+      clearTimeout(timer);
+      timer = null;
+    }
+
+    setTimeout(() => {
+      state.longPressTriggered = false;
+    }, 60);
+  };
+
+  element.addEventListener("contextmenu", e => e.preventDefault());
+  element.addEventListener("touchstart", start, { passive: true });
+  element.addEventListener("touchmove", move, { passive: true });
+  element.addEventListener("touchend", cancel);
+  element.addEventListener("touchcancel", cancel);
+
+  element.addEventListener("mousedown", start);
+  element.addEventListener("mousemove", move);
+  element.addEventListener("mouseup", cancel);
+  element.addEventListener("mouseleave", cancel);
+}
+
+function setupSwipeDelete(card, onDelete) {
+  const content = card.querySelector(".swipe-content");
+  if (!content) return;
+
+  let deleteAction = card.querySelector(".swipe-delete-action");
+  if (!deleteAction) {
+    deleteAction = document.createElement("button");
+    deleteAction.type = "button";
+    deleteAction.className = "swipe-delete-action";
+    deleteAction.innerHTML = "<span>Delete</span>";
+    card.appendChild(deleteAction);
+  }
+
+  const revealWidth = 96;
+  let startX = 0;
+  let currentX = 0;
+  let dragging = false;
+
+  const setTranslate = x => {
+    const safeX = Math.max(-revealWidth, Math.min(0, x));
+    content.style.transform = `translateX(${safeX}px)`;
+  };
+
+  const openSwipe = () => {
+    closeAllSwipes(card);
+    card.classList.add("swipe-open");
+    content.style.transform = `translateX(-${revealWidth}px)`;
+  };
+
+  const closeSwipe = () => {
+    card.classList.remove("swipe-open");
+    content.style.transform = "";
+  };
+
+  deleteAction.onclick = e => {
+    e.stopPropagation();
+    closeSwipe();
+    if (typeof onDelete === "function") onDelete();
+  };
+
+  card.addEventListener("touchstart", e => {
+    if (shouldIgnoreGestureTarget(e.target)) return;
+
+    const nearestSwipe = getNearestSwipeCard(e.target);
+    if (nearestSwipe && nearestSwipe !== card) return;
+
+    closeAllSwipes(card);
+
+    const point = e.touches[0];
+    startX = point.clientX;
+    currentX = startX;
+    dragging = true;
+  }, { passive: true });
+
+  let startYSwipe = 0;
+
+  card.addEventListener("touchstart", e => {
+    if (e.touches && e.touches[0]) startYSwipe = e.touches[0].clientY;
+  }, { passive: true });
+
+  card.addEventListener("touchmove", e => {
+    if (!dragging) return;
+
+    const nearestSwipe = getNearestSwipeCard(e.target);
+    if (nearestSwipe && nearestSwipe !== card) return;
+
+    const point = e.touches[0];
+    currentX = point.clientX;
+    const dx = currentX - startX;
+    const dy = Math.abs(point.clientY - startYSwipe);
+
+    // Only hijack scroll if clearly horizontal swipe
+    if (dx < -8 && Math.abs(dx) > dy * 1.5) {
+      e.preventDefault();
+      setTranslate(dx);
+    }
+  }, { passive: false });
+
+  const endTouch = () => {
+    if (!dragging) return;
+
+    dragging = false;
+    const dx = currentX - startX;
+
+    if (dx < -48) {
+      openSwipe();
+    } else {
+      closeSwipe();
+    }
+  };
+
+  card.addEventListener("touchend", endTouch);
+  card.addEventListener("touchcancel", endTouch);
+
+  card.addEventListener("click", e => {
+    if (card.classList.contains("swipe-open") && !e.target.closest(".swipe-delete-action")) {
+      closeSwipe();
+    }
+  });
+}
+
+function openQuickActions({ title = "", onEdit, onToggleStage, onExportPerson, onCancel }) {
+  const hasStageToggle = typeof onToggleStage === "function";
+  const hasExport = typeof onExportPerson === "function";
+
+  openModal(
+    title || "Actions",
+    `
+      ${hasStageToggle ? `
+      <div style="margin-bottom:10px;">
+        <button type="button" class="secondary-btn full-btn" id="quickToggleStageBtn" style="min-height:48px;border-radius:14px;font-weight:800;font-size:15px;"></button>
+      </div>` : ""}
+      ${hasExport ? `
+      <div style="margin-bottom:10px;">
+        <button type="button" class="secondary-btn full-btn" id="quickExportPersonBtn" style="min-height:48px;border-radius:14px;font-weight:800;font-size:15px;">📄 Export PDF</button>
+      </div>` : ""}
+      <div class="quick-actions-row quick-actions-row-2">
+        <button type="button" class="secondary-btn" id="quickCancelBtn">Cancel</button>
+        <button type="button" class="primary-btn" id="quickEditBtn">Edit</button>
+      </div>
+    `,
+    () => {
+      const cancelBtn = document.getElementById("quickCancelBtn");
+      const editBtn = document.getElementById("quickEditBtn");
+      const toggleBtn = document.getElementById("quickToggleStageBtn");
+      const exportBtn = document.getElementById("quickExportPersonBtn");
+
+      if (cancelBtn) {
+        cancelBtn.onclick = () => {
+          closeModal();
+          if (typeof onCancel === "function") onCancel();
+        };
+      }
+
+      if (editBtn) {
+        editBtn.onclick = () => {
+          closeModal();
+          if (typeof onEdit === "function") onEdit();
+        };
+      }
+
+      if (toggleBtn && hasStageToggle) {
+        toggleBtn.textContent = onToggleStage._label || "Toggle Stage";
+        toggleBtn.onclick = () => {
+          closeModal();
+          onToggleStage();
+        };
+      }
+
+      if (exportBtn && hasExport) {
+        exportBtn.onclick = () => {
+          closeModal();
+          onExportPerson();
+        };
+      }
+    }
+  );
+}
+
+/* =========================
+   Action handlers
+========================= */
+
+/* =========================
+   PDF Export
+========================= */
+
+function buildPdfHtml(people) {
+  const isLight = document.body.classList.contains("light-theme");
+  const bg = isLight ? "#f4f7fb" : "#13294d";
+  const card = isLight ? "#ffffff" : "#1b3158";
+  const text = isLight ? "#1d2a3a" : "#eef4ff";
+  const muted = isLight ? "#6e7c8f" : "#a7b6cf";
+  const line = isLight ? "#e4eaf2" : "#466087";
+  const green = isLight ? "#1f9d55" : "#35c26b";
+  const red = isLight ? "#d64545" : "#ff6b6b";
+  const gray = isLight ? "#7b8794" : "#9aaac4";
+
+  const colorFor = val => Number(val) > 0 ? green : Number(val) < 0 ? red : gray;
+
+  let html = `<!DOCTYPE html><html><head><meta charset="UTF-8">
+  <style>
+    body { margin:0; padding:24px; background:${bg}; color:${text};
+      font-family:system-ui,-apple-system,sans-serif; font-size:14px; }
+    h1 { font-size:22px; font-weight:900; margin:0 0 6px; }
+    .sub { color:${muted}; font-size:13px; margin-bottom:24px; }
+    .person { background:${card}; border-radius:16px; border:1px solid ${line};
+      padding:16px; margin-bottom:20px; page-break-inside:avoid; }
+    .person-header { display:flex; justify-content:space-between; align-items:center;
+      margin-bottom:12px; padding-bottom:10px; border-bottom:1px solid ${line}; }
+    .person-name { font-size:18px; font-weight:900; }
+    .balance-pill { font-size:16px; font-weight:900; padding:6px 14px;
+      border-radius:999px; background:rgba(0,0,0,0.06); }
+    .section-title { font-size:11px; font-weight:800; text-transform:uppercase;
+      letter-spacing:.04em; color:${muted}; margin:14px 0 8px; }
+    .stage { border:1px solid ${line}; border-radius:12px; margin-bottom:10px; overflow:hidden; }
+    .stage-head { display:flex; justify-content:space-between; align-items:center;
+      padding:10px 14px; background:rgba(0,0,0,0.03); }
+    .stage-name { font-weight:800; font-size:15px; }
+    .stage-tag { font-size:11px; font-weight:700; padding:3px 8px; border-radius:999px;
+      background:rgba(0,0,0,0.08); color:${muted}; margin-left:8px; }
+    .entry { display:flex; justify-content:space-between; align-items:center;
+      padding:8px 14px; border-top:1px solid ${line}; }
+    .entry-type { font-weight:700; font-size:13px; }
+    .entry-right { text-align:right; }
+    .entry-amount { font-weight:900; font-size:14px; }
+    .entry-meta { font-size:12px; color:${muted}; margin-top:2px; }
+    .no-entries { padding:10px 14px; font-size:13px; color:${muted}; }
+    .totals { display:flex; gap:16px; flex-wrap:wrap; padding:10px 14px;
+      background:rgba(0,0,0,0.03); font-size:13px; color:${muted}; border-top:1px solid ${line}; }
+    .totals span { font-weight:700; }
+    .grand-total { display:flex; justify-content:space-between;
+      padding:12px 14px; border-top:2px solid ${line}; margin-top:4px; }
+    .grand-label { font-weight:800; font-size:15px; }
+    .grand-value { font-weight:900; font-size:16px; }
+    @media print { body { background:#fff; } }
+  </style></head><body>
+  <h1>Accounts Export</h1>
+  <div class="sub">Generated ${new Date().toLocaleDateString("ka-GE")} • ${people.length} person(s)</div>`;
+
+  people.forEach(person => {
+    const openStages = (person.stages || []).filter(s => !s.closed);
+    const closedStages = (person.stages || []).filter(s => s.closed);
+    const openBal = personOpenBalance(person);
+
+    html += `<div class="person">
+      <div class="person-header">
+        <div class="person-name">${escapeHtml(person.name)}</div>
+        <div class="balance-pill" style="color:${colorFor(openBal)}">${formatMoney(openBal)}</div>
+      </div>`;
+
+    if (person.note) {
+      html += `<div style="color:${muted};font-size:13px;margin-bottom:10px;">${escapeHtml(person.note)}</div>`;
+    }
+
+    const renderStageGroup = (stages, label) => {
+      if (!stages.length) return "";
+      let out = `<div class="section-title">${label}</div>`;
+      stages.forEach(stage => {
+        const bal = stageBalance(stage);
+        const cur = stageCurrency(stage);
+        const totals = stageTotals(stage);
+        out += `<div class="stage">
+          <div class="stage-head">
+            <div>
+              <span class="stage-name">${escapeHtml(stage.name)}</span>
+              <span class="stage-tag">${stage.closed ? "Closed" : "Open"}</span>
+            </div>
+            <div style="font-weight:900;color:${colorFor(bal)}">${formatMoney(bal, cur)}</div>
+          </div>`;
+        if ((stage.entries || []).length) {
+          stage.entries.forEach(entry => {
+            const ef = entry.type === "Gave" ? entry.amount : -entry.amount;
+            out += `<div class="entry">
+              <div>
+                <div class="entry-type" style="color:${entry.type === "Gave" ? green : red}">${entry.type}</div>
+                ${entry.comment ? `<div style="font-size:12px;color:${muted};margin-top:2px;">${escapeHtml(entry.comment)}</div>` : ""}
+              </div>
+              <div class="entry-right">
+                <div class="entry-amount" style="color:${colorFor(ef)}">${Number(entry.amount).toFixed(2)}${currencyLabel(cur)}</div>
+                <div class="entry-meta">${formatDate(entry.date)}</div>
+              </div>
+            </div>`;
+          });
+          out += `<div class="totals">
+            Out <span>${totals.gave.toFixed(2)}${currencyLabel(cur)}</span> &nbsp;
+            In <span>${totals.received.toFixed(2)}${currencyLabel(cur)}</span> &nbsp;
+            Net <span style="color:${colorFor(bal)}">${formatMoney(bal, cur)}</span>
+          </div>`;
+        } else {
+          out += `<div class="no-entries">No entries</div>`;
+        }
+        out += `</div>`;
+      });
+      return out;
+    };
+
+    html += renderStageGroup(openStages, "Open Stage");
+    html += renderStageGroup(closedStages, "Closed Stages");
+
+    html += `<div class="grand-total">
+      <div class="grand-label">Total Balance</div>
+      <div class="grand-value" style="color:${colorFor(openBal)}">${formatMoney(openBal)}</div>
+    </div>`;
+
+    html += `</div>`;
+  });
+
+  html += `</body></html>`;
+  return html;
+}
+
+function triggerPdfPrint(html) {
+  const win = window.open("", "_blank");
+  if (!win) {
+    confirmDelete("Pop-up blocked. Please allow pop-ups and try again.", () => {}, false, "OK");
+    return;
+  }
+  win.document.write(html);
+  win.document.close();
+  win.focus();
+  setTimeout(() => { win.print(); }, 400);
+}
+
+function exportAllPdf() {
+  if (!state.people.length) {
+    confirmDelete("No data to export.", () => {}, false, "OK");
+    return;
+  }
+  triggerPdfPrint(buildPdfHtml(state.people));
+}
+
+function exportPersonPdf(personId) {
+  const person = findPerson(personId);
+  if (!person) return;
+  triggerPdfPrint(buildPdfHtml([person]));
+}
+
+function openTransferActionsModal() {
+  openModal(
+    "Import / Export",
+    `
+      <div class="quick-actions-row quick-actions-row-2" style="margin-bottom:10px;">
+        <button type="button" class="secondary-btn" id="transferImportBtn">⬇️ Import JSON</button>
+        <button type="button" class="primary-btn" id="transferExportBtn">⬆️ Export JSON</button>
+      </div>
+      <div class="quick-actions-row quick-actions-row-2" style="margin-bottom:10px;">
+        <button type="button" class="secondary-btn" id="transferExportAllPdfBtn" style="min-height:48px;border-radius:14px;font-weight:800;font-size:14px;">📄 Export All PDF</button>
+        <button type="button" class="primary-btn" id="transferExportPersonPdfBtn" style="min-height:48px;border-radius:14px;font-weight:800;font-size:14px;">👤 Export Person PDF</button>
+      </div>
+      <div class="quick-actions-row" style="display:grid;grid-template-columns:1fr;">
+        <button type="button" class="danger-btn" id="transferCancelBtn" style="min-height:48px;border-radius:14px;font-weight:800;font-size:15px;">Cancel</button>
+      </div>
+    `,
+    () => {
+      const importBtn = document.getElementById("transferImportBtn");
+      const cancelBtn = document.getElementById("transferCancelBtn");
+      const exportBtn = document.getElementById("transferExportBtn");
+      const exportAllPdfBtn = document.getElementById("transferExportAllPdfBtn");
+      const exportPersonPdfBtn = document.getElementById("transferExportPersonPdfBtn");
+
+      if (cancelBtn) cancelBtn.onclick = closeModal;
+
+      if (exportBtn) {
+        exportBtn.onclick = () => {
+          exportDataAsJson();
+          closeModal();
+        };
+      }
+
+      if (exportAllPdfBtn) {
+        exportAllPdfBtn.onclick = () => {
+          closeModal();
+          exportAllPdf();
+        };
+      }
+
+      if (exportPersonPdfBtn) {
+        exportPersonPdfBtn.onclick = () => {
+          closeModal();
+          openChoosePersonForPdf();
+        };
+      }
+
+      if (importBtn) {
+        importBtn.onclick = () => {
+          closeModal();
+          confirmDelete(
+            "Importing a file will replace your current data. Continue?",
+            () => { importFile.click(); },
+            false,
+            "Import"
+          );
+        };
+      }
+    }
+  );
+}
+
+function openChoosePersonForPdf() {
+  openModal(
+    "Choose a Person",
+    `
+      ${state.people.map(person => `
+        <div class="sheet-item choose-person-pdf" data-person-id="${person.id}">
+          <span class="sheet-item-title">${escapeHtml(person.name)}</span>
+          <span class="sheet-item-sub">${formatMoney(personOpenBalance(person))}</span>
+        </div>
+      `).join("")}
+      `,
+    () => {
+
+      document.querySelectorAll(".choose-person-pdf").forEach(btn => {
+        btn.onclick = () => {
+          const personId = btn.dataset.personId;
+          closeModal();
+          exportPersonPdf(personId);
+        };
+      });
+    }
+  );
+}
+
+function getActionPayloadFromCard(card) {
+  return {
+    type: card.dataset.actionType || "",
+    personId: card.dataset.personId || "",
+    stageId: card.dataset.stageId || "",
+    entryId: card.dataset.entryId || "",
+    source: card.dataset.source || "main"
+  };
+}
+
+function openEditByPayload(payload) {
+  if (payload.type === "person") {
+    openPersonForm(payload.personId);
+    return;
+  }
+
+  if (payload.type === "stage") {
+    openStageForm(
+      payload.personId,
+      payload.stageId,
+      false,
+      false,
+      payload.source === "overview" ? payload.personId : null
+    );
+    return;
+  }
+
+  if (payload.type === "entry") {
+    openEntryForm(
+      payload.personId,
+      payload.stageId,
+      payload.entryId,
+      payload.source === "overview" ? payload.personId : null
+    );
+  }
+}
+
+function deleteByPayload(payload) {
+  if (payload.type === "person") {
+    confirmDelete(
+      "Delete this person? All stages and entries will be deleted.",
+      () => {
+        state.people = state.people.filter(person => person.id !== payload.personId);
+        saveData();
+        render();
+      }
+    );
+    return;
+  }
+
+  if (payload.type === "stage") {
+    confirmDelete(
+      "Delete this stage?",
+      () => {
+        const person = findPerson(payload.personId);
+        if (!person) return;
+
+        person.stages = (person.stages || []).filter(stage => stage.id !== payload.stageId);
+        saveData();
+        render();
+        if (payload.source === "overview") openOverviewPersonDetail(payload.personId);
+      }
+    );
+    return;
+  }
+
+  if (payload.type === "entry") {
+    confirmDelete(
+      "Delete this entry?",
+      () => {
+        const stage = findStage(payload.personId, payload.stageId);
+        if (!stage) return;
+
+        stage.entries = (stage.entries || []).filter(entry => entry.id !== payload.entryId);
+        saveData();
+        render();
+      }
+    );
+  }
+}
+
+function setupActionCard(card) {
+  if (card.dataset.actionsBound === "1") return;
+  card.dataset.actionsBound = "1";
+
+  const payload = getActionPayloadFromCard(card);
+  if (!payload.type) return;
+
+  const swipeArea = card.querySelector(".swipe-content") || card;
+
+  setupLongPress(swipeArea, () => {
+    let onToggleStage = null;
+    let onExportPerson = null;
+
+    if (payload.type === "stage") {
+      const stage = findStage(payload.personId, payload.stageId);
+      if (stage) {
+        const isClosed = !!stage.closed;
+        const toggleFn = () => {
+          if (!isClosed) {
+            confirmDelete(
+              "Close this stage? You can reopen it later.",
+              () => {
+                stage.closed = true;
+                saveData();
+                render();
+                if (payload.source === "overview") openOverviewPersonDetail(payload.personId);
+              },
+              false,
+              "Close"
+            );
+          } else {
+            const existingOpen = findOpenStage(payload.personId);
+            if (existingOpen) {
+              confirmDelete(
+                "This person already has an open stage. Close it first.",
+                () => { openOverviewPersonDetail(payload.personId); },
+                false,
+                "OK"
+              );
+              return;
+            }
+            stage.closed = false;
+            saveData();
+            render();
+            if (payload.source === "overview") openOverviewPersonDetail(payload.personId);
+          }
+        };
+        toggleFn._label = isClosed ? "🔓 Reopen Stage" : "🔒 Close Stage";
+        onToggleStage = toggleFn;
+      }
+    }
+
+    if (payload.type === "person") {
+      onExportPerson = () => exportPersonPdf(payload.personId);
+    }
+
+    openQuickActions({
+      title: payload.type === "person" ? "Person" : payload.type === "stage" ? "Stage" : "Entry",
+      onEdit: () => openEditByPayload(payload),
+      onToggleStage,
+      onExportPerson,
+      onCancel: () => {
+        if (payload.source === "overview") {
+          openOverviewPersonDetail(payload.personId);
+        }
+      }
+    });
+  });
+
+  setupSwipeDelete(card, () => deleteByPayload(payload));
 }
 
 /* =========================
@@ -292,14 +985,14 @@ function renderStats() {
           <div class="stats-box">
             <div class="stats-title">Balance</div>
             <div
-  class="stats-value ${balanceClass(totalBalance)}"
-  data-animated-balance
-  data-value="${totalBalance}"
-  data-prev-value="0"
-  data-currency="EUR"
->
-  ${formatMoney(totalBalance)}
-</div>
+              class="stats-value ${balanceClass(totalBalance)}"
+              data-animated-balance
+              data-value="${totalBalance}"
+              data-prev-value="${state.totalBalancePrev ?? 0}"
+              data-currency="EUR"
+            >
+              ${formatMoney(totalBalance)}
+            </div>
           </div>
         </div>
 
@@ -320,11 +1013,11 @@ function renderStats() {
                       return `
                         <div class="sheet-item stats-person-item" data-person-id="${person.id}">
                           <div class="stats-person-head">
-                           <span class="sheet-item-title">${escapeHtml(person.name)}</span>
-                           <span class="stats-person-balance ${balanceClass(personOpenBalance(person))}">
+                            <span class="sheet-item-title">${escapeHtml(person.name)}</span>
+                            <span class="stats-person-balance ${balanceClass(personOpenBalance(person))}">
                               ${formatMoney(personOpenBalance(person), currentCurrency)}
-                          </span>
-                       </div>
+                            </span>
+                          </div>
                           <span class="sheet-item-sub">
                             ${openStage ? escapeHtml(openStage.name) : "No open stage"} • ${closedCount} closed
                           </span>
@@ -341,12 +1034,12 @@ function renderStats() {
   `;
 
   const toggle = document.getElementById("statsSummaryToggle");
-if (toggle) {
-  toggle.onclick = () => {
-    state.statsExpanded = !state.statsExpanded;
-    animateStatsOverview(state.statsExpanded);
-  };
-}
+  if (toggle) {
+    toggle.onclick = () => {
+      state.statsExpanded = !state.statsExpanded;
+      animateStatsOverview(state.statsExpanded);
+    };
+  }
 
   bindStatsEvents();
 }
@@ -359,9 +1052,8 @@ function animateStatsOverview(expand) {
   if (expand) {
     renderStats();
 
-    const newWrap = document.querySelector(".stats-wrap");
     const newList = document.querySelector(".stats-overview-list");
-    if (!newWrap || !newList) return;
+    if (!newList) return;
 
     newList.style.overflow = "hidden";
     newList.style.height = "0px";
@@ -455,75 +1147,97 @@ function renderPerson(person) {
 
   return `
     <article class="person-card ${person.expanded ? "expanded" : ""}" data-person-id="${person.id}">
-      <div class="person-head" data-toggle-person="${person.id}">
-        <div class="person-main">
-          <div class="person-name">${highlightMatch(person.name, state.search)}</div>
-          <div class="subtext">
-            ${openStage ? escapeHtml(openStage.name) : "No open stage"} • ${currencyLabel(currentCurrency)} • ${closedStages.length} closed
+      <div
+        class="person-head-swipe swipe-card"
+        data-action-type="person"
+        data-person-id="${person.id}"
+      >
+        <div class="swipe-content">
+          <div class="person-head" data-toggle-person="${person.id}">
+            <div class="person-main">
+              <div class="person-name">${highlightMatch(person.name, state.search)}</div>
+              <div class="subtext">
+                ${openStage ? escapeHtml(openStage.name) : "No open stage"} • ${currencyLabel(currentCurrency)} • ${closedStages.length} closed
+              </div>
+            </div>
+
+            <div
+              class="balance ${balanceClass(openBalance)}"
+              data-animated-balance
+              data-value="${openBalance}"
+              data-prev-value="${state.personBalancePrev[person.id] ?? 0}"
+              data-currency="${currentCurrency}"
+            >
+              ${formatMoney(openBalance, currentCurrency)}
+            </div>
+
+            <div class="stats-arrow ${person.expanded ? "open" : ""}">></div>
           </div>
         </div>
-        <div
-          class="balance ${balanceClass(openBalance)}"
-          data-animated-balance
-          data-value="${openBalance}"
-          data-prev-value="0"
-          data-currency="${currentCurrency}"
-        >
-      ${formatMoney(openBalance, currentCurrency)}
-      </div>
-        <div class="stats-arrow ${person.expanded ? "open" : ""}">></div>
       </div>
 
       <div class="person-body">
         ${person.note ? `<div class="inline-note">${escapeHtml(person.note)}</div>` : ""}
 
-        <div class="entry-list">
-          ${
-            entries.length
-              ? entries.map(entry => renderEntry(openStage, entry)).join("")
-              : `<div class="empty-state mini-empty">No entries yet</div>`
-          }
+        <div class="person-body-scroll">
+          <div class="entry-list">
+            ${
+              entries.length
+                ? entries.map(entry => renderEntry(person.id, openStage.id, openStage, entry)).join("")
+                : `<div class="empty-state mini-empty">No entries yet</div>`
+            }
+          </div>
         </div>
 
-        ${
-          openStage
-            ? `
-              <div class="totals-line">
-                <span>Out ${totals.gave.toFixed(2)}${currencyLabel(currentCurrency)}</span>
-                <span>In ${totals.received.toFixed(2)}${currencyLabel(currentCurrency)}</span>
-                <span class="${balanceClass(totals.balance)}">Net ${formatMoney(totals.balance, currentCurrency)}</span>
-              </div>
-            `
-            : ""
-        }
-
-        <div class="person-actions">
+        <div class="person-body-footer">
           ${
             openStage
-              ? `<button class="primary-btn" data-add-entry-person="${person.id}">+ Add Entry</button>`
-              : `<button class="primary-btn" data-add-stage="${person.id}">+ Add Stage</button>`
+              ? `
+                <div class="totals-line">
+                  <span>↑ ${totals.gave.toFixed(2)}${currencyLabel(currentCurrency)}</span>
+                  <span>↓ ${totals.received.toFixed(2)}${currencyLabel(currentCurrency)}</span>
+                  <span class="${balanceClass(totals.balance)}">Net ${formatMoney(totals.balance, currentCurrency)}</span>
+                </div>
+              `
+              : ""
           }
+
+          <div class="person-actions">
+            ${
+              openStage
+                ? `<button class="primary-btn" data-add-entry-person="${person.id}">+ Add Entry</button>`
+                : `<button class="primary-btn" data-add-stage="${person.id}">+ Add Stage</button>`
+            }
+          </div>
         </div>
       </div>
     </article>
   `;
 }
 
-function renderEntry(stage, entry) {
+function renderEntry(personId, stageId, stage, entry, source = "main") {
   const effect = entryEffect(entry.type, entry.amount);
   const currentCurrency = stageCurrency(stage);
 
   return `
-    <div class="entry-card">
-      <div class="entry-top">
-        <div>
+    <div
+      class="entry-card swipe-card"
+      data-action-type="entry"
+      data-person-id="${personId}"
+      data-stage-id="${stageId}"
+      data-entry-id="${entry.id}"
+      data-source="${source}"
+    >
+      <div class="swipe-content">
+        <div class="entry-top">
           <div class="entry-type ${typeLabelClass(entry.type)}">${escapeHtml(entry.type)}</div>
-          <div class="entry-meta">${formatDate(entry.date)}</div>
+          <div class="entry-amount ${balanceClass(effect)}">${Number(entry.amount).toFixed(2)}${currencyLabel(currentCurrency)}</div>
         </div>
-        <div class="entry-amount ${balanceClass(effect)}">${Number(entry.amount).toFixed(2)}${currencyLabel(currentCurrency)}</div>
-      </div>
 
-      ${entry.comment ? `<div class="entry-comment">${escapeHtml(entry.comment)}</div>` : ""}
+        ${entry.comment ? `<div class="entry-comment">${escapeHtml(entry.comment)}</div>` : ""}
+
+        <div class="entry-meta">${formatDate(entry.date)}</div>
+      </div>
     </div>
   `;
 }
@@ -537,13 +1251,8 @@ function bindPremiumPressEffects() {
     const head = card.querySelector(".person-head");
     if (!head) return;
 
-    const pressStart = () => {
-      card.style.transform = "translateY(1px) scale(0.992)";
-    };
-
-    const pressEnd = () => {
-      card.style.transform = "";
-    };
+    const pressStart = () => { card.style.transform = "translateY(1px) scale(0.992)"; };
+    const pressEnd = () => { card.style.transform = ""; };
 
     head.addEventListener("touchstart", pressStart, { passive: true });
     head.addEventListener("touchend", pressEnd, { passive: true });
@@ -558,13 +1267,8 @@ function bindPremiumPressEffects() {
   const statsWrap = document.querySelector(".stats-wrap");
 
   if (statsSummary && statsWrap) {
-    const pressStart = () => {
-      statsWrap.style.transform = "translateY(1px) scale(0.992)";
-    };
-
-    const pressEnd = () => {
-      statsWrap.style.transform = "";
-    };
+    const pressStart = () => { statsWrap.style.transform = "translateY(1px) scale(0.992)"; };
+    const pressEnd = () => { statsWrap.style.transform = ""; };
 
     statsSummary.addEventListener("touchstart", pressStart, { passive: true });
     statsSummary.addEventListener("touchend", pressEnd, { passive: true });
@@ -582,23 +1286,25 @@ function animatePersonCard(card, expand) {
 
   body.style.transition = "none";
 
+  const modalIsOpen = () => fab.classList.contains("fab-back");
+
   if (expand) {
     body.style.height = "0px";
     body.style.opacity = "0";
 
+    if (!modalIsOpen()) fab.classList.add("fab-hidden");
+
     requestAnimationFrame(() => {
       card.classList.add("expanded");
-
       const fullHeight = body.scrollHeight;
       body.style.transition = "height 0.28s ease, opacity 0.22s ease";
       body.style.height = fullHeight + "px";
       body.style.opacity = "1";
-
       const onEnd = () => {
         body.style.height = "auto";
+        body.style.transition = "";
         body.removeEventListener("transitionend", onEnd);
       };
-
       body.addEventListener("transitionend", onEnd);
     });
   } else {
@@ -612,9 +1318,17 @@ function animatePersonCard(card, expand) {
 
       const onEnd = () => {
         card.classList.remove("expanded");
+        body.style.height = "";
+        body.style.opacity = "";
+        body.style.transition = "";
         body.removeEventListener("transitionend", onEnd);
-      };
 
+        if (!modalIsOpen()) {
+          // Use state to check expanded, DOM may have changed
+          const anyExpanded = state.people.some(p => p.expanded);
+          if (!anyExpanded) fab.classList.remove("fab-hidden");
+        }
+      };
       body.addEventListener("transitionend", onEnd);
     });
   }
@@ -622,28 +1336,33 @@ function animatePersonCard(card, expand) {
 
 function bindDynamicEvents() {
   document.querySelectorAll("[data-toggle-person]").forEach(el => {
-  el.onclick = () => {
-    const person = findPerson(el.dataset.togglePerson);
-    if (!person) return;
+    el.onclick = () => {
+      if (state.longPressTriggered) return;
 
-    const card = el.closest(".person-card");
-    if (!card) return;
+      const person = findPerson(el.dataset.togglePerson);
+      if (!person) return;
 
-    person.expanded = !person.expanded;
-    saveData();
+      const card = el.closest(".person-card");
+      if (!card) return;
 
-    animatePersonCard(card, person.expanded);
-  };
-});
+      person.expanded = !person.expanded;
+      saveData();
+
+      animatePersonCard(card, person.expanded);
+    };
+  });
 
   document.querySelectorAll("[data-add-stage]").forEach(el => {
-    el.onclick = () => {
+    el.onclick = e => {
+      e.stopPropagation();
       openStageForm(el.dataset.addStage);
     };
   });
 
   document.querySelectorAll("[data-add-entry-person]").forEach(el => {
-    el.onclick = () => {
+    el.onclick = e => {
+      e.stopPropagation();
+
       const personId = el.dataset.addEntryPerson;
       const openStage = findOpenStage(personId);
 
@@ -653,6 +1372,10 @@ function bindDynamicEvents() {
         openStageForm(personId, null, true);
       }
     };
+  });
+
+  document.querySelectorAll(".swipe-card").forEach(card => {
+    setupActionCard(card);
   });
 }
 
@@ -664,14 +1387,33 @@ function openModal(title, html, afterOpen) {
   modalTitle.textContent = title;
   modalContent.innerHTML = html;
   modalOverlay.classList.add("show");
-  fab.style.display = "none";
+  fab.classList.remove("fab-hidden");
+  fab.classList.add("fab-back");
+  fab.style.pointerEvents = "";
+  fab.style.opacity = "";
+  fab.textContent = "←";
+  fab.onclick = closeModal;
   if (typeof afterOpen === "function") afterOpen();
 }
 
 function closeModal() {
   modalOverlay.classList.remove("show");
   modalContent.innerHTML = "";
-  fab.style.display = "";
+  fab.classList.remove("fab-back");
+  fab.style.pointerEvents = "";
+  fab.style.opacity = "";
+  fab.textContent = "+";
+  fab.onclick = openMainAddMenu;
+
+  // Use state to check expanded (DOM not yet updated)
+  const anyExpanded = state.people.some(p => p.expanded);
+  if (anyExpanded) {
+    fab.classList.add("fab-hidden");
+  } else {
+    fab.classList.remove("fab-hidden");
+  }
+
+  requestAnimationFrame(() => render());
 }
 
 /* =========================
@@ -748,7 +1490,7 @@ function openPersonForm(personId = null, reopenEditPanel = false) {
   );
 }
 
-function openStageForm(personId, stageId = null, openEntryAfterSave = false, reopenEditPanel = false) {
+function openStageForm(personId, stageId = null, openEntryAfterSave = false, reopenEditPanel = false, reopenOverviewPersonId = null) {
   const person = findPerson(personId);
   const stage = stageId ? findStage(personId, stageId) : null;
 
@@ -787,7 +1529,7 @@ function openStageForm(personId, stageId = null, openEntryAfterSave = false, reo
         </div>
 
         <div class="form-actions">
-          <button type="button" class="secondary-btn" id="cancelModalBtn">Cancel</button>
+          <button type="button" class="primary-btn" id="cancelModalBtn">Cancel</button>
           <button type="submit" class="primary-btn">Save</button>
         </div>
       </form>
@@ -797,7 +1539,9 @@ function openStageForm(personId, stageId = null, openEntryAfterSave = false, reo
       const cancelBtn = document.getElementById("cancelModalBtn");
 
       cancelBtn.onclick = () => {
-        if (reopenEditPanel) {
+        if (reopenOverviewPersonId) {
+          openOverviewPersonDetail(reopenOverviewPersonId);
+        } else if (reopenEditPanel) {
           openEditStagesPanel();
         } else {
           closeModal();
@@ -830,7 +1574,9 @@ function openStageForm(personId, stageId = null, openEntryAfterSave = false, reo
               render();
 
               if (openEntryAfterSave && savedStageId) {
-                openEntryForm(personId, savedStageId);
+                openEntryForm(personId, savedStageId, null, reopenOverviewPersonId);
+              } else if (reopenOverviewPersonId) {
+                openOverviewPersonDetail(reopenOverviewPersonId);
               } else if (reopenEditPanel) {
                 openEditStagesPanel();
               } else {
@@ -866,21 +1612,20 @@ function openStageForm(personId, stageId = null, openEntryAfterSave = false, reo
         }
 
         saveData();
-        render();
 
-        if (openEntryAfterSave && savedStageId) {
-          openEntryForm(personId, savedStageId);
-        } else if (reopenEditPanel) {
-          openEditStagesPanel();
-        } else {
-          closeModal();
-        }
+if (openEntryAfterSave && savedStageId) {
+  openEntryForm(personId, savedStageId);
+} else if (reopenEditPanel) {
+  openEditStagesPanel();
+} else {
+  closeModal();
+}
       };
     }
   );
 }
 
-function openEntryForm(personId, stageId, entryId = null) {
+function openEntryForm(personId, stageId, entryId = null, reopenOverviewPersonId = null) {
   const stage = findStage(personId, stageId);
   const entry = entryId ? findEntry(personId, stageId, entryId) : null;
 
@@ -896,11 +1641,34 @@ function openEntryForm(personId, stageId, entryId = null) {
         </div>
 
         <div class="field">
-          <label for="entryType">Type</label>
-          <select id="entryType" name="type" required>
-            <option value="Gave" ${entry?.type === "Gave" ? "selected" : ""}>Gave</option>
-            <option value="Received" ${entry?.type === "Received" ? "selected" : ""}>Received</option>
-          </select>
+          <label>Type</label>
+
+          <div class="type-toggle" id="entryTypeToggle">
+            <button
+              type="button"
+              class="type-toggle-btn ${(entry?.type || "Gave") === "Gave" ? "active gave" : ""}"
+              data-entry-type="Gave"
+            >
+              <span class="type-toggle-icon">↗</span>
+              <span>Gave</span>
+            </button>
+
+            <button
+              type="button"
+              class="type-toggle-btn ${(entry?.type || "Gave") === "Received" ? "active received" : ""}"
+              data-entry-type="Received"
+            >
+              <span class="type-toggle-icon">↘</span>
+              <span>Received</span>
+            </button>
+          </div>
+
+          <input
+            type="hidden"
+            id="entryType"
+            name="type"
+            value="${entry?.type || "Gave"}"
+          >
         </div>
 
         <div class="field">
@@ -923,7 +1691,30 @@ function openEntryForm(personId, stageId, entryId = null) {
       const form = document.getElementById("entryForm");
       const cancelBtn = document.getElementById("cancelModalBtn");
 
-      cancelBtn.onclick = closeModal;
+      cancelBtn.onclick = () => {
+        if (reopenOverviewPersonId) {
+          openOverviewPersonDetail(reopenOverviewPersonId);
+        } else {
+          closeModal();
+        }
+      };
+
+      const typeInput = document.getElementById("entryType");
+      const typeButtons = document.querySelectorAll("[data-entry-type]");
+
+      typeButtons.forEach(btn => {
+        btn.onclick = () => {
+          const nextType = btn.dataset.entryType || "Gave";
+          typeInput.value = nextType;
+
+          typeButtons.forEach(b => {
+            b.classList.remove("active", "gave", "received");
+          });
+
+          btn.classList.add("active");
+          btn.classList.add(nextType === "Gave" ? "gave" : "received");
+        };
+      });
 
       form.onsubmit = e => {
         e.preventDefault();
@@ -952,8 +1743,12 @@ function openEntryForm(personId, stageId, entryId = null) {
         }
 
         saveData();
-        closeModal();
-        render();
+
+if (reopenOverviewPersonId) {
+  openOverviewPersonDetail(reopenOverviewPersonId);
+} else {
+  closeModal();
+}
       };
     }
   );
@@ -969,14 +1764,13 @@ function confirmDelete(text, onOk, reopenEdit = false, okLabel = "Delete") {
   confirmText.textContent = text;
   confirmOk.textContent = okLabel;
   confirmOverlay.classList.add("show");
-  fab.style.display = "none";
+  fab.classList.add("fab-hidden");
 }
 
 function closeConfirm() {
   state.confirmAction = null;
-  state.confirmOverlay = null;
   confirmOverlay.classList.remove("show");
-  fab.style.display = "";
+  fab.classList.remove("fab-hidden");
 }
 
 /* =========================
@@ -998,22 +1792,12 @@ function openMainAddMenu() {
           <span class="sheet-item-sub">Choose a person</span>
         </div>
       </div>
-
-      <div class="detail-topbar">
-        <button type="button" class="round-back-btn" id="backFromMainAddBtn">←</button>
-      </div>
-    `,
+      `,
     () => {
-      const backBtn = document.getElementById("backFromMainAddBtn");
-      if (backBtn) {
-        backBtn.onclick = closeModal;
-      }
 
       const addPersonBtn = document.getElementById("quickAddPerson");
       if (addPersonBtn) {
-        addPersonBtn.onclick = () => {
-          openPersonForm();
-        };
+        addPersonBtn.onclick = () => { openPersonForm(); };
       }
 
       const addEntryBtn = document.getElementById("quickAddEntry");
@@ -1032,172 +1816,16 @@ function openMainAddMenu() {
 }
 
 /* =========================
-   Edit list
+   Legacy edit list
 ========================= */
 
 function openEditStagesPanel() {
   openModal(
     "Edit",
     `
-      <div class="sheet-list">
-        ${
-          state.people.length
-            ? state.people.map(person => {
-                const stageCount = (person.stages || []).length;
-                const openStage = findOpenStage(person.id);
-
-                return `
-                  <div class="sheet-item edit-person-open-item" data-person-id="${person.id}">
-                    <span class="sheet-item-title">${escapeHtml(person.name)}</span>
-                    <span class="sheet-item-sub">
-                      ${openStage ? escapeHtml(openStage.name) : "No open stage"} • ${stageCount} stages
-                    </span>
-                  </div>
-                `;
-              }).join("")
-            : `<div class="empty-state mini-empty">No people yet</div>`
-        }
-      </div>
-
-      <div class="detail-topbar">
-        <button type="button" class="round-back-btn" id="backFromEditBtn">←</button>
-      </div>
-    `,
+      <div class="empty-state mini-empty">Long press any card to edit. Swipe left to delete.</div>
+      `,
     () => {
-      const backBtn = document.getElementById("backFromEditBtn");
-      if (backBtn) {
-        backBtn.onclick = closeModal;
-      }
-
-      document.querySelectorAll(".edit-person-open-item").forEach(item => {
-        item.onclick = () => {
-          openEditPersonDetail(item.dataset.personId);
-        };
-      });
-    }
-  );
-}
-
-function openEditPersonDetail(personId) {
-  const person = findPerson(personId);
-  if (!person) return;
-
-  openModal(
-    `${escapeHtml(person.name)} — Edit`,
-    `
-      <div class="inline-note edit-person-block">
-        <div class="edit-person-row">
-          <strong>${escapeHtml(person.name)}</strong>
-        </div>
-
-        <div class="form-actions" style="margin-top:10px;">
-          <button type="button" class="secondary-btn" id="editThisPersonBtn">Edit Person</button>
-          <button type="button" class="danger-btn" id="deleteThisPersonBtn">Delete</button>
-        </div>
-      </div>
-
-      <div class="sheet-list">
-        ${
-          (person.stages || []).length
-            ? person.stages.map(stage => `
-                <div class="sheet-item ${stage.closed ? "stage-closed" : "stage-open"}">
-                  <span class="sheet-item-title">${escapeHtml(stage.name)} — ${stage.closed ? "Closed" : "Open"}</span>
-                  <span class="sheet-item-sub">Balance: ${formatMoney(stageBalance(stage), stageCurrency(stage))}</span>
-
-                  <div class="form-actions" style="margin-top:10px;">
-                    <button type="button" class="secondary-btn edit-stage-btn" data-stage-id="${stage.id}">Edit</button>
-                    <button type="button" class="secondary-btn toggle-stage-btn" data-stage-id="${stage.id}">
-                      ${stage.closed ? "Reopen" : "Close"}
-                    </button>
-                    <button type="button" class="danger-btn delete-stage-btn" data-stage-id="${stage.id}">Delete</button>
-                  </div>
-                </div>
-              `).join("")
-            : `<div class="empty-state mini-empty">No stages yet</div>`
-        }
-      </div>
-
-      <div class="detail-topbar">
-        <button type="button" class="round-back-btn" id="backFromPersonEditBtn">←</button>
-      </div>
-    `,
-    () => {
-      const backBtn = document.getElementById("backFromPersonEditBtn");
-      if (backBtn) {
-        backBtn.onclick = () => {
-          openEditStagesPanel();
-        };
-      }
-
-      const editPersonBtn = document.getElementById("editThisPersonBtn");
-      if (editPersonBtn) {
-        editPersonBtn.onclick = () => {
-          openPersonForm(personId, true);
-        };
-      }
-
-      const deletePersonBtn = document.getElementById("deleteThisPersonBtn");
-      if (deletePersonBtn) {
-        deletePersonBtn.onclick = () => {
-          confirmDelete(
-            "Are you sure you want to delete this person? All stages and entries will be deleted.",
-            () => {
-              state.people = state.people.filter(p => p.id !== personId);
-              saveData();
-              render();
-            },
-            true
-          );
-        };
-      }
-
-      document.querySelectorAll(".edit-stage-btn").forEach(btn => {
-        btn.onclick = () => {
-          openStageForm(personId, btn.dataset.stageId, false, true);
-        };
-      });
-
-      document.querySelectorAll(".toggle-stage-btn").forEach(btn => {
-        btn.onclick = () => {
-          const stageId = btn.dataset.stageId;
-          const stage = findStage(personId, stageId);
-          if (!stage) return;
-
-          if (stage.closed) {
-            const existingOpenStage = findOpenStage(personId);
-            if (existingOpenStage && existingOpenStage.id !== stageId) {
-              alert("This person already has another open stage.");
-              return;
-            }
-            stage.closed = false;
-          } else {
-            stage.closed = true;
-          }
-
-          saveData();
-          render();
-          openEditPersonDetail(personId);
-        };
-      });
-
-      document.querySelectorAll(".delete-stage-btn").forEach(btn => {
-        btn.onclick = () => {
-          const stageId = btn.dataset.stageId;
-
-          confirmDelete(
-            "Are you sure you want to delete this stage?",
-            () => {
-              const currentPerson = findPerson(personId);
-              if (!currentPerson) return;
-
-              currentPerson.stages = currentPerson.stages.filter(stage => stage.id !== stageId);
-              saveData();
-              render();
-            },
-            true
-          );
-        };
-      });
     }
   );
 }
@@ -1213,27 +1841,84 @@ function openOverviewPersonDetail(personId) {
   const openStage = findOpenStage(person.id);
   const closedStages = (person.stages || []).filter(stage => stage.closed);
   const currentCurrency = openStage ? stageCurrency(openStage) : "EUR";
+  const closedSummary = closedStagesSummary(person);
+  const openEntriesExpanded = !!state.overviewOpenExpanded[person.id];
 
   openModal(
     `${escapeHtml(person.name)} — Details`,
     `
-      <div class="inline-note">
-        <div><strong>Total Balance:</strong> <span class="${balanceClass(personOpenBalance(person))}">${formatMoney(personOpenBalance(person), currentCurrency)}</span></div>
-        <div style="margin-top:6px;"><strong>Open Stage:</strong> ${openStage ? escapeHtml(openStage.name) : "None"}</div>
-        <div style="margin-top:6px;"><strong>Closed Stages:</strong> ${closedStages.length}</div>
+      <div class="inline-note overview-summary-grid">
+        <div class="overview-summary-row">
+          <span class="overview-summary-label">Total Balance</span>
+          <span class="overview-summary-value">
+            <span class="${balanceClass(personOpenBalance(person))}">
+              ${formatMoney(personOpenBalance(person), currentCurrency)}
+            </span>
+          </span>
+        </div>
+
+        <div class="overview-summary-row">
+          <span class="overview-summary-label">Open Stage</span>
+          <span class="overview-summary-value">
+            ${openStage ? escapeHtml(openStage.name) : "None"}
+          </span>
+        </div>
+
+        <div class="overview-summary-row">
+          <span class="overview-summary-label overview-summary-label-with-badge">
+            <span>Closed Stages</span>
+            <span class="mini-count-badge">${closedSummary.count}</span>
+          </span>
+          <span class="overview-summary-value">
+            <span class="${balanceClass(closedSummary.balance)}">
+              ${formatMoney(closedSummary.balance, closedSummary.currency)}
+            </span>
+          </span>
+        </div>
       </div>
 
       ${
         openStage
           ? `
-            <div class="section-label">Open Stage Entries</div>
-            <div class="entry-list">
-              ${
-                (openStage.entries || []).length
-                  ? openStage.entries.map(entry => renderEntry(openStage, entry)).join("")
-                  : `<div class="empty-state mini-empty">No entries</div>`
-              }
+            <div
+              class="open-stage-mini-card swipe-card"
+              data-action-type="stage"
+              data-person-id="${person.id}"
+              data-stage-id="${openStage.id}"
+              data-source="overview"
+            >
+              <div class="swipe-content">
+                <div class="open-stage-mini-inner" data-toggle-open-entries="${person.id}">
+                  <div class="open-stage-mini-left">
+                    <div class="stage-title-row">
+                      <span class="open-stage-mini-title">${escapeHtml(openStage.name)}</span>
+                      <span class="mini-count-badge">${(openStage.entries || []).length}</span>
+                    </div>
+                    ${
+                      openStage.note
+                        ? `<div class="open-stage-mini-note">${escapeHtml(openStage.note)}</div>`
+                        : ""
+                    }
+                  </div>
+                  <div class="open-stage-mini-right">
+                    <div class="open-stage-mini-balance ${balanceClass(stageBalance(openStage))}">
+                      ${formatMoney(stageBalance(openStage), stageCurrency(openStage))}
+                    </div>
+                    <span class="closed-stage-chev">${openEntriesExpanded ? "⌃" : "⌄"}</span>
+                  </div>
+                </div>
+              </div>
             </div>
+
+            ${openEntriesExpanded ? `
+              <div class="entry-list" style="margin-top:8px;">
+                ${
+                  (openStage.entries || []).length
+                    ? openStage.entries.map(entry => renderEntry(person.id, openStage.id, openStage, entry, "overview")).join("")
+                    : `<div class="empty-state mini-empty">No entries</div>`
+                }
+              </div>
+            ` : ""}
           `
           : ""
       }
@@ -1245,29 +1930,47 @@ function openOverviewPersonDetail(personId) {
             <div class="sheet-list">
               ${closedStages.map(stage => {
                 const isExpanded = !!state.overviewClosedExpanded[stage.id];
-                return `
-                  <div class="sheet-item">
-                    <div class="closed-stage-head" data-toggle-closed-stage="${stage.id}">
-                      <div>
-                        <span class="sheet-item-title">${escapeHtml(stage.name)} — ${formatMoney(stageBalance(stage), stageCurrency(stage))}</span>
-                        <span class="sheet-item-sub">Entries: ${(stage.entries || []).length}</span>
-                      </div>
-                      <div class="closed-stage-chev">${isExpanded ? "⌃" : "⌄"}</div>
-                    </div>
 
-                    ${
-                      isExpanded
-                        ? `
-                          <div class="closed-stage-body">
-                            ${
-                              (stage.entries || []).length
-                                ? stage.entries.map(entry => renderEntry(stage, entry)).join("")
-                                : `<div class="empty-state mini-empty">No entries</div>`
-                            }
+                return `
+                  <div
+                    class="sheet-item closed-stage-item swipe-card"
+                    data-action-type="stage"
+                    data-person-id="${person.id}"
+                    data-stage-id="${stage.id}"
+                    data-source="overview"
+                  >
+                    <div class="swipe-content">
+                      <div class="closed-stage-head" data-toggle-closed-stage="${stage.id}">
+                        <div class="closed-stage-col closed-stage-left">
+                          <div class="stage-title-row">
+                            <span class="sheet-item-title">${escapeHtml(stage.name)}</span>
+                            <span class="mini-count-badge">${(stage.entries || []).length}</span>
                           </div>
-                        `
-                        : ""
-                    }
+                          <span class="sheet-item-sub">${stage.note ? escapeHtml(stage.note) : "No comment"}</span>
+                        </div>
+
+                        <div class="closed-stage-col closed-stage-right">
+                          <span class="closed-stage-balance ${balanceClass(stageBalance(stage))}">
+                            ${formatMoney(stageBalance(stage), stageCurrency(stage))}
+                          </span>
+                          <span class="closed-stage-chev">${isExpanded ? "⌃" : "⌄"}</span>
+                        </div>
+                      </div>
+
+                      ${
+                        isExpanded
+                          ? `
+                              <div class="closed-stage-body">
+                                ${
+                                  (stage.entries || []).length
+                                    ? stage.entries.map(entry => renderEntry(person.id, stage.id, stage, entry, "overview")).join("")
+                                    : `<div class="empty-state mini-empty">No entries</div>`
+                                }
+                              </div>
+                            `
+                          : ""
+                      }
+                    </div>
                   </div>
                 `;
               }).join("")}
@@ -1275,21 +1978,34 @@ function openOverviewPersonDetail(personId) {
           `
           : ""
       }
-
-      <div class="detail-topbar">
-        <button type="button" class="round-back-btn" id="backToOverviewBtn">←</button>
-      </div>
-    `,
+      `,
     () => {
-      document.getElementById("backToOverviewBtn").onclick = closeModal;
+
+      document.querySelectorAll("[data-toggle-open-entries]").forEach(btn => {
+        btn.onclick = (e) => {
+          if (state.longPressTriggered) return;
+          if (e.target.closest(".swipe-delete-action")) return;
+          const current = !!state.overviewOpenExpanded[person.id];
+          state.overviewOpenExpanded[person.id] = !current;
+          openOverviewPersonDetail(personId);
+        };
+      });
 
       document.querySelectorAll("[data-toggle-closed-stage]").forEach(btn => {
         btn.onclick = () => {
+          if (state.longPressTriggered) return;
+
           const stageId = btn.dataset.toggleClosedStage;
           state.overviewClosedExpanded[stageId] = !state.overviewClosedExpanded[stageId];
           openOverviewPersonDetail(personId);
         };
       });
+
+      document.querySelectorAll(".swipe-card").forEach(card => {
+        setupActionCard(card);
+      });
+
+      closeAllSwipes();
     }
   );
 }
@@ -1308,16 +2024,8 @@ function openChoosePersonForEntry() {
           <span class="sheet-item-sub">Balance: ${formatMoney(personOpenBalance(person))}</span>
         </div>
       `).join("")}
-
-      <div class="detail-topbar">
-        <button type="button" class="round-back-btn" id="backFromChoosePersonBtn">←</button>
-      </div>
-    `,
+      `,
     () => {
-      const backBtn = document.getElementById("backFromChoosePersonBtn");
-      if (backBtn) {
-        backBtn.onclick = closeModal;
-      }
 
       document.querySelectorAll(".choose-person-entry").forEach(btn => {
         btn.onclick = () => {
@@ -1344,21 +2052,23 @@ searchInput.addEventListener("input", e => {
   render();
 });
 
-fab.addEventListener("click", openMainAddMenu);
+fab.onclick = openMainAddMenu;
 
-  menuBtn.addEventListener("click", () => {
-  menuOverlay.classList.add("show");
-});
+if (menuBtn) {
+  menuBtn.classList.add("transfer-btn");
+  menuBtn.textContent = "⇅";
+  menuBtn.setAttribute("aria-label", "Import / Export");
+  menuBtn.addEventListener("click", openTransferActionsModal);
+}
 
 themeToggleBtn.addEventListener("click", () => {
   toggleTheme();
 });
 
-menuOverlay.addEventListener("click", e => {
-  if (e.target === menuOverlay) {
-    menuOverlay.classList.remove("show");
-  }
-});
+if (menuOverlay) menuOverlay.style.display = "none";
+if (menuEditStages) menuEditStages.style.display = "none";
+if (menuTransfer) menuTransfer.style.display = "none";
+if (menuDelete) menuDelete.style.display = "none";
 
 confirmOverlay.addEventListener("click", e => {
   if (e.target === confirmOverlay) {
@@ -1390,75 +2100,6 @@ confirmOk.addEventListener("click", () => {
   }
 });
 
-menuEditStages.addEventListener("click", () => {
-  menuOverlay.classList.remove("show");
-  openEditStagesPanel();
-});
-
-menuTransfer.addEventListener("click", () => {
-  menuOverlay.classList.remove("show");
-
-  openModal(
-    "Import / Export",
-    `
-      <div class="sheet-item" id="doExport">
-        <span class="sheet-item-title">Export</span>
-        <span class="sheet-item-sub">Download a JSON backup file</span>
-      </div>
-
-      <div class="sheet-item" id="doImport">
-        <span class="sheet-item-title">Import</span>
-        <span class="sheet-item-sub">Upload a saved file</span>
-      </div>
-
-      <div class="detail-topbar">
-        <button type="button" class="round-back-btn" id="backFromTransferBtn">←</button>
-      </div>
-    `,
-    () => {
-      document.getElementById("backFromTransferBtn").onclick = closeModal;
-
-      document.getElementById("doExport").onclick = () => {
-        const blob = new Blob([JSON.stringify(state.people, null, 2)], {
-          type: "application/json"
-        });
-
-        const a = document.createElement("a");
-        a.href = URL.createObjectURL(blob);
-        a.download = `accounts-backup-${todayStr()}.json`;
-        a.click();
-        URL.revokeObjectURL(a.href);
-        closeModal();
-      };
-
-      document.getElementById("doImport").onclick = () => {
-  confirmDelete(
-    "Importing a file will replace your current data. Continue?",
-    () => {
-      importFile.click();
-    },
-    false,
-    "Import"
-  );
-};
-    }
-  );
-});
-
-menuDelete.addEventListener("click", () => {
-  menuOverlay.classList.remove("show");
-
-  confirmDelete(
-    "Are you sure you want to delete all data?",
-    () => {
-      state.people = [];
-      saveData();
-      render();
-    },
-    false
-  );
-});
-
 importFile.addEventListener("change", async e => {
   const file = e.target.files?.[0];
   if (!file) return;
@@ -1482,13 +2123,166 @@ importFile.addEventListener("change", async e => {
   }
 });
 
-loadTheme();
-render();
+document.addEventListener("click", e => {
+  if (!e.target.closest(".swipe-card")) {
+    closeAllSwipes();
+  }
+});
 
-if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => {
-    navigator.serviceWorker.register("./service-worker.js")
-      .then(() => console.log("Service Worker registered"))
-      .catch(error => console.log("Service Worker error:", error));
+document.addEventListener("keydown", e => {
+  if (e.key === "Escape") {
+    closeAllSwipes();
+  }
+});
+
+/* =========================
+   PWA install + update
+========================= */
+
+let deferredInstallPrompt = null;
+let swRegistrationRef = null;
+let isRefreshingFromUpdate = false;
+
+function isStandaloneMode() {
+  return window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true;
+}
+
+function openInstallPromptCard() {
+  if (!installPromptOverlay || isStandaloneMode() || !deferredInstallPrompt) return;
+  installPromptOverlay.classList.add("show");
+}
+
+function closeInstallPromptCard() {
+  if (!installPromptOverlay) return;
+  installPromptOverlay.classList.remove("show");
+}
+
+async function triggerInstallPrompt() {
+  if (!deferredInstallPrompt) return;
+
+  const installEvent = deferredInstallPrompt;
+  deferredInstallPrompt = null;
+  closeInstallPromptCard();
+
+  try {
+    installEvent.prompt();
+    await installEvent.userChoice;
+  } catch (error) {
+    console.log("Install prompt error:", error);
+  }
+}
+
+function openUpdatePromptCard() {
+  if (!updatePromptOverlay) return;
+  updatePromptOverlay.classList.add("show");
+}
+
+function closeUpdatePromptCard() {
+  if (!updatePromptOverlay) return;
+  updatePromptOverlay.classList.remove("show");
+}
+
+function applyAppUpdate() {
+  const waitingWorker = swRegistrationRef?.waiting;
+  if (!waitingWorker) return;
+  waitingWorker.postMessage({ type: "SKIP_WAITING" });
+}
+
+function bindPwaUi() {
+  if (installPromptLaterBtn) {
+    installPromptLaterBtn.onclick = closeInstallPromptCard;
+  }
+
+  if (installPromptInstallBtn) {
+    installPromptInstallBtn.onclick = () => {
+      triggerInstallPrompt();
+    };
+  }
+
+  if (updateExportBtn) {
+    updateExportBtn.onclick = () => {
+      exportDataAsJson();
+    };
+  }
+
+  if (updateCancelBtn) {
+    updateCancelBtn.onclick = closeUpdatePromptCard;
+  }
+
+  if (updateApplyBtn) {
+    updateApplyBtn.onclick = applyAppUpdate;
+  }
+
+  window.addEventListener("beforeinstallprompt", event => {
+    event.preventDefault();
+    deferredInstallPrompt = event;
+    openInstallPromptCard();
+  });
+
+  window.addEventListener("appinstalled", () => {
+    deferredInstallPrompt = null;
+    closeInstallPromptCard();
+  });
+
+  if (installPromptOverlay) {
+    installPromptOverlay.addEventListener("click", event => {
+      if (event.target === installPromptOverlay) closeInstallPromptCard();
+    });
+  }
+
+  if (updatePromptOverlay) {
+    updatePromptOverlay.addEventListener("click", event => {
+      if (event.target === updatePromptOverlay) closeUpdatePromptCard();
+    });
+  }
+}
+
+function setupServiceWorkerUpdates(registration) {
+  swRegistrationRef = registration;
+
+  if (registration.waiting) {
+    openUpdatePromptCard();
+  }
+
+  registration.addEventListener("updatefound", () => {
+    const newWorker = registration.installing;
+    if (!newWorker) return;
+
+    newWorker.addEventListener("statechange", () => {
+      if (newWorker.state === "installed" && navigator.serviceWorker.controller) {
+        openUpdatePromptCard();
+      }
+    });
+  });
+
+  navigator.serviceWorker.addEventListener("controllerchange", () => {
+    if (isRefreshingFromUpdate) return;
+    isRefreshingFromUpdate = true;
+    closeUpdatePromptCard();
+    window.location.reload();
   });
 }
+
+function registerServiceWorker() {
+  if (!("serviceWorker" in navigator)) return;
+
+  window.addEventListener("load", async () => {
+    try {
+      const registration = await navigator.serviceWorker.register("./service-workers.js");
+      setupServiceWorkerUpdates(registration);
+      registration.update();
+      console.log("Service Worker registered");
+    } catch (error) {
+      console.log("Service Worker error:", error);
+    }
+  });
+}
+
+/* =========================
+   Init
+========================= */
+
+loadTheme();
+bindPwaUi();
+render();
+registerServiceWorker();
