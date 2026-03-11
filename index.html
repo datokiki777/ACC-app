@@ -7,22 +7,25 @@
 
   <link rel="stylesheet" href="style.css" />
   <link rel="manifest" href="manifest.json" />
+
   <meta name="theme-color" content="#0f2447" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Accounts" />
+
   <link rel="apple-touch-icon" href="icon-192.png" />
 </head>
 <body>
   <div class="app">
-
     <header class="topbar">
       <div class="title-row">
-        <button class="icon-btn" id="menuBtn" aria-label="Menu">☰</button>
+        <button class="icon-btn" id="menuBtn" aria-label="Import / Export">⇅</button>
 
         <button class="theme-switch" id="themeToggleBtn" aria-label="Toggle theme">
-        <span class="theme-icon">☀️</span>
-        <span class="theme-separator">/</span>
-        <span class="theme-icon">🌙</span>
-      </button>
-    </div>
+          <span class="theme-icon">☀️</span>
+          <span class="theme-icon">🌙</span>
+        </button>
+      </div>
 
       <div class="search-box">
         <span class="search-icon">🔍</span>
@@ -36,8 +39,8 @@
     </header>
 
     <main>
-         <div class="stats-bar" id="statsBar"></div>
-       <section class="people-list" id="peopleList">
+      <div class="stats-bar" id="statsBar"></div>
+      <section class="people-list" id="peopleList">
         <div class="empty-state" id="emptyState">
           <div class="empty-icon">📒</div>
           <div class="empty-title">No records yet</div>
@@ -49,42 +52,19 @@
 
   <button class="fab" id="fab" aria-label="Add">+</button>
 
-  <div class="overlay" id="menuOverlay">
-    <div class="sheet menu-sheet">
-      <div class="sheet-header">
-        <h2>Menu</h2>
-      </div>
-
-      <div class="sheet-body">
-         
-        <button class="sheet-item" id="menuEditStages">
-         <span class="sheet-item-title">Edit</span>
-         <span class="sheet-item-sub">Manage and update stages</span>
-       </button>
-
-        <button class="sheet-item" id="menuTransfer">
-          <span class="sheet-item-title">Import / Export</span>
-          <span class="sheet-item-sub">Choose the action you want</span>
-        </button>
-
-        <button class="sheet-item danger-sheet-item" id="menuDelete">
-          <span class="sheet-item-title">Delete</span>
-          <span class="sheet-item-sub">Delete all data</span>
-        </button>
-
-        <input type="file" id="importFile" accept="application/json" hidden />
-      </div>
-    </div>
-  </div>
+  <!-- Legacy menu elements — hidden by JS, kept for querySelector compatibility -->
+  <div id="menuOverlay" style="display:none;"></div>
+  <button id="menuEditStages" style="display:none;"></button>
+  <button id="menuTransfer" style="display:none;"></button>
+  <button id="menuDelete" style="display:none;"></button>
+  <input type="file" id="importFile" accept="application/json" hidden />
 
   <div class="overlay" id="modalOverlay">
     <div class="sheet modal-sheet">
       <div class="sheet-header">
         <h2 id="modalTitle">Form</h2>
       </div>
-
-      <div class="sheet-body" id="modalContent">
-      </div>
+      <div class="sheet-body" id="modalContent"></div>
     </div>
   </div>
 
@@ -93,14 +73,45 @@
       <div class="sheet-header">
         <h2>Confirm</h2>
       </div>
-
       <div class="sheet-body">
         <p class="confirm-text" id="confirmText">Are you sure?</p>
       </div>
-
       <div class="sheet-footer confirm-actions">
         <button class="secondary-btn" id="confirmCancel">Cancel</button>
         <button class="danger-btn" id="confirmOk">Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay app-prompt-overlay" id="installPromptOverlay" aria-hidden="true">
+    <div class="sheet app-prompt-sheet app-prompt-sheet-install">
+      <div class="app-prompt-badge">Install App</div>
+      <h2 class="app-prompt-title">Install Accounts on your phone</h2>
+      <p class="app-prompt-text">
+        Open it like a real app from your home screen, without browser tabs and address bar.
+      </p>
+      <div class="app-prompt-actions app-prompt-actions-2">
+        <button type="button" class="secondary-btn" id="installPromptLaterBtn">Later</button>
+        <button type="button" class="primary-btn" id="installPromptInstallBtn">Install</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay app-prompt-overlay" id="updatePromptOverlay" aria-hidden="true">
+    <div class="sheet app-prompt-sheet app-prompt-sheet-update">
+      <div class="app-prompt-badge">New Version Available</div>
+      <h2 class="app-prompt-title">Update is ready</h2>
+      <p class="app-prompt-text">
+        Before updating, make an export of your data for safety.
+      </p>
+
+      <button type="button" class="primary-btn app-prompt-export-btn" id="updateExportBtn">
+        ⬆️ Export data
+      </button>
+
+      <div class="app-prompt-actions app-prompt-actions-2 compact">
+        <button type="button" class="secondary-btn" id="updateCancelBtn">Cancel</button>
+        <button type="button" class="primary-btn" id="updateApplyBtn">Update</button>
       </div>
     </div>
   </div>
