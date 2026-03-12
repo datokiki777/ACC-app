@@ -1351,6 +1351,35 @@ main{
   transform:rotate(90deg);
 }
 
+.stats-overview-panel{
+  position:fixed;
+  left:0;
+  right:0;
+  z-index:29;
+  background:var(--bg);
+  border-top:1px solid var(--line);
+  display:none;
+  flex-direction:column;
+  overflow:hidden;
+}
+
+.stats-overview-panel.active{
+  display:flex;
+}
+
+.stats-overview-panel-fixed{
+  flex-shrink:0;
+  padding:10px 12px 8px;
+}
+
+.stats-overview-panel-scroll{
+  flex:1 1 0;
+  overflow-y:auto;
+  -webkit-overflow-scrolling:touch;
+  padding:0 12px 120px;
+  min-height:0;
+}
+
 .stats-overview-list{
   width:100%;
   display:flex;
