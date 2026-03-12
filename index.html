@@ -1,60 +1,91 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <!-- =========================
+       Meta
+  ========================= -->
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Accounts</title>
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+  />
 
-  <link rel="stylesheet" href="style.css" />
-  <link rel="manifest" href="manifest.json" />
+  <!-- =========================
+       Title
+  ========================= -->
+  <title>ACC</title>
 
+  <!-- =========================
+       PWA / Theme
+  ========================= -->
   <meta name="theme-color" content="#0f2447" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <meta name="apple-mobile-web-app-title" content="Accounts" />
+  <meta name="apple-mobile-web-app-title" content="ACC" />
 
+  <!-- =========================
+       Assets
+  ========================= -->
+  <link rel="stylesheet" href="style.css" />
+  <link rel="manifest" href="manifest.json" />
   <link rel="apple-touch-icon" href="icon-192.png" />
 </head>
 <body>
   <div class="app">
+
+    <!-- =========================
+         Topbar
+    ========================= -->
     <header class="topbar">
-  <div class="topbar-main-row">
-  <button class="icon-btn" id="menuBtn" aria-label="Import / Export">⇅</button>
+      <div class="topbar-main-row">
+        <button class="icon-btn" id="menuBtn" aria-label="Import / Export">⇄</button>
 
-  <div class="mode-switch topbar-mode-switch">
-    <button id="modePersonal" class="mode-btn active">Personal</button>
-    <button id="modeWork" class="mode-btn">Work</button>
+        <div class="mode-switch topbar-mode-switch">
+          <button id="modePersonal" class="mode-btn active">Personal</button>
+          <button id="modeWork" class="mode-btn">Work</button>
+        </div>
+
+        <button class="theme-switch" id="themeToggleBtn" aria-label="Toggle theme">
+          <span class="theme-icon">🌙</span>
+          <span class="theme-icon">☀️</span>
+        </button>
+      </div>
+
+      <div class="stats-bar" id="statsBar"></div>
+    </header>
+
+    <!-- =========================
+         Main Content
+    ========================= -->
+    <main>
+      <section class="people-list" id="peopleList">
+        <div class="empty-state" id="emptyState">
+          <div class="empty-icon">📒</div>
+          <div class="empty-title">No records yet</div>
+          <div class="empty-text">Tap the plus button below to add your first person.</div>
+        </div>
+      </section>
+    </main>
   </div>
 
-  <button class="theme-switch" id="themeToggleBtn" aria-label="Toggle theme">
-  <span class="theme-icon">🌙</span>
-  <span class="theme-icon">☀️</span>
-</button>
-</div>
-
-  <div class="stats-bar" id="statsBar"></div>
-</header>
-
-<main>
-  <section class="people-list" id="peopleList">
-    <div class="empty-state" id="emptyState">
-      <div class="empty-icon">📒</div>
-      <div class="empty-title">No records yet</div>
-      <div class="empty-text">Tap the plus button below and start by adding a person.</div>
-    </div>
-  </section>
-</main>
-  </div>
-
+  <!-- =========================
+       Floating Action Button
+  ========================= -->
   <button class="fab" id="fab" aria-label="Add">+</button>
 
-  <!-- Legacy menu elements — hidden by JS, kept for querySelector compatibility -->
+  <!-- =========================
+       Legacy hidden elements
+       Kept for JS compatibility
+  ========================= -->
   <div id="menuOverlay" style="display:none;"></div>
   <button id="menuEditStages" style="display:none;"></button>
   <button id="menuTransfer" style="display:none;"></button>
   <button id="menuDelete" style="display:none;"></button>
   <input type="file" id="importFile" accept="application/json" hidden />
 
+  <!-- =========================
+       Main Modal
+  ========================= -->
   <div class="overlay" id="modalOverlay">
     <div class="sheet modal-sheet">
       <div class="sheet-header">
@@ -64,6 +95,9 @@
     </div>
   </div>
 
+  <!-- =========================
+       Confirm Modal
+  ========================= -->
   <div class="overlay" id="confirmOverlay">
     <div class="sheet confirm-sheet">
       <div class="sheet-header">
@@ -79,10 +113,13 @@
     </div>
   </div>
 
+  <!-- =========================
+       Install Prompt
+  ========================= -->
   <div class="overlay app-prompt-overlay" id="installPromptOverlay" aria-hidden="true">
     <div class="sheet app-prompt-sheet app-prompt-sheet-install">
       <div class="app-prompt-badge">Install App</div>
-      <h2 class="app-prompt-title">Install Accounts on your phone</h2>
+      <h2 class="app-prompt-title">Install ACC on your phone</h2>
       <p class="app-prompt-text">
         Open it like a real app from your home screen, without browser tabs and address bar.
       </p>
@@ -92,13 +129,32 @@
       </div>
     </div>
   </div>
+  
+  <!-- =========================
+       iPhone Prompt
+   ======================== -->
+   <div class="overlay app-prompt-overlay" id="iosInstallPromptOverlay" aria-hidden="true">
+    <div class="sheet app-prompt-sheet app-prompt-sheet-install">
+      <div class="app-prompt-badge">Install on iPhone</div>
+      <h2 class="app-prompt-title">Add ACC to your Home Screen</h2>
+      <p class="app-prompt-text">
+        Tap the Share button in Safari, then choose <strong>Add to Home Screen</strong>.
+      </p>
+      <div class="app-prompt-actions app-prompt-actions-2">
+        <button type="button" class="secondary-btn" id="iosInstallPromptCloseBtn">Close</button>
+      </div>
+    </div>
+  </div>
 
+  <!-- =========================
+       Update Prompt
+  ========================= -->
   <div class="overlay app-prompt-overlay" id="updatePromptOverlay" aria-hidden="true">
     <div class="sheet app-prompt-sheet app-prompt-sheet-update">
       <div class="app-prompt-badge">New Version Available</div>
       <h2 class="app-prompt-title">Update is ready</h2>
       <p class="app-prompt-text">
-        Before updating, make an export of your data for safety.
+        Before updating, export your data for safety.
       </p>
 
       <button type="button" class="primary-btn app-prompt-export-btn" id="updateExportBtn">
@@ -112,6 +168,9 @@
     </div>
   </div>
 
+  <!-- =========================
+       Scripts
+  ========================= -->
   <script src="app.js"></script>
 </body>
 </html>
