@@ -2288,3 +2288,65 @@ body.install-open .fab{
   pointer-events:none !important;
   transform:scale(.82) !important;
 }
+
+/* =========================
+   App prompts (Install / Update)
+========================= */
+
+.app-prompt-sheet{
+  width:min(100%, 760px);
+  max-width:100%;
+  overflow:hidden;
+}
+
+.app-prompt-badge{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  max-width:100%;
+  margin:0 0 12px 0;
+  padding:8px 12px;
+  border-radius:999px;
+  font-size:12px;
+  font-weight:800;
+  line-height:1;
+  letter-spacing:.02em;
+  background:rgba(76,141,255,0.12);
+  color:var(--primary);
+  border:1px solid rgba(76,141,255,0.18);
+  white-space:nowrap;
+}
+
+.app-prompt-title{
+  margin:0 0 10px;
+  font-size:20px;
+  font-weight:900;
+  line-height:1.2;
+}
+
+.app-prompt-text{
+  margin:0 0 16px;
+  font-size:15px;
+  line-height:1.45;
+  color:var(--muted);
+}
+
+.app-prompt-actions{
+  display:flex;
+  gap:10px;
+}
+
+.app-prompt-actions-2 > button{
+  flex:1;
+}
+
+.app-prompt-export-btn{
+  width:100%;
+  margin-bottom:12px;
+}
+
+body.light-theme .app-prompt-badge{
+  background:rgba(31,111,235,0.10);
+  color:#1f6feb;
+  border:1px solid rgba(31,111,235,0.16);
+}
