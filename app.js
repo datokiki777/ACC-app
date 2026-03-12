@@ -2469,7 +2469,7 @@ if (btnWork) {
 
  /* =========================
    PWA Install Prompt
-   Android + iPhone
+   Android + iPhone + Update
 ========================= */
 
 let deferredInstallPrompt = null;
@@ -2482,28 +2482,51 @@ const installPromptInstallBtn = document.getElementById("installPromptInstallBtn
 const iosInstallPromptOverlay = document.getElementById("iosInstallPromptOverlay");
 const iosInstallPromptCloseBtn = document.getElementById("iosInstallPromptCloseBtn");
 
+const updatePromptOverlay = document.getElementById("updatePromptOverlay");
+const updateCancelBtn = document.getElementById("updateCancelBtn");
+const updateApplyBtn = document.getElementById("updateApplyBtn");
+const updateExportBtn = document.getElementById("updateExportBtn");
+
 function showInstallPromptUI() {
   if (!installPromptOverlay) return;
   installPromptOverlay.classList.add("show");
   installPromptOverlay.setAttribute("aria-hidden", "false");
+  document.body.classList.add("install-open");
 }
 
 function hideInstallPromptUI() {
   if (!installPromptOverlay) return;
   installPromptOverlay.classList.remove("show");
   installPromptOverlay.setAttribute("aria-hidden", "true");
+  document.body.classList.remove("install-open");
 }
 
 function showIosInstallPromptUI() {
   if (!iosInstallPromptOverlay) return;
   iosInstallPromptOverlay.classList.add("show");
   iosInstallPromptOverlay.setAttribute("aria-hidden", "false");
+  document.body.classList.add("install-open");
 }
 
 function hideIosInstallPromptUI() {
   if (!iosInstallPromptOverlay) return;
   iosInstallPromptOverlay.classList.remove("show");
   iosInstallPromptOverlay.setAttribute("aria-hidden", "true");
+  document.body.classList.remove("install-open");
+}
+
+function showUpdatePromptUI() {
+  if (!updatePromptOverlay) return;
+  updatePromptOverlay.classList.add("show");
+  updatePromptOverlay.setAttribute("aria-hidden", "false");
+  document.body.classList.add("install-open");
+}
+
+function hideUpdatePromptUI() {
+  if (!updatePromptOverlay) return;
+  updatePromptOverlay.classList.remove("show");
+  updatePromptOverlay.setAttribute("aria-hidden", "true");
+  document.body.classList.remove("install-open");
 }
 
 function isIosDevice() {
@@ -2511,7 +2534,10 @@ function isIosDevice() {
 }
 
 function isRunningStandalone() {
-  return window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true;
+  return (
+    window.matchMedia("(display-mode: standalone)").matches ||
+    window.navigator.standalone === true
+  );
 }
 
 function scheduleAndroidInstallPrompt() {
@@ -2546,6 +2572,10 @@ function scheduleIosInstallPrompt() {
   }, 10000);
 }
 
+function maybeShowIosInstallPrompt() {
+  scheduleIosInstallPrompt();
+}
+
 window.addEventListener("beforeinstallprompt", event => {
   event.preventDefault();
   deferredInstallPrompt = event;
@@ -2556,6 +2586,8 @@ window.addEventListener("appinstalled", () => {
   deferredInstallPrompt = null;
   hideInstallPromptUI();
   hideIosInstallPromptUI();
+  hideUpdatePromptUI();
+
   localStorage.setItem("acc-install-dismissed", "1");
   localStorage.setItem("acc-ios-install-dismissed", "1");
 });
@@ -2606,8 +2638,18 @@ if (iosInstallPromptOverlay) {
   });
 }
 
-function maybeShowIosInstallPrompt() {
-  scheduleIosInstallPrompt();
+if (updateCancelBtn) {
+  updateCancelBtn.addEventListener("click", () => {
+    hideUpdatePromptUI();
+  });
+}
+
+if (updatePromptOverlay) {
+  updatePromptOverlay.addEventListener("click", e => {
+    if (e.target === updatePromptOverlay) {
+      hideUpdatePromptUI();
+    }
+  });
 }
 
 /* =========================
