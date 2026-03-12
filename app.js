@@ -1322,6 +1322,9 @@ function renderStats() {
       if (e.target.closest(".overview-search-box")) return;
 
       state.statsExpanded = !state.statsExpanded;
+      if (state.statsExpanded) {
+        history.pushState({ cards: true }, "");
+      }
       render();
     };
   }
@@ -1643,6 +1646,10 @@ function bindDynamicEvents() {
       person.expanded = willExpand;
       saveData();
       animatePersonCard(card, willExpand);
+
+      if (willExpand) {
+        history.pushState({ cards: true }, "");
+      }
     };
   });
 
@@ -1740,10 +1747,31 @@ window.addEventListener("popstate", () => {
     _suppressPopstate = false;
     return;
   }
+
   if (modalOverlay.classList.contains("show")) {
     closeModal();
-  } else if (confirmOverlay.classList.contains("show")) {
+    return;
+  }
+
+  if (confirmOverlay.classList.contains("show")) {
     closeConfirm();
+    return;
+  }
+
+  const anyExpanded = state.people.some(p => p.expanded);
+  if (anyExpanded) {
+    state.people.forEach(p => { p.expanded = false; });
+    saveData();
+    render();
+    history.pushState({ cards: true }, "");
+    return;
+  }
+
+  if (state.statsExpanded) {
+    state.statsExpanded = false;
+    render();
+    history.pushState({ cards: true }, "");
+    return;
   }
 });
 
