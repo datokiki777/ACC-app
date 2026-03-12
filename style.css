@@ -2282,3 +2282,9 @@ body:not(.light-theme) .mini-count-badge{
   pointer-events:none;
   transform:scale(.9);
 }
+
+body.install-open .fab{
+  opacity:0 !important;
+  pointer-events:none !important;
+  transform:scale(.82) !important;
+}
