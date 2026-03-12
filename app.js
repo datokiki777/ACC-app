@@ -1473,6 +1473,16 @@ function adjustMainPadding() {
   }
 }
 
+function syncFab() {
+  if (fab.classList.contains("fab-back")) return; // modal ღიაა — არ შევეხოთ
+  const anyExpanded = state.people.some(p => p.expanded);
+  if (anyExpanded) {
+    fab.classList.add("fab-hidden");
+  } else {
+    fab.classList.remove("fab-hidden");
+  }
+}
+
 function render() {
   const filteredPeople = getFilteredPeople();
 
@@ -1482,6 +1492,7 @@ function render() {
     if (emptyStateEl) peopleListEl.appendChild(emptyStateEl);
     renderStats();
     requestAnimationFrame(adjustMainPadding);
+    syncFab();
     return;
   }
 
@@ -1493,6 +1504,7 @@ function render() {
   bindStatsEvents();
   runBalanceAnimations();
   requestAnimationFrame(adjustMainPadding);
+  syncFab();
 }
 
 
