@@ -1,3 +1,30 @@
+/* =========================================================
+   ACC App — Clean Ordered JS
+   Sections:
+   1) Constants + State + Elements
+   2) Helpers
+   3) Storage + Theme
+   4) Finders
+   5) Animations
+   6) Swipe + Long Press
+   7) PDF Export + Quick Actions
+   8) Card Action Routing
+   9) Render
+  10) Dynamic Events
+  11) Modal Helpers
+  12) Forms
+  13) Confirm
+  14) Menus + Overview
+  15) Static Events
+  16) Mode Switch
+  17) Init
+========================================================= */
+
+
+/* =========================
+   1) Constants + State + Elements
+========================= */
+
 const PERSONAL_STORAGE_KEY = "accounts-personal-v1";
 const WORK_STORAGE_KEY = "accounts-work-v1";
 const MODE_STORAGE_KEY = "accounts-mode-v1";
@@ -20,7 +47,6 @@ const state = {
 
 const peopleListEl = document.getElementById("peopleList");
 const emptyStateEl = document.getElementById("emptyState");
-
 const searchInput = document.getElementById("searchInput");
 
 const fab = document.getElementById("fab");
@@ -42,8 +68,12 @@ const confirmText = document.getElementById("confirmText");
 const confirmCancel = document.getElementById("confirmCancel");
 const confirmOk = document.getElementById("confirmOk");
 
+const btnPersonal = document.getElementById("modePersonal");
+const btnWork = document.getElementById("modeWork");
+
+
 /* =========================
-   Helpers
+   2) Helpers
 ========================= */
 
 function uid() {
@@ -80,6 +110,12 @@ function formatMoney(value, currency = "EUR") {
   return `${sign}${num.toFixed(2)}${currencyLabel(currency)}`;
 }
 
+function formatMoneyPlain(value, currency = "EUR") {
+  const num = Number(value || 0);
+  const sign = num < 0 ? "-" : "";
+  return `${sign}${Math.abs(num).toFixed(2)}${currencyLabel(currency)}`;
+}
+
 function balanceClass(value) {
   if (value > 0) return "green";
   if (value < 0) return "red";
@@ -98,6 +134,7 @@ function escapeHtml(value) {
 function highlightMatch(text, query) {
   const safeText = escapeHtml(text || "");
   const q = String(query || "").trim();
+
   if (!q) return safeText;
 
   const escapedQuery = q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -117,7 +154,7 @@ function typeLabelClass(type) {
   return type === "Gave" ? "green" : "red";
 }
 
- function isWorkMode() {
+function isWorkMode() {
   return state.mode === "work";
 }
 
@@ -157,16 +194,14 @@ function entryTypeToggleContent(type, active) {
   `;
 }
 
+function stageCurrency(stage) {
+  return stage?.currency || "EUR";
+}
+
 function stageBalance(stage) {
   return (stage.entries || []).reduce((sum, entry) => {
     return sum + entryEffect(entry.type, entry.amount);
   }, 0);
-}
-
-function personOpenBalance(person) {
-  return (person.stages || [])
-    .filter(stage => !stage.closed)
-    .reduce((sum, stage) => sum + stageBalance(stage), 0);
 }
 
 function stageTotals(stage) {
@@ -186,14 +221,10 @@ function stageTotals(stage) {
   };
 }
 
-function stageCurrency(stage) {
-  return stage?.currency || "EUR";
-}
-
-function formatMoneyPlain(value, currency = "EUR") {
-  const num = Number(value || 0);
-  const sign = num < 0 ? "-" : "";
-  return `${sign}${Math.abs(num).toFixed(2)}${currencyLabel(currency)}`;
+function personOpenBalance(person) {
+  return (person.stages || [])
+    .filter(stage => !stage.closed)
+    .reduce((sum, stage) => sum + stageBalance(stage), 0);
 }
 
 function getOrderedCurrencyEntries(totalsMap) {
@@ -221,7 +252,6 @@ function getOpenCurrencyTotals(people = state.people) {
       .forEach(stage => {
         const currency = stageCurrency(stage);
         const balance = stageBalance(stage);
-
         totals[currency] = (totals[currency] || 0) + balance;
       });
   });
@@ -304,8 +334,38 @@ function getNearestSwipeCard(target) {
   return target.closest(".swipe-card");
 }
 
+function personLastActivityTs(person) {
+  const stages = person.stages || [];
+  let latest = 0;
+
+  stages.forEach(stage => {
+    if (stage.createdAt) {
+      const ts = new Date(stage.createdAt).getTime();
+      if (!isNaN(ts) && ts > latest) latest = ts;
+    }
+
+    (stage.entries || []).forEach(entry => {
+      if (entry.date) {
+        const ts = new Date(entry.date).getTime();
+        if (!isNaN(ts) && ts > latest) latest = ts;
+      }
+    });
+  });
+
+  return latest;
+}
+
+function getFilteredPeople() {
+  const query = state.search.trim().toLowerCase();
+
+  return state.people
+    .filter(person => (person.name || "").toLowerCase().includes(query))
+    .sort((a, b) => personLastActivityTs(b) - personLastActivityTs(a));
+}
+
+
 /* =========================
-   Storage
+   3) Storage + Theme
 ========================= */
 
 function currentStorageKey() {
@@ -357,8 +417,9 @@ function toggleTheme() {
   applyTheme(nextTheme);
 }
 
+
 /* =========================
-   Finders
+   4) Finders
 ========================= */
 
 function findPerson(personId) {
@@ -383,8 +444,9 @@ function findOpenStage(personId) {
   return (person.stages || []).find(stage => !stage.closed) || null;
 }
 
+
 /* =========================
-   Animations
+   5) Animations
 ========================= */
 
 function animateValue(el, start, end, duration = 450, currency = "EUR") {
@@ -411,9 +473,10 @@ function animateValue(el, start, end, duration = 450, currency = "EUR") {
 function runBalanceAnimations() {
   document.querySelectorAll("[data-animated-balance]").forEach(el => {
     if (el.classList.contains("stats-mixed-balance")) {
-  return;
-}
-   const target = Number(el.dataset.value || 0);
+      return;
+    }
+
+    const target = Number(el.dataset.value || 0);
     const currency = el.dataset.currency || "EUR";
     const previous = Number(el.dataset.prevValue || 0);
     const personId = el.closest(".person-card")?.dataset.personId || null;
@@ -432,13 +495,15 @@ function runBalanceAnimations() {
   });
 }
 
+
 /* =========================
-   Swipe + long press
+   6) Swipe + Long Press
 ========================= */
 
 function closeAllSwipes(exceptCard = null) {
   document.querySelectorAll(".swipe-card").forEach(card => {
     if (exceptCard && card === exceptCard) return;
+
     const content = card.querySelector(".swipe-content");
     if (content) content.style.transform = "";
     card.classList.remove("swipe-open");
@@ -472,6 +537,7 @@ function setupLongPress(element, callback) {
 
   const move = e => {
     if (!timer) return;
+
     const point = e.touches ? e.touches[0] : e;
     const dx = Math.abs(point.clientX - startX);
     const dy = Math.abs(point.clientY - startY);
@@ -522,6 +588,7 @@ function setupSwipeDelete(card, onDelete) {
   let startX = 0;
   let currentX = 0;
   let dragging = false;
+  let startYSwipe = 0;
 
   const setTranslate = x => {
     const safeX = Math.max(-revealWidth, Math.min(0, x));
@@ -556,13 +623,8 @@ function setupSwipeDelete(card, onDelete) {
     const point = e.touches[0];
     startX = point.clientX;
     currentX = startX;
+    startYSwipe = point.clientY;
     dragging = true;
-  }, { passive: true });
-
-  let startYSwipe = 0;
-
-  card.addEventListener("touchstart", e => {
-    if (e.touches && e.touches[0]) startYSwipe = e.touches[0].clientY;
   }, { passive: true });
 
   card.addEventListener("touchmove", e => {
@@ -573,10 +635,10 @@ function setupSwipeDelete(card, onDelete) {
 
     const point = e.touches[0];
     currentX = point.clientX;
+
     const dx = currentX - startX;
     const dy = Math.abs(point.clientY - startYSwipe);
 
-    // Only hijack scroll if clearly horizontal swipe
     if (dx < -8 && Math.abs(dx) > dy * 1.5) {
       e.preventDefault();
       setTranslate(dx);
@@ -606,70 +668,9 @@ function setupSwipeDelete(card, onDelete) {
   });
 }
 
-function openQuickActions({ title = "", onEdit, onToggleStage, onExportPerson, onCancel }) {
-  const hasStageToggle = typeof onToggleStage === "function";
-  const hasExport = typeof onExportPerson === "function";
-
-  openModal(
-    title || "Actions",
-    `
-      ${hasStageToggle ? `
-      <div style="margin-bottom:10px;">
-        <button type="button" class="secondary-btn full-btn" id="quickToggleStageBtn" style="min-height:48px;border-radius:14px;font-weight:800;font-size:15px;"></button>
-      </div>` : ""}
-      ${hasExport ? `
-      <div style="margin-bottom:10px;">
-        <button type="button" class="secondary-btn full-btn" id="quickExportPersonBtn" style="min-height:48px;border-radius:14px;font-weight:800;font-size:15px;">📄 Export PDF</button>
-      </div>` : ""}
-      <div class="quick-actions-row quick-actions-row-2">
-        <button type="button" class="secondary-btn" id="quickCancelBtn">Cancel</button>
-        <button type="button" class="primary-btn" id="quickEditBtn">Edit</button>
-      </div>
-    `,
-    () => {
-      const cancelBtn = document.getElementById("quickCancelBtn");
-      const editBtn = document.getElementById("quickEditBtn");
-      const toggleBtn = document.getElementById("quickToggleStageBtn");
-      const exportBtn = document.getElementById("quickExportPersonBtn");
-
-      if (cancelBtn) {
-        cancelBtn.onclick = () => {
-          closeModal();
-          if (typeof onCancel === "function") onCancel();
-        };
-      }
-
-      if (editBtn) {
-        editBtn.onclick = () => {
-          closeModal();
-          if (typeof onEdit === "function") onEdit();
-        };
-      }
-
-      if (toggleBtn && hasStageToggle) {
-        toggleBtn.textContent = onToggleStage._label || "Toggle Stage";
-        toggleBtn.onclick = () => {
-          closeModal();
-          onToggleStage();
-        };
-      }
-
-      if (exportBtn && hasExport) {
-        exportBtn.onclick = () => {
-          closeModal();
-          onExportPerson();
-        };
-      }
-    }
-  );
-}
 
 /* =========================
-   Action handlers
-========================= */
-
-/* =========================
-   PDF Export
+   7) PDF Export + Quick Actions
 ========================= */
 
 function buildPdfHtml(people) {
@@ -722,7 +723,7 @@ function buildPdfHtml(people) {
     .grand-value { font-weight:900; font-size:16px; }
     @media print { body { background:#fff; } }
   </style></head><body>
-  <h1>Accounts Export</h1>
+  <h1>ACC Export</h1>
   <div class="sub">Generated ${new Date().toLocaleDateString("ka-GE")} • ${people.length} person(s)</div>`;
 
   people.forEach(person => {
@@ -742,11 +743,14 @@ function buildPdfHtml(people) {
 
     const renderStageGroup = (stages, label) => {
       if (!stages.length) return "";
+
       let out = `<div class="section-title">${label}</div>`;
+
       stages.forEach(stage => {
         const bal = stageBalance(stage);
         const cur = stageCurrency(stage);
         const totals = stageTotals(stage);
+
         out += `<div class="stage">
           <div class="stage-head">
             <div>
@@ -755,9 +759,11 @@ function buildPdfHtml(people) {
             </div>
             <div style="font-weight:900;color:${colorFor(bal)}">${formatMoney(bal, cur)}</div>
           </div>`;
+
         if ((stage.entries || []).length) {
           stage.entries.forEach(entry => {
             const ef = entry.type === "Gave" ? entry.amount : -entry.amount;
+
             out += `<div class="entry">
               <div>
                 <div class="entry-type" style="color:${entry.type === "Gave" ? green : red}">${entry.type}</div>
@@ -769,6 +775,7 @@ function buildPdfHtml(people) {
               </div>
             </div>`;
           });
+
           out += `<div class="totals">
             Out <span>${totals.gave.toFixed(2)}${currencyLabel(cur)}</span> &nbsp;
             In <span>${totals.received.toFixed(2)}${currencyLabel(cur)}</span> &nbsp;
@@ -777,8 +784,10 @@ function buildPdfHtml(people) {
         } else {
           out += `<div class="no-entries">No entries</div>`;
         }
+
         out += `</div>`;
       });
+
       return out;
     };
 
@@ -799,14 +808,19 @@ function buildPdfHtml(people) {
 
 function triggerPdfPrint(html) {
   const win = window.open("", "_blank");
+
   if (!win) {
     confirmDelete("Pop-up blocked. Please allow pop-ups and try again.", () => {}, false, "OK");
     return;
   }
+
   win.document.write(html);
   win.document.close();
   win.focus();
-  setTimeout(() => { win.print(); }, 400);
+
+  setTimeout(() => {
+    win.print();
+  }, 400);
 }
 
 function exportAllPdf() {
@@ -814,6 +828,7 @@ function exportAllPdf() {
     confirmDelete("No data to export.", () => {}, false, "OK");
     return;
   }
+
   triggerPdfPrint(buildPdfHtml(state.people));
 }
 
@@ -823,95 +838,72 @@ function exportPersonPdf(personId) {
   triggerPdfPrint(buildPdfHtml([person]));
 }
 
-function openTransferActionsModal() {
+function openQuickActions({ title = "", onEdit, onToggleStage, onExportPerson, onCancel }) {
+  const hasStageToggle = typeof onToggleStage === "function";
+  const hasExport = typeof onExportPerson === "function";
+
   openModal(
-    "Import / Export",
+    title || "Actions",
     `
-      <div class="quick-actions-row quick-actions-row-2" style="margin-bottom:10px;">
-        <button type="button" class="secondary-btn" id="transferImportBtn">⬇️ Import JSON</button>
-        <button type="button" class="primary-btn" id="transferExportBtn">⬆️ Export JSON</button>
-      </div>
-      <div class="quick-actions-row quick-actions-row-2" style="margin-bottom:10px;">
-        <button type="button" class="secondary-btn" id="transferExportAllPdfBtn" style="min-height:48px;border-radius:14px;font-weight:800;font-size:14px;">📄 Export All PDF</button>
-        <button type="button" class="primary-btn" id="transferExportPersonPdfBtn" style="min-height:48px;border-radius:14px;font-weight:800;font-size:14px;">👤 Export Person PDF</button>
-      </div>
-      <div class="quick-actions-row" style="display:grid;grid-template-columns:1fr;">
-        <button type="button" class="danger-btn" id="transferCancelBtn" style="min-height:48px;border-radius:14px;font-weight:800;font-size:15px;">Cancel</button>
+      ${hasStageToggle ? `
+        <div style="margin-bottom:10px;">
+          <button type="button" class="secondary-btn full-btn" id="quickToggleStageBtn" style="min-height:48px;border-radius:14px;font-weight:800;font-size:15px;"></button>
+        </div>
+      ` : ""}
+
+      ${hasExport ? `
+        <div style="margin-bottom:10px;">
+          <button type="button" class="secondary-btn full-btn" id="quickExportPersonBtn" style="min-height:48px;border-radius:14px;font-weight:800;font-size:15px;">📄 Export PDF</button>
+        </div>
+      ` : ""}
+
+      <div class="quick-actions-row quick-actions-row-2">
+        <button type="button" class="secondary-btn" id="quickCancelBtn">Cancel</button>
+        <button type="button" class="primary-btn" id="quickEditBtn">Edit</button>
       </div>
     `,
     () => {
-      const importBtn = document.getElementById("transferImportBtn");
-      const cancelBtn = document.getElementById("transferCancelBtn");
-      const exportBtn = document.getElementById("transferExportBtn");
-      const exportAllPdfBtn = document.getElementById("transferExportAllPdfBtn");
-      const exportPersonPdfBtn = document.getElementById("transferExportPersonPdfBtn");
+      const cancelBtn = document.getElementById("quickCancelBtn");
+      const editBtn = document.getElementById("quickEditBtn");
+      const toggleBtn = document.getElementById("quickToggleStageBtn");
+      const exportBtn = document.getElementById("quickExportPersonBtn");
 
-      if (cancelBtn) cancelBtn.onclick = closeModal;
+      if (cancelBtn) {
+        cancelBtn.onclick = () => {
+          closeModal();
+          if (typeof onCancel === "function") onCancel();
+        };
+      }
 
-      if (exportBtn) {
+      if (editBtn) {
+        editBtn.onclick = () => {
+          closeModal();
+          if (typeof onEdit === "function") onEdit();
+        };
+      }
+
+      if (toggleBtn && hasStageToggle) {
+        toggleBtn.textContent = onToggleStage._label || "Toggle Stage";
+        toggleBtn.onclick = () => {
+          closeModal();
+          onToggleStage();
+        };
+      }
+
+      if (exportBtn && hasExport) {
         exportBtn.onclick = () => {
-          const blob = new Blob([JSON.stringify(state.people, null, 2)], { type: "application/json" });
-          const a = document.createElement("a");
-          a.href = URL.createObjectURL(blob);
-          a.download = `accounts-backup-${todayStr()}.json`;
-          a.click();
-          URL.revokeObjectURL(a.href);
           closeModal();
-        };
-      }
-
-      if (exportAllPdfBtn) {
-        exportAllPdfBtn.onclick = () => {
-          closeModal();
-          exportAllPdf();
-        };
-      }
-
-      if (exportPersonPdfBtn) {
-        exportPersonPdfBtn.onclick = () => {
-          closeModal();
-          openChoosePersonForPdf();
-        };
-      }
-
-      if (importBtn) {
-        importBtn.onclick = () => {
-          closeModal();
-          confirmDelete(
-            "Importing a file will replace your current data. Continue?",
-            () => { importFile.click(); },
-            false,
-            "Import"
-          );
+          onExportPerson();
         };
       }
     }
   );
 }
 
-function openChoosePersonForPdf() {
-  openModal(
-    "Choose a Person",
-    `
-      ${state.people.map(person => `
-        <div class="sheet-item choose-person-pdf" data-person-id="${person.id}">
-          <span class="sheet-item-title">${escapeHtml(person.name)}</span>
-          <span class="sheet-item-sub">${formatMoney(personOpenBalance(person))}</span>
-        </div>
-      `).join("")}
-      `,
-    () => {
 
-      document.querySelectorAll(".choose-person-pdf").forEach(btn => {
-        btn.onclick = () => {
-          const personId = btn.dataset.personId;
-          closeModal();
-          exportPersonPdf(personId);
-        };
-      });
-    }
-  );
-}
+/* =========================
+   8) Card Action Routing
+========================= */
 
 function getActionPayloadFromCard(card) {
   return {
@@ -973,7 +965,10 @@ function deleteByPayload(payload) {
         person.stages = (person.stages || []).filter(stage => stage.id !== payload.stageId);
         saveData();
         render();
-        if (payload.source === "overview") openOverviewPersonDetail(payload.personId);
+
+        if (payload.source === "overview") {
+          openOverviewPersonDetail(payload.personId);
+        }
       }
     );
     return;
@@ -1009,8 +1004,10 @@ function setupActionCard(card) {
 
     if (payload.type === "stage") {
       const stage = findStage(payload.personId, payload.stageId);
+
       if (stage) {
         const isClosed = !!stage.closed;
+
         const toggleFn = () => {
           if (!isClosed) {
             confirmDelete(
@@ -1019,28 +1016,39 @@ function setupActionCard(card) {
                 stage.closed = true;
                 saveData();
                 render();
-                if (payload.source === "overview") openOverviewPersonDetail(payload.personId);
+
+                if (payload.source === "overview") {
+                  openOverviewPersonDetail(payload.personId);
+                }
               },
               false,
               "Close"
             );
           } else {
             const existingOpen = findOpenStage(payload.personId);
+
             if (existingOpen) {
               confirmDelete(
                 "This person already has an open stage. Close it first.",
-                () => { openOverviewPersonDetail(payload.personId); },
+                () => {
+                  openOverviewPersonDetail(payload.personId);
+                },
                 false,
                 "OK"
               );
               return;
             }
+
             stage.closed = false;
             saveData();
             render();
-            if (payload.source === "overview") openOverviewPersonDetail(payload.personId);
+
+            if (payload.source === "overview") {
+              openOverviewPersonDetail(payload.personId);
+            }
           }
         };
+
         toggleFn._label = isClosed ? "🔓 Reopen Stage" : "🔒 Close Stage";
         onToggleStage = toggleFn;
       }
@@ -1066,38 +1074,10 @@ function setupActionCard(card) {
   setupSwipeDelete(card, () => deleteByPayload(payload));
 }
 
+
 /* =========================
-   Render
+   9) Render
 ========================= */
-
-function personLastActivityTs(person) {
-  const stages = person.stages || [];
-  let latest = 0;
-
-  stages.forEach(stage => {
-    if (stage.createdAt) {
-      const ts = new Date(stage.createdAt).getTime();
-      if (!isNaN(ts) && ts > latest) latest = ts;
-    }
-
-    (stage.entries || []).forEach(entry => {
-      if (entry.date) {
-        const ts = new Date(entry.date).getTime();
-        if (!isNaN(ts) && ts > latest) latest = ts;
-      }
-    });
-  });
-
-  return latest;
-}
-
-function getFilteredPeople() {
-  const query = state.search.trim().toLowerCase();
-
-  return state.people
-    .filter(person => (person.name || "").toLowerCase().includes(query))
-    .sort((a, b) => personLastActivityTs(b) - personLastActivityTs(a));
-}
 
 function renderStatsPeopleList(filteredPeople) {
   if (!filteredPeople.length) {
@@ -1162,7 +1142,6 @@ function renderStats() {
     <div class="stats-wrap">
       <div class="stats-summary" id="statsSummaryToggle">
         <div class="stats-summary-left">
-
           <div class="stats-box">
             <div class="stats-title">${state.mode === "work" ? "Team" : "People"}</div>
             <div class="stats-value">${peopleCount}</div>
@@ -1190,10 +1169,9 @@ function renderStats() {
                 `
             }
           </div>
-
         </div>
 
-        <div class="stats-arrow ${state.statsExpanded ? "open" : ""}">></div>
+        <div class="stats-arrow ${state.statsExpanded ? "open" : ""}">›</div>
       </div>
 
       ${
@@ -1223,7 +1201,7 @@ function renderStats() {
                 </div>
               </div>
 
-             <div id="statsPeopleList">
+              <div id="statsPeopleList">
                 ${renderStatsPeopleList(sortedPeople)}
               </div>
             </div>
@@ -1234,72 +1212,19 @@ function renderStats() {
   `;
 
   const toggle = document.getElementById("statsSummaryToggle");
-if (toggle) {
-  toggle.onclick = (e) => {
-    if (e.target.closest("input")) return;
-    if (e.target.closest(".stats-person-item")) return;
-    if (e.target.closest(".overview-search-box")) return;
+  if (toggle) {
+    toggle.onclick = e => {
+      if (e.target.closest("input")) return;
+      if (e.target.closest(".stats-person-item")) return;
+      if (e.target.closest(".overview-search-box")) return;
 
-    state.statsExpanded = !state.statsExpanded;
-    render();
-  };
-}
-
-bindStatsEvents();
-}
-
-function bindStatsEvents() {
-  const overviewSearchInput = document.getElementById("overviewSearchInput");
-
-  if (overviewSearchInput) {
-    overviewSearchInput.addEventListener("click", e => {
-      e.stopPropagation();
-    });
-
-    overviewSearchInput.addEventListener("focus", e => {
-      e.stopPropagation();
-    });
-
-    overviewSearchInput.addEventListener("input", e => {
-      e.stopPropagation();
-
-      const nextValue = e.target.value;
-      const caretPos = e.target.selectionStart || nextValue.length;
-
-      state.search = nextValue;
-      refreshPeopleListsOnly();
-
-    });
-  }
-
-  document.querySelectorAll(".stats-person-item").forEach(item => {
-    item.onclick = e => {
-      e.stopPropagation();
-      openOverviewPersonDetail(item.dataset.personId);
+      state.statsExpanded = !state.statsExpanded;
+      render();
     };
-  });
-}
-
-function render() {
-  const filteredPeople = getFilteredPeople();
-
-  if (!filteredPeople.length) {
-    if (emptyStateEl) emptyStateEl.style.display = "block";
-    peopleListEl.innerHTML = "";
-    if (emptyStateEl) peopleListEl.appendChild(emptyStateEl);
-    renderStats();
-    return;
   }
 
-  if (emptyStateEl) emptyStateEl.style.display = "none";
-  peopleListEl.innerHTML = filteredPeople.map(renderPerson).join("");
-  bindDynamicEvents();
-  bindPremiumPressEffects();
-  renderStats();
   bindStatsEvents();
-  runBalanceAnimations();
 }
-
 
 function renderPerson(person) {
   const openStage = findOpenStage(person.id);
@@ -1335,13 +1260,12 @@ function renderPerson(person) {
               ${formatMoney(openBalance, currentCurrency)}
             </div>
 
-            <div class="stats-arrow ${person.expanded ? "open" : ""}">></div>
+            <div class="stats-arrow ${person.expanded ? "open" : ""}">›</div>
           </div>
         </div>
       </div>
 
       <div class="person-body">
-
         ${
           openStage
             ? `
@@ -1407,17 +1331,78 @@ function renderEntry(personId, stageId, stage, entry, source = "main") {
   `;
 }
 
+function render() {
+  const filteredPeople = getFilteredPeople();
+
+  if (!filteredPeople.length) {
+    if (emptyStateEl) emptyStateEl.style.display = "block";
+    peopleListEl.innerHTML = "";
+    if (emptyStateEl) peopleListEl.appendChild(emptyStateEl);
+    renderStats();
+    return;
+  }
+
+  if (emptyStateEl) emptyStateEl.style.display = "none";
+  peopleListEl.innerHTML = filteredPeople.map(renderPerson).join("");
+  bindDynamicEvents();
+  bindPremiumPressEffects();
+  renderStats();
+  bindStatsEvents();
+  runBalanceAnimations();
+}
+
+
 /* =========================
-   Dynamic events
+   10) Dynamic Events
 ========================= */
+
+function bindStatsEvents() {
+  const overviewSearchInput = document.getElementById("overviewSearchInput");
+
+  if (overviewSearchInput && overviewSearchInput.dataset.bound !== "1") {
+    overviewSearchInput.dataset.bound = "1";
+
+    overviewSearchInput.onclick = e => {
+      e.stopPropagation();
+    };
+
+    overviewSearchInput.onfocus = e => {
+      e.stopPropagation();
+    };
+
+    overviewSearchInput.oninput = e => {
+      e.stopPropagation();
+      state.search = e.target.value;
+      refreshPeopleListsOnly();
+    };
+
+    overviewSearchInput.onkeydown = e => {
+      if (e.key === "Backspace" && !overviewSearchInput.value) {
+        overviewSearchInput.blur();
+      }
+    };
+  }
+
+  document.querySelectorAll(".stats-person-item").forEach(item => {
+    item.onclick = e => {
+      e.stopPropagation();
+      openOverviewPersonDetail(item.dataset.personId);
+    };
+  });
+}
 
 function bindPremiumPressEffects() {
   document.querySelectorAll(".person-card").forEach(card => {
     const head = card.querySelector(".person-head");
     if (!head) return;
 
-    const pressStart = () => { card.style.transform = "translateY(1px) scale(0.992)"; };
-    const pressEnd = () => { card.style.transform = ""; };
+    const pressStart = () => {
+      card.style.transform = "translateY(1px) scale(0.992)";
+    };
+
+    const pressEnd = () => {
+      card.style.transform = "";
+    };
 
     head.addEventListener("touchstart", pressStart, { passive: true });
     head.addEventListener("touchend", pressEnd, { passive: true });
@@ -1432,8 +1417,13 @@ function bindPremiumPressEffects() {
   const statsWrap = document.querySelector(".stats-wrap");
 
   if (statsSummary && statsWrap) {
-    const pressStart = () => { statsWrap.style.transform = "translateY(1px) scale(0.992)"; };
-    const pressEnd = () => { statsWrap.style.transform = ""; };
+    const pressStart = () => {
+      statsWrap.style.transform = "translateY(1px) scale(0.992)";
+    };
+
+    const pressEnd = () => {
+      statsWrap.style.transform = "";
+    };
 
     statsSummary.addEventListener("touchstart", pressStart, { passive: true });
     statsSummary.addEventListener("touchend", pressEnd, { passive: true });
@@ -1468,7 +1458,7 @@ function animatePersonCard(card, expand) {
       void body.offsetHeight;
 
       body.style.transition = "height 0.28s ease, opacity 0.22s ease";
-      body.style.height = targetHeight + "px";
+      body.style.height = `${targetHeight}px`;
       body.style.opacity = "1";
 
       const onEnd = event => {
@@ -1478,7 +1468,6 @@ function animatePersonCard(card, expand) {
         body.style.transition = "";
         body.style.willChange = "";
         body.style.overflow = "";
-
         body.removeEventListener("transitionend", onEnd);
       };
 
@@ -1486,7 +1475,7 @@ function animatePersonCard(card, expand) {
     });
   } else {
     const currentHeight = body.getBoundingClientRect().height;
-    body.style.height = currentHeight + "px";
+    body.style.height = `${currentHeight}px`;
     body.style.opacity = "1";
     void body.offsetHeight;
 
@@ -1505,7 +1494,6 @@ function animatePersonCard(card, expand) {
         body.style.transition = "";
         body.style.willChange = "";
         body.style.overflow = "";
-
         body.removeEventListener("transitionend", onEnd);
 
         if (!modalIsOpen()) {
@@ -1540,7 +1528,6 @@ function bindDynamicEvents() {
 
       person.expanded = willExpand;
       saveData();
-
       animatePersonCard(card, willExpand);
     };
   });
@@ -1572,33 +1559,36 @@ function bindDynamicEvents() {
   });
 }
 
+
 /* =========================
-   Modal helpers
+   11) Modal Helpers
 ========================= */
 
 function openModal(title, html, afterOpen) {
   modalTitle.textContent = title;
   modalContent.innerHTML = html;
   modalOverlay.classList.add("show");
+
   fab.classList.remove("fab-hidden");
   fab.classList.add("fab-back");
   fab.style.pointerEvents = "";
   fab.style.opacity = "";
   fab.textContent = "←";
   fab.onclick = closeModal;
+
   if (typeof afterOpen === "function") afterOpen();
 }
 
 function closeModal() {
   modalOverlay.classList.remove("show");
   modalContent.innerHTML = "";
+
   fab.classList.remove("fab-back");
   fab.style.pointerEvents = "";
   fab.style.opacity = "";
   fab.textContent = "+";
   fab.onclick = openMainAddMenu;
 
-  // Use state to check expanded (DOM not yet updated)
   const anyExpanded = state.people.some(p => p.expanded);
   if (anyExpanded) {
     fab.classList.add("fab-hidden");
@@ -1609,8 +1599,9 @@ function closeModal() {
   requestAnimationFrame(() => render());
 }
 
+
 /* =========================
-   Forms
+   12) Forms
 ========================= */
 
 function openPersonForm(personId = null, reopenEditPanel = false) {
@@ -1648,20 +1639,19 @@ function openPersonForm(personId = null, reopenEditPanel = false) {
 
         const fd = new FormData(form);
         const name = String(fd.get("name") || "").trim();
-        
 
         if (!name) return;
 
         if (person) {
-  person.name = name;
-} else {
-  state.people.unshift({
-    id: uid(),
-    name,
-    expanded: true,
-    stages: []
-  });
-}
+          person.name = name;
+        } else {
+          state.people.unshift({
+            id: uid(),
+            name,
+            expanded: true,
+            stages: []
+          });
+        }
 
         saveData();
         render();
@@ -1676,7 +1666,13 @@ function openPersonForm(personId = null, reopenEditPanel = false) {
   );
 }
 
-function openStageForm(personId, stageId = null, openEntryAfterSave = false, reopenEditPanel = false, reopenOverviewPersonId = null) {
+function openStageForm(
+  personId,
+  stageId = null,
+  openEntryAfterSave = false,
+  reopenEditPanel = false,
+  reopenOverviewPersonId = null
+) {
   const person = findPerson(personId);
   const stage = stageId ? findStage(personId, stageId) : null;
 
@@ -1799,13 +1795,13 @@ function openStageForm(personId, stageId = null, openEntryAfterSave = false, reo
 
         saveData();
 
-if (openEntryAfterSave && savedStageId) {
-  openEntryForm(personId, savedStageId);
-} else if (reopenEditPanel) {
-  openEditStagesPanel();
-} else {
-  closeModal();
-}
+        if (openEntryAfterSave && savedStageId) {
+          openEntryForm(personId, savedStageId);
+        } else if (reopenEditPanel) {
+          openEditStagesPanel();
+        } else {
+          closeModal();
+        }
       };
     }
   );
@@ -1830,22 +1826,22 @@ function openEntryForm(personId, stageId, entryId = null, reopenOverviewPersonId
           <label>Type</label>
 
           <div class="type-toggle" id="entryTypeToggle">
-         <button
-          type="button"
-           class="type-toggle-btn ${(entry?.type || "Gave") === "Gave" ? "active gave" : ""}"
-           data-entry-type="Gave"
-        >
-          ${entryTypeToggleContent("Gave", (entry?.type || "Gave") === "Gave")}
-       </button>
+            <button
+              type="button"
+              class="type-toggle-btn ${(entry?.type || "Gave") === "Gave" ? "active gave" : ""}"
+              data-entry-type="Gave"
+            >
+              ${entryTypeToggleContent("Gave", (entry?.type || "Gave") === "Gave")}
+            </button>
 
-       <button
-         type="button"
-        class="type-toggle-btn ${(entry?.type || "Gave") === "Received" ? "active received" : ""}"
-        data-entry-type="Received"
-      >
-        ${entryTypeToggleContent("Received", (entry?.type || "Gave") === "Received")}
-     </button>
-  </div>
+            <button
+              type="button"
+              class="type-toggle-btn ${(entry?.type || "Gave") === "Received" ? "active received" : ""}"
+              data-entry-type="Received"
+            >
+              ${entryTypeToggleContent("Received", (entry?.type || "Gave") === "Received")}
+            </button>
+          </div>
 
           <input
             type="hidden"
@@ -1874,6 +1870,8 @@ function openEntryForm(personId, stageId, entryId = null, reopenOverviewPersonId
     () => {
       const form = document.getElementById("entryForm");
       const cancelBtn = document.getElementById("cancelModalBtn");
+      const typeInput = document.getElementById("entryType");
+      const typeButtons = document.querySelectorAll("[data-entry-type]");
 
       cancelBtn.onclick = () => {
         if (reopenOverviewPersonId) {
@@ -1883,28 +1881,26 @@ function openEntryForm(personId, stageId, entryId = null, reopenOverviewPersonId
         }
       };
 
-      const typeInput = document.getElementById("entryType");
-      const typeButtons = document.querySelectorAll("[data-entry-type]");
-
       typeButtons.forEach(btn => {
-  btn.onclick = () => {
-    const nextType = btn.dataset.entryType || "Gave";
-    typeInput.value = nextType;
+        btn.onclick = () => {
+          const nextType = btn.dataset.entryType || "Gave";
+          typeInput.value = nextType;
 
-    typeButtons.forEach(b => {
-      const type = b.dataset.entryType || "Gave";
-      const isActive = type === nextType;
+          typeButtons.forEach(b => {
+            const type = b.dataset.entryType || "Gave";
+            const isActive = type === nextType;
 
-      b.classList.remove("active", "gave", "received");
-      if (isActive) {
-        b.classList.add("active");
-        b.classList.add(type === "Gave" ? "gave" : "received");
-      }
+            b.classList.remove("active", "gave", "received");
 
-      b.innerHTML = entryTypeToggleContent(type, isActive);
-    });
-  };
-});
+            if (isActive) {
+              b.classList.add("active");
+              b.classList.add(type === "Gave" ? "gave" : "received");
+            }
+
+            b.innerHTML = entryTypeToggleContent(type, isActive);
+          });
+        };
+      });
 
       form.onsubmit = e => {
         e.preventDefault();
@@ -1934,18 +1930,19 @@ function openEntryForm(personId, stageId, entryId = null, reopenOverviewPersonId
 
         saveData();
 
-if (reopenOverviewPersonId) {
-  openOverviewPersonDetail(reopenOverviewPersonId);
-} else {
-  closeModal();
-}
+        if (reopenOverviewPersonId) {
+          openOverviewPersonDetail(reopenOverviewPersonId);
+        } else {
+          closeModal();
+        }
       };
     }
   );
 }
 
+
 /* =========================
-   Confirm
+   13) Confirm
 ========================= */
 
 function confirmDelete(text, onOk, reopenEdit = false, okLabel = "Delete") {
@@ -1963,13 +1960,109 @@ function closeConfirm() {
   fab.classList.remove("fab-hidden");
 }
 
+
 /* =========================
-   Main add menu
+   14) Menus + Overview
 ========================= */
+
+function openTransferActionsModal() {
+  openModal(
+    "Data Transfer",
+    `
+      <div class="quick-actions-row quick-actions-row-2" style="margin-bottom:10px;">
+        <button type="button" class="secondary-btn" id="transferImportBtn">⬇️ Import JSON</button>
+        <button type="button" class="primary-btn" id="transferExportBtn">⬆️ Export JSON</button>
+      </div>
+
+      <div class="quick-actions-row quick-actions-row-2" style="margin-bottom:10px;">
+        <button type="button" class="secondary-btn" id="transferExportAllPdfBtn" style="min-height:48px;border-radius:14px;font-weight:800;font-size:14px;">📄 Export All PDF</button>
+        <button type="button" class="primary-btn" id="transferExportPersonPdfBtn" style="min-height:48px;border-radius:14px;font-weight:800;font-size:14px;">👤 Export Person PDF</button>
+      </div>
+
+      <div class="quick-actions-row" style="display:grid;grid-template-columns:1fr;">
+        <button type="button" class="danger-btn" id="transferCancelBtn" style="min-height:48px;border-radius:14px;font-weight:800;font-size:15px;">Cancel</button>
+      </div>
+    `,
+    () => {
+      const importBtn = document.getElementById("transferImportBtn");
+      const cancelBtn = document.getElementById("transferCancelBtn");
+      const exportBtn = document.getElementById("transferExportBtn");
+      const exportAllPdfBtn = document.getElementById("transferExportAllPdfBtn");
+      const exportPersonPdfBtn = document.getElementById("transferExportPersonPdfBtn");
+
+      if (cancelBtn) {
+        cancelBtn.onclick = closeModal;
+      }
+
+      if (exportBtn) {
+        exportBtn.onclick = () => {
+          const blob = new Blob([JSON.stringify(state.people, null, 2)], { type: "application/json" });
+          const a = document.createElement("a");
+          a.href = URL.createObjectURL(blob);
+          a.download = `accounts-backup-${todayStr()}.json`;
+          a.click();
+          URL.revokeObjectURL(a.href);
+          closeModal();
+        };
+      }
+
+      if (exportAllPdfBtn) {
+        exportAllPdfBtn.onclick = () => {
+          closeModal();
+          exportAllPdf();
+        };
+      }
+
+      if (exportPersonPdfBtn) {
+        exportPersonPdfBtn.onclick = () => {
+          closeModal();
+          openChoosePersonForPdf();
+        };
+      }
+
+      if (importBtn) {
+        importBtn.onclick = () => {
+          closeModal();
+          confirmDelete(
+            "Importing a file will replace your current data. Continue?",
+            () => {
+              importFile.click();
+            },
+            false,
+            "Import"
+          );
+        };
+      }
+    }
+  );
+}
+
+function openChoosePersonForPdf() {
+  openModal(
+    "Choose a Person",
+    `
+      ${state.people.map(person => `
+        <div class="sheet-item choose-person-pdf" data-person-id="${person.id}">
+          <span class="sheet-item-title">${escapeHtml(person.name)}</span>
+          <span class="sheet-item-sub">${formatMoney(personOpenBalance(person))}</span>
+        </div>
+      `).join("")}
+    `,
+    () => {
+      document.querySelectorAll(".choose-person-pdf").forEach(btn => {
+        btn.onclick = () => {
+          const personId = btn.dataset.personId;
+          closeModal();
+          exportPersonPdf(personId);
+        };
+      });
+    }
+  );
+}
 
 function openMainAddMenu() {
   openModal(
-    "What do you want to add?",
+    "Add New",
     `
       <div class="sheet-list">
         <div class="sheet-item" id="quickAddPerson">
@@ -1982,15 +2075,17 @@ function openMainAddMenu() {
           <span class="sheet-item-sub">Choose a person</span>
         </div>
       </div>
-      `,
+    `,
     () => {
-
       const addPersonBtn = document.getElementById("quickAddPerson");
+      const addEntryBtn = document.getElementById("quickAddEntry");
+
       if (addPersonBtn) {
-        addPersonBtn.onclick = () => { openPersonForm(); };
+        addPersonBtn.onclick = () => {
+          openPersonForm();
+        };
       }
 
-      const addEntryBtn = document.getElementById("quickAddEntry");
       if (addEntryBtn) {
         addEntryBtn.onclick = () => {
           if (!state.people.length) {
@@ -2005,24 +2100,15 @@ function openMainAddMenu() {
   );
 }
 
-/* =========================
-   Legacy edit list
-========================= */
-
 function openEditStagesPanel() {
   openModal(
     "Edit",
     `
       <div class="empty-state mini-empty">Long press any card to edit. Swipe left to delete.</div>
-      `,
-    () => {
-    }
+    `,
+    () => {}
   );
 }
-
-/* =========================
-   Overview detail
-========================= */
 
 function openOverviewPersonDetail(personId) {
   const person = findPerson(personId);
@@ -2094,21 +2180,25 @@ function openOverviewPersonDetail(personId) {
                     <div class="open-stage-mini-balance ${balanceClass(stageBalance(openStage))}">
                       ${formatMoney(stageBalance(openStage), stageCurrency(openStage))}
                     </div>
-                    <span class="closed-stage-chev">${openEntriesExpanded ? "⌃" : "⌄"}</span>
+                    <span class="closed-stage-chev ${openEntriesExpanded ? "open" : ""}">›</span>
                   </div>
                 </div>
               </div>
             </div>
 
-            ${openEntriesExpanded ? `
-              <div class="entry-list" style="margin-top:8px;">
-                ${
-                  (openStage.entries || []).length
-                    ? openStage.entries.map(entry => renderEntry(person.id, openStage.id, openStage, entry, "overview")).join("")
-                    : `<div class="empty-state mini-empty">No entries</div>`
-                }
-              </div>
-            ` : ""}
+            ${
+              openEntriesExpanded
+                ? `
+                  <div class="entry-list" style="margin-top:8px;">
+                    ${
+                      (openStage.entries || []).length
+                        ? openStage.entries.map(entry => renderEntry(person.id, openStage.id, openStage, entry, "overview")).join("")
+                        : `<div class="empty-state mini-empty">No entries</div>`
+                    }
+                  </div>
+                `
+                : ""
+            }
           `
           : ""
       }
@@ -2143,21 +2233,21 @@ function openOverviewPersonDetail(personId) {
                           <span class="closed-stage-balance ${balanceClass(stageBalance(stage))}">
                             ${formatMoney(stageBalance(stage), stageCurrency(stage))}
                           </span>
-                          <span class="closed-stage-chev">${isExpanded ? "⌃" : "⌄"}</span>
+                          <span class="closed-stage-chev ${isExpanded ? "open" : ""}">›</span>
                         </div>
                       </div>
 
                       ${
                         isExpanded
                           ? `
-                              <div class="closed-stage-body">
-                                ${
-                                  (stage.entries || []).length
-                                    ? stage.entries.map(entry => renderEntry(person.id, stage.id, stage, entry, "overview")).join("")
-                                    : `<div class="empty-state mini-empty">No entries</div>`
-                                }
-                              </div>
-                            `
+                            <div class="closed-stage-body">
+                              ${
+                                (stage.entries || []).length
+                                  ? stage.entries.map(entry => renderEntry(person.id, stage.id, stage, entry, "overview")).join("")
+                                  : `<div class="empty-state mini-empty">No entries</div>`
+                              }
+                            </div>
+                          `
                           : ""
                       }
                     </div>
@@ -2168,13 +2258,13 @@ function openOverviewPersonDetail(personId) {
           `
           : ""
       }
-      `,
+    `,
     () => {
-
       document.querySelectorAll("[data-toggle-open-entries]").forEach(btn => {
-        btn.onclick = (e) => {
+        btn.onclick = e => {
           if (state.longPressTriggered) return;
           if (e.target.closest(".swipe-delete-action")) return;
+
           const current = !!state.overviewOpenExpanded[person.id];
           state.overviewOpenExpanded[person.id] = !current;
           openOverviewPersonDetail(personId);
@@ -2200,10 +2290,6 @@ function openOverviewPersonDetail(personId) {
   );
 }
 
-/* =========================
-   Pick person for entry
-========================= */
-
 function openChoosePersonForEntry() {
   openModal(
     "Choose a Person",
@@ -2214,9 +2300,8 @@ function openChoosePersonForEntry() {
           <span class="sheet-item-sub">Balance: ${formatMoney(personOpenBalance(person))}</span>
         </div>
       `).join("")}
-      `,
+    `,
     () => {
-
       document.querySelectorAll(".choose-person-entry").forEach(btn => {
         btn.onclick = () => {
           const personId = btn.dataset.personId;
@@ -2235,7 +2320,7 @@ function openChoosePersonForEntry() {
 
 
 /* =========================
-   Static events
+   15) Static Events
 ========================= */
 
 if (searchInput) {
@@ -2249,14 +2334,16 @@ fab.onclick = openMainAddMenu;
 
 if (menuBtn) {
   menuBtn.classList.add("transfer-btn");
-  menuBtn.textContent = "⇅";
+  menuBtn.textContent = "⇄";
   menuBtn.setAttribute("aria-label", "Import / Export");
   menuBtn.addEventListener("click", openTransferActionsModal);
 }
 
-themeToggleBtn.addEventListener("click", () => {
-  toggleTheme();
-});
+if (themeToggleBtn) {
+  themeToggleBtn.addEventListener("click", () => {
+    toggleTheme();
+  });
+}
 
 if (menuOverlay) menuOverlay.style.display = "none";
 if (menuEditStages) menuEditStages.style.display = "none";
@@ -2320,6 +2407,16 @@ document.addEventListener("click", e => {
   if (!e.target.closest(".swipe-card")) {
     closeAllSwipes();
   }
+
+  const overviewSearchInput = document.getElementById("overviewSearchInput");
+  if (
+    overviewSearchInput &&
+    document.activeElement === overviewSearchInput &&
+    !e.target.closest("#overviewSearchInput") &&
+    !e.target.closest(".overview-search-box")
+  ) {
+    overviewSearchInput.blur();
+  }
 });
 
 document.addEventListener("keydown", e => {
@@ -2328,12 +2425,10 @@ document.addEventListener("keydown", e => {
   }
 });
 
-/* =========================
-   Mode switch
-========================= */
 
-const btnPersonal = document.getElementById("modePersonal");
-const btnWork = document.getElementById("modeWork");
+/* =========================
+   16) Mode Switch
+========================= */
 
 function syncModeButtons() {
   if (!btnPersonal || !btnWork) return;
@@ -2371,22 +2466,170 @@ if (btnWork) {
   });
 }
 
+
+ /* =========================
+   PWA Install Prompt
+   Android + iPhone
+========================= */
+
+let deferredInstallPrompt = null;
+let installPromptTimer = null;
+
+const installPromptOverlay = document.getElementById("installPromptOverlay");
+const installPromptLaterBtn = document.getElementById("installPromptLaterBtn");
+const installPromptInstallBtn = document.getElementById("installPromptInstallBtn");
+
+const iosInstallPromptOverlay = document.getElementById("iosInstallPromptOverlay");
+const iosInstallPromptCloseBtn = document.getElementById("iosInstallPromptCloseBtn");
+
+function showInstallPromptUI() {
+  if (!installPromptOverlay) return;
+  installPromptOverlay.classList.add("show");
+  installPromptOverlay.setAttribute("aria-hidden", "false");
+}
+
+function hideInstallPromptUI() {
+  if (!installPromptOverlay) return;
+  installPromptOverlay.classList.remove("show");
+  installPromptOverlay.setAttribute("aria-hidden", "true");
+}
+
+function showIosInstallPromptUI() {
+  if (!iosInstallPromptOverlay) return;
+  iosInstallPromptOverlay.classList.add("show");
+  iosInstallPromptOverlay.setAttribute("aria-hidden", "false");
+}
+
+function hideIosInstallPromptUI() {
+  if (!iosInstallPromptOverlay) return;
+  iosInstallPromptOverlay.classList.remove("show");
+  iosInstallPromptOverlay.setAttribute("aria-hidden", "true");
+}
+
+function isIosDevice() {
+  return /iphone|ipad|ipod/i.test(window.navigator.userAgent);
+}
+
+function isRunningStandalone() {
+  return window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true;
+}
+
+function scheduleAndroidInstallPrompt() {
+  if (!deferredInstallPrompt) return;
+  if (isRunningStandalone()) return;
+
+  const dismissed = localStorage.getItem("acc-install-dismissed") === "1";
+  if (dismissed) return;
+
+  clearTimeout(installPromptTimer);
+
+  installPromptTimer = setTimeout(() => {
+    if (deferredInstallPrompt && !isRunningStandalone()) {
+      showInstallPromptUI();
+    }
+  }, 10000);
+}
+
+function scheduleIosInstallPrompt() {
+  if (!isIosDevice()) return;
+  if (isRunningStandalone()) return;
+
+  const dismissed = localStorage.getItem("acc-ios-install-dismissed") === "1";
+  if (dismissed) return;
+
+  clearTimeout(installPromptTimer);
+
+  installPromptTimer = setTimeout(() => {
+    if (isIosDevice() && !isRunningStandalone()) {
+      showIosInstallPromptUI();
+    }
+  }, 10000);
+}
+
+window.addEventListener("beforeinstallprompt", event => {
+  event.preventDefault();
+  deferredInstallPrompt = event;
+  scheduleAndroidInstallPrompt();
+});
+
+window.addEventListener("appinstalled", () => {
+  deferredInstallPrompt = null;
+  hideInstallPromptUI();
+  hideIosInstallPromptUI();
+  localStorage.setItem("acc-install-dismissed", "1");
+  localStorage.setItem("acc-ios-install-dismissed", "1");
+});
+
+if (installPromptLaterBtn) {
+  installPromptLaterBtn.addEventListener("click", () => {
+    hideInstallPromptUI();
+    localStorage.setItem("acc-install-dismissed", "1");
+  });
+}
+
+if (installPromptInstallBtn) {
+  installPromptInstallBtn.addEventListener("click", async () => {
+    if (!deferredInstallPrompt) return;
+
+    hideInstallPromptUI();
+
+    const promptEvent = deferredInstallPrompt;
+    deferredInstallPrompt = null;
+
+    await promptEvent.prompt();
+    await promptEvent.userChoice;
+  });
+}
+
+if (installPromptOverlay) {
+  installPromptOverlay.addEventListener("click", e => {
+    if (e.target === installPromptOverlay) {
+      hideInstallPromptUI();
+      localStorage.setItem("acc-install-dismissed", "1");
+    }
+  });
+}
+
+if (iosInstallPromptCloseBtn) {
+  iosInstallPromptCloseBtn.addEventListener("click", () => {
+    hideIosInstallPromptUI();
+    localStorage.setItem("acc-ios-install-dismissed", "1");
+  });
+}
+
+if (iosInstallPromptOverlay) {
+  iosInstallPromptOverlay.addEventListener("click", e => {
+    if (e.target === iosInstallPromptOverlay) {
+      hideIosInstallPromptUI();
+      localStorage.setItem("acc-ios-install-dismissed", "1");
+    }
+  });
+}
+
+function maybeShowIosInstallPrompt() {
+  scheduleIosInstallPrompt();
+}
+
 /* =========================
-   Init
+   17) Init
 ========================= */
 
 loadTheme();
+
 state.people = loadDataByMode(state.mode).map(person => ({
   ...person,
   expanded: false
 }));
+
 state.statsExpanded = false;
 syncModeButtons();
 render();
+maybeShowIosInstallPrompt();
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
-    navigator.serviceWorker.register("./service-worker.js")
+    navigator.serviceWorker
+      .register("./service-worker.js")
       .then(() => console.log("Service Worker registered"))
       .catch(error => console.log("Service Worker error:", error));
   });
