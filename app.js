@@ -2666,3 +2666,67 @@ state.statsExpanded = false;
 syncModeButtons();
 render();
 maybeShowIosInstallPrompt();
+
+/* =========================
+   18) Service Worker Registration & Update Detection
+========================= */
+
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("./service-workers.js")
+      .then(registration => {
+
+        // Check if there's already a waiting worker on first load
+        if (registration.waiting) {
+          pendingServiceWorker = registration.waiting;
+          showUpdatePromptUI();
+        }
+
+        // New update found while page is open
+        registration.addEventListener("updatefound", () => {
+          const newWorker = registration.installing;
+          if (!newWorker) return;
+
+          newWorker.addEventListener("statechange", () => {
+            if (newWorker.state === "installed" && navigator.serviceWorker.controller) {
+              // New version is ready and waiting
+              pendingServiceWorker = newWorker;
+              showUpdatePromptUI();
+            }
+          });
+        });
+      })
+      .catch(err => {
+        console.warn("Service Worker registration failed:", err);
+      });
+
+    // When controller changes (after skipWaiting), reload the page
+    navigator.serviceWorker.addEventListener("controllerchange", () => {
+      if (controllerChangeHandled) return;
+      controllerChangeHandled = true;
+      window.location.reload();
+    });
+  });
+}
+
+// Update prompt button handlers
+if (updateApplyBtn) {
+  updateApplyBtn.addEventListener("click", () => {
+    if (pendingServiceWorker) {
+      pendingServiceWorker.postMessage({ type: "SKIP_WAITING" });
+    }
+    hideUpdatePromptUI();
+  });
+}
+
+if (updateCancelBtn) {
+  updateCancelBtn.addEventListener("click", () => {
+    hideUpdatePromptUI();
+  });
+}
+
+if (updateExportBtn) {
+  updateExportBtn.addEventListener("click", () => {
+    exportJsonBackup();
+  });
+}
