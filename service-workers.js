@@ -1,4 +1,4 @@
-const CACHE_NAME = "accounts-pwa-v15";
+const CACHE_NAME = "accounts-pwa-v2";
 
 const ASSETS_TO_CACHE = [
   "./",
@@ -47,6 +47,27 @@ self.addEventListener("fetch", event => {
 
   if (!isSameOrigin) return;
 
+  // Network-first for HTML — ensures update detection works correctly
+  const isHtmlRequest =
+    requestUrl.pathname === "/" ||
+    requestUrl.pathname.endsWith(".html");
+
+  if (isHtmlRequest) {
+    event.respondWith(
+      fetch(event.request)
+        .then(networkResponse => {
+          if (networkResponse && networkResponse.status === 200) {
+            const responseClone = networkResponse.clone();
+            caches.open(CACHE_NAME).then(cache => cache.put(event.request, responseClone));
+          }
+          return networkResponse;
+        })
+        .catch(() => caches.match(event.request))
+    );
+    return;
+  }
+
+  // Cache-first for all other assets (JS, CSS, images)
   event.respondWith(
     caches.match(event.request).then(cachedResponse => {
       if (cachedResponse) {
