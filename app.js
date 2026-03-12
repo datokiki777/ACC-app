@@ -417,6 +417,29 @@ function toggleTheme() {
   applyTheme(nextTheme);
 }
 
+function loadRawData(key) {
+  try {
+    const raw = localStorage.getItem(key);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (error) {
+    return [];
+  }
+}
+
+function getAllModeData() {
+  return {
+    personal: loadRawData(PERSONAL_STORAGE_KEY),
+    work: loadRawData(WORK_STORAGE_KEY)
+  };
+}
+
+function hasAnyDataInAnyMode() {
+  const allData = getAllModeData();
+  return allData.personal.length > 0 || allData.work.length > 0;
+}
+
 
 /* =========================
    4) Finders
@@ -673,7 +696,7 @@ function setupSwipeDelete(card, onDelete) {
    7) PDF Export + Quick Actions
 ========================= */
 
-function buildPdfHtml(people) {
+function buildPdfHtml(people, title = "ACC Export") {
   const isLight = document.body.classList.contains("light-theme");
   const bg = isLight ? "#f4f7fb" : "#13294d";
   const card = isLight ? "#ffffff" : "#1b3158";
@@ -723,7 +746,7 @@ function buildPdfHtml(people) {
     .grand-value { font-weight:900; font-size:16px; }
     @media print { body { background:#fff; } }
   </style></head><body>
-  <h1>ACC Export</h1>
+  <h1>${escapeHtml(title)}</h1>
   <div class="sub">Generated ${new Date().toLocaleDateString("ka-GE")} • ${people.length} person(s)</div>`;
 
   people.forEach(person => {
@@ -824,12 +847,27 @@ function triggerPdfPrint(html) {
 }
 
 function exportAllPdf() {
-  if (!state.people.length) {
+  const allData = getAllModeData();
+  const personalPeople = allData.personal || [];
+  const workPeople = allData.work || [];
+
+  if (!personalPeople.length && !workPeople.length) {
     confirmDelete("No data to export.", () => {}, false, "OK");
     return;
   }
 
-  triggerPdfPrint(buildPdfHtml(state.people));
+  const combinedPeople = [
+    ...personalPeople.map(person => ({
+      ...person,
+      name: `[Personal] ${person.name || "Unnamed"}`
+    })),
+    ...workPeople.map(person => ({
+      ...person,
+      name: `[Work] ${person.name || "Unnamed"}`
+    }))
+  ];
+
+  triggerPdfPrint(buildPdfHtml(combinedPeople, "ACC Full Export"));
 }
 
 function exportPersonPdf(personId) {
@@ -1995,16 +2033,11 @@ function openTransferActionsModal() {
       }
 
       if (exportBtn) {
-        exportBtn.onclick = () => {
-          const blob = new Blob([JSON.stringify(state.people, null, 2)], { type: "application/json" });
-          const a = document.createElement("a");
-          a.href = URL.createObjectURL(blob);
-          a.download = `accounts-backup-${todayStr()}.json`;
-          a.click();
-          URL.revokeObjectURL(a.href);
-          closeModal();
-        };
-      }
+  exportBtn.onclick = () => {
+    exportJsonBackup();
+    closeModal();
+  };
+}
 
       if (exportAllPdfBtn) {
         exportAllPdfBtn.onclick = () => {
@@ -2388,16 +2421,29 @@ importFile.addEventListener("change", async e => {
     const text = await file.text();
     const data = JSON.parse(text);
 
-    if (!Array.isArray(data)) {
-      throw new Error("Invalid file");
+    const isFullBackup =
+      data &&
+      typeof data === "object" &&
+      !Array.isArray(data) &&
+      Array.isArray(data.personal) &&
+      Array.isArray(data.work);
+
+    if (!isFullBackup) {
+      throw new Error("Invalid backup file");
     }
 
-    state.people = data;
-    saveData();
+    localStorage.setItem(PERSONAL_STORAGE_KEY, JSON.stringify(data.personal));
+    localStorage.setItem(WORK_STORAGE_KEY, JSON.stringify(data.work));
+
+    state.people = loadDataByMode(state.mode).map(person => ({
+      ...person,
+      expanded: false
+    }));
+
     render();
     closeModal();
   } catch (error) {
-    alert("Could not read the file.");
+    alert("Could not read the backup file.");
   } finally {
     importFile.value = "";
   }
@@ -2587,7 +2633,13 @@ function maybeShowIosInstallPrompt() {
 }
 
 function exportJsonBackup() {
-  const blob = new Blob([JSON.stringify(state.people, null, 2)], {
+  const backup = {
+    personal: loadRawData(PERSONAL_STORAGE_KEY),
+    work: loadRawData(WORK_STORAGE_KEY),
+    exportDate: new Date().toISOString()
+  };
+
+  const blob = new Blob([JSON.stringify(backup, null, 2)], {
     type: "application/json"
   });
 
@@ -2596,132 +2648,6 @@ function exportJsonBackup() {
   a.download = `acc-backup-${todayStr()}.json`;
   a.click();
   URL.revokeObjectURL(a.href);
-}
-
-window.addEventListener("beforeinstallprompt", event => {
-  event.preventDefault();
-  deferredInstallPrompt = event;
-  scheduleAndroidInstallPrompt();
-});
-
-window.addEventListener("appinstalled", () => {
-  deferredInstallPrompt = null;
-  hideInstallPromptUI();
-  hideIosInstallPromptUI();
-  hideUpdatePromptUI();
-
-});
-
-if (installPromptLaterBtn) {
-  installPromptLaterBtn.addEventListener("click", () => {
-    hideInstallPromptUI();
-    localStorage.setItem("acc-install-dismissed", "1");
-  });
-}
-
-if (installPromptInstallBtn) {
-  installPromptInstallBtn.addEventListener("click", async () => {
-    if (!deferredInstallPrompt) return;
-
-    hideInstallPromptUI();
-
-    const promptEvent = deferredInstallPrompt;
-    deferredInstallPrompt = null;
-
-    await promptEvent.prompt();
-    await promptEvent.userChoice;
-  });
-}
-
-if (installPromptOverlay) {
-  installPromptOverlay.addEventListener("click", e => {
-    if (e.target === installPromptOverlay) {
-      hideInstallPromptUI();
-      localStorage.setItem("acc-install-dismissed", "1");
-    }
-  });
-}
-
-if (iosInstallPromptCloseBtn) {
-  iosInstallPromptCloseBtn.addEventListener("click", () => {
-    hideIosInstallPromptUI();
-    localStorage.setItem("acc-ios-install-dismissed", "1");
-  });
-}
-
-if (iosInstallPromptOverlay) {
-  iosInstallPromptOverlay.addEventListener("click", e => {
-    if (e.target === iosInstallPromptOverlay) {
-      hideIosInstallPromptUI();
-      localStorage.setItem("acc-ios-install-dismissed", "1");
-    }
-  });
-}
-
-if (updateExportBtn) {
-  updateExportBtn.addEventListener("click", () => {
-    exportJsonBackup();
-  });
-}
-
-if (updateCancelBtn) {
-  updateCancelBtn.addEventListener("click", () => {
-    hideUpdatePromptUI();
-  });
-}
-
-if (updateApplyBtn) {
-  updateApplyBtn.addEventListener("click", () => {
-    if (pendingServiceWorker) {
-      pendingServiceWorker.postMessage({ type: "SKIP_WAITING" });
-    } else {
-      window.location.reload();
-    }
-  });
-}
-
-if (updatePromptOverlay) {
-  updatePromptOverlay.addEventListener("click", e => {
-    if (e.target === updatePromptOverlay) {
-      hideUpdatePromptUI();
-    }
-  });
-}
-
-if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.addEventListener("controllerchange", () => {
-    if (controllerChangeHandled) return;
-    controllerChangeHandled = true;
-    window.location.reload();
-  });
-
-  window.addEventListener("load", async () => {
-    try {
-      const registration = await navigator.serviceWorker.register("./service-worker.js");
-
-      if (registration.waiting) {
-        pendingServiceWorker = registration.waiting;
-        showUpdatePromptUI();
-      }
-
-      registration.addEventListener("updatefound", () => {
-        const newWorker = registration.installing;
-        if (!newWorker) return;
-
-        newWorker.addEventListener("statechange", () => {
-          if (
-            newWorker.state === "installed" &&
-            navigator.serviceWorker.controller
-          ) {
-            pendingServiceWorker = newWorker;
-            showUpdatePromptUI();
-          }
-        });
-      });
-    } catch (error) {
-      console.log("Service Worker error:", error);
-    }
-  });
 }
 
 
