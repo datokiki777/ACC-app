@@ -19,8 +19,10 @@
   16) Money / Currency UI
   17) FAB
   18) Light Theme Overrides
-  19) Animations
-  20) Responsive
+  19) Dark Theme Specific
+  20) Edit Blocks
+  21) Animations
+  22) Responsive
 ========================================================= */
 
 
@@ -692,6 +694,24 @@ main{
   background:inherit;
 }
 
+.person-body-footer .quick-actions-row{
+  margin-top:8px;
+}
+
+.person-body-footer .quick-actions-row .secondary-btn{
+  min-height:40px;
+  padding:10px 12px;
+  font-size:12.5px;
+  font-weight:800;
+  border-radius:16px;
+  background:linear-gradient(180deg, #6fa3ff, #4d85ee);
+  color:#fff;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.18),
+    0 4px 12px rgba(47,111,228,0.18);
+  border:none;
+}
+
 .person-body-footer .totals-line{
   margin-top:0;
   margin-bottom:8px;
@@ -909,9 +929,20 @@ main{
 
 .overview-summary-row{
   display:flex;
-  align-items:center;
+  align-items:flex-start;
   justify-content:space-between;
   gap:14px;
+  padding:10px 0;
+  border-bottom:1px solid rgba(255,255,255,0.06);
+}
+
+.overview-summary-row:last-child{
+  border-bottom:none;
+  padding-bottom:0;
+}
+
+.overview-summary-row:first-child{
+  padding-top:0;
 }
 
 .overview-summary-label{
@@ -932,6 +963,13 @@ main{
   display:flex;
   align-items:center;
   gap:8px;
+}
+
+.overview-summary-value-stack{
+  display:flex;
+  flex-direction:column;
+  align-items:flex-end;
+  gap:3px;
 }
 
 .overview-summary-value-compact{
@@ -1088,6 +1126,21 @@ main{
 .closed-stage-left,
 .closed-stage-col{
   min-width:0;
+}
+
+.closed-stage-left{
+  flex:1 1 auto;
+}
+
+.closed-stage-right{
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  gap:8px;
+  flex-shrink:0;
+  margin-left:auto;
+  padding-left:12px;
+  text-align:right;
 }
 
 .closed-stage-balance{
@@ -1874,6 +1927,15 @@ body.light-theme .secondary-btn{
   box-shadow:none;
 }
 
+body.light-theme .person-body-footer .quick-actions-row .secondary-btn{
+  background:linear-gradient(180deg, #dce8f8, #c8d9ef);
+  color:#1f3a5c;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.75),
+    0 3px 8px rgba(20,50,90,0.12);
+  border:1px solid rgba(36,85,140,0.16);
+}
+
 body.light-theme .type-toggle-btn{
   background:#eef2f7;
   color:#22324a;
@@ -1894,6 +1956,10 @@ body.light-theme .type-toggle-btn.active.received{
 
 body.light-theme .overview-summary-label{
   color:#3a4a5c;
+}
+
+body.light-theme .overview-summary-row{
+  border-bottom-color:rgba(0,0,0,0.07);
 }
 
 body.light-theme .overview-summary-value{
@@ -1978,11 +2044,11 @@ body.light-theme .stats-value.gray{
 }
 
 body.light-theme .stats-wrap{
-  background:linear-gradient(180deg, #edf3fa, #e3ebf5);
-  border:1px solid rgba(36,55,84,0.10);
+  background:linear-gradient(180deg, #d6e1ee, #cad7e6);
+  border:1px solid rgba(36,55,84,0.15);
   box-shadow:
     0 10px 24px rgba(20,40,70,0.08),
-    inset 0 1px 0 rgba(255,255,255,0.82);
+    inset 0 1px 0 rgba(255,255,255,0.70);
 }
 
 body.light-theme .stats-wrap::before{
@@ -2019,6 +2085,14 @@ body:not(.light-theme) .secondary-btn{
 body:not(.light-theme) .quick-actions-row .secondary-btn{
   background:#d9e2ef;
   color:#1f3150;
+}
+
+body:not(.light-theme) .person-body-footer .quick-actions-row .secondary-btn{
+  background:linear-gradient(180deg, #89baff, #6a9ff5);
+  color:#fff;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.18),
+    0 4px 12px rgba(47,111,228,0.18);
 }
 
 body:not(.light-theme) .quick-actions-row .primary-btn{
@@ -2280,7 +2354,7 @@ body:not(.light-theme) .mini-count-badge{
   }
 }
 
- .install-open .fab{
+.install-open .fab{
   opacity:0;
   pointer-events:none;
   transform:scale(.9);
@@ -2348,19 +2422,35 @@ body.install-open .fab{
   margin-bottom:12px;
 }
 
-body.light-theme .app-prompt-badge{
-  background:rgba(31,111,235,0.10);
-  color:#1f6feb;
-  border:1px solid rgba(31,111,235,0.16);
-}
-
 .app-prompt-sheet{
+  width:min(100%, 760px);
+  max-width:100%;
+  overflow:hidden;
   padding:20px 22px 22px;
 }
 
 .app-prompt-badge{
-  display:inline-block;
-  margin-bottom:10px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  max-width:100%;
+  margin:0 0 12px 0;
+  padding:8px 12px;
+  border-radius:999px;
+  font-size:12px;
+  font-weight:800;
+  line-height:1;
+  letter-spacing:.02em;
+  background:rgba(76,141,255,0.12);
+  color:var(--primary);
+  border:1px solid rgba(76,141,255,0.18);
+  white-space:nowrap;
+}
+
+body.light-theme .app-prompt-badge{
+  background:rgba(31,111,235,0.10);
+  color:#1f6feb;
+  border:1px solid rgba(31,111,235,0.16);
 }
 
 .overlay.app-prompt-overlay{
