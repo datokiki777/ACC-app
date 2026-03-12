@@ -2739,4 +2739,7 @@ state.people = loadDataByMode(state.mode).map(person => ({
 state.statsExpanded = false;
 syncModeButtons();
 render();
+setTimeout(() => {
+  showUpdatePromptUI();
+}, 2000);
 maybeShowIosInstallPrompt();
