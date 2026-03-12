@@ -1276,43 +1276,53 @@ function renderStats() {
 
         <div class="stats-arrow ${state.statsExpanded ? "open" : ""}">›</div>
       </div>
-
-      ${
-        state.statsExpanded
-          ? `
-            <div class="stats-overview-list">
-              ${
-                state.mode === "personal" && balanceSummary.breakdown.length > 1
-                  ? `
-                    <div class="stats-breakdown-wrap">
-                      ${renderCurrencyBreakdown(balanceSummary.breakdown)}
-                    </div>
-                  `
-                  : ""
-              }
-
-              <div class="stats-search-wrap">
-                <div class="search-box overview-search-box">
-                  <span class="search-icon">🔍</span>
-                  <input
-                    type="text"
-                    id="overviewSearchInput"
-                    placeholder="Search by name..."
-                    autocomplete="off"
-                    value="${escapeHtml(state.search)}"
-                  />
-                </div>
-              </div>
-
-              <div id="statsPeopleList">
-                ${renderStatsPeopleList(sortedPeople)}
-              </div>
-            </div>
-          `
-          : ""
-      }
     </div>
   `;
+
+  // expanded სია — ცალკე fixed overlay
+  let overviewPanel = document.getElementById("statsOverviewPanel");
+  if (state.statsExpanded) {
+    if (!overviewPanel) {
+      overviewPanel = document.createElement("div");
+      overviewPanel.id = "statsOverviewPanel";
+      overviewPanel.className = "stats-overview-panel";
+      document.body.appendChild(overviewPanel);
+    }
+    overviewPanel.innerHTML = `
+      <div class="stats-overview-panel-fixed">
+        ${
+          state.mode === "personal" && balanceSummary.breakdown.length > 1
+            ? `<div class="stats-breakdown-wrap">${renderCurrencyBreakdown(balanceSummary.breakdown)}</div>`
+            : ""
+        }
+        <div class="stats-search-wrap">
+          <div class="search-box overview-search-box">
+            <span class="search-icon">🔍</span>
+            <input
+              type="text"
+              id="overviewSearchInput"
+              placeholder="Search by name..."
+              autocomplete="off"
+              value="${escapeHtml(state.search)}"
+            />
+          </div>
+        </div>
+      </div>
+      <div class="stats-overview-panel-scroll">
+        <div id="statsPeopleList">
+          ${renderStatsPeopleList(sortedPeople)}
+        </div>
+      </div>
+    `;
+    overviewPanel.style.display = "";
+    overviewPanel.classList.add("active");
+    requestAnimationFrame(adjustMainPadding);
+  } else {
+    if (overviewPanel) {
+      overviewPanel.classList.remove("active");
+      overviewPanel.innerHTML = "";
+    }
+  }
 
   const toggle = document.getElementById("statsSummaryToggle");
   if (toggle) {
@@ -1448,6 +1458,21 @@ function renderEntry(personId, stageId, stage, entry, source = "main") {
   `;
 }
 
+function adjustMainPadding() {
+  const topbar = document.querySelector(".topbar");
+  const mainEl = document.querySelector("main");
+  if (!topbar || !mainEl) return;
+  const h = topbar.getBoundingClientRect().height;
+  mainEl.style.paddingTop = (h + 16) + "px";
+
+  const panel = document.getElementById("statsOverviewPanel");
+  if (panel && panel.classList.contains("active")) {
+    panel.style.top = h + "px";
+    panel.style.bottom = "0";
+    panel.style.height = "";
+  }
+}
+
 function render() {
   const filteredPeople = getFilteredPeople();
 
@@ -1456,6 +1481,7 @@ function render() {
     peopleListEl.innerHTML = "";
     if (emptyStateEl) peopleListEl.appendChild(emptyStateEl);
     renderStats();
+    requestAnimationFrame(adjustMainPadding);
     return;
   }
 
@@ -1466,6 +1492,7 @@ function render() {
   renderStats();
   bindStatsEvents();
   runBalanceAnimations();
+  requestAnimationFrame(adjustMainPadding);
 }
 
 
@@ -1827,22 +1854,31 @@ function openPersonForm(personId = null, reopenEditPanel = false) {
 
         if (person) {
           person.name = name;
+          saveData();
+          render();
+          if (reopenEditPanel) {
+            openEditStagesPanel();
+          } else {
+            closeModal();
+          }
         } else {
+          const newId = uid();
           state.people.unshift({
-            id: uid(),
+            id: newId,
             name,
             expanded: true,
             stages: []
           });
-        }
-
-        saveData();
-        render();
-
-        if (reopenEditPanel) {
-          openEditStagesPanel();
-        } else {
+          saveData();
           closeModal();
+          requestAnimationFrame(() => {
+            render();
+            requestAnimationFrame(() => {
+              const card = document.querySelector(`[data-person-id="${newId}"]`);
+              if (card) card.scrollIntoView({ behavior: "smooth", block: "start" });
+              openStageForm(newId, null, true);
+            });
+          });
         }
       };
     }
@@ -2825,6 +2861,11 @@ state.statsExpanded = false;
 syncModeButtons();
 render();
 maybeShowIosInstallPrompt();
+
+const topbarEl = document.querySelector(".topbar");
+if (topbarEl && window.ResizeObserver) {
+  new ResizeObserver(() => adjustMainPadding()).observe(topbarEl);
+}
 
 /* =========================
    19) Service Worker Registration & Update Detection
