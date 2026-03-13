@@ -2765,6 +2765,7 @@ function showInstallPromptUI() {
 
 function hideInstallPromptUI() {
   if (!installPromptOverlay) return;
+  clearTimeout(installPromptTimer);
   installPromptOverlay.classList.remove("show");
   installPromptOverlay.setAttribute("aria-hidden", "true");
   showFabAfterPrompt();
@@ -2779,6 +2780,7 @@ function showIosInstallPromptUI() {
 
 function hideIosInstallPromptUI() {
   if (!iosInstallPromptOverlay) return;
+  clearTimeout(installPromptTimer);
   iosInstallPromptOverlay.classList.remove("show");
   iosInstallPromptOverlay.setAttribute("aria-hidden", "true");
   showFabAfterPrompt();
@@ -2835,6 +2837,17 @@ function scheduleIosInstallPrompt() {
   }, 10000);
 }
 
+ window.addEventListener("beforeinstallprompt", e => {
+  e.preventDefault();
+  deferredInstallPrompt = e;
+  scheduleAndroidInstallPrompt();
+});
+
+ window.addEventListener("appinstalled", () => {
+  deferredInstallPrompt = null;
+  hideInstallPromptUI();
+});
+
 function maybeShowIosInstallPrompt() {
   scheduleIosInstallPrompt();
 }
@@ -2857,6 +2870,32 @@ function exportJsonBackup() {
   URL.revokeObjectURL(a.href);
 }
 
+
+if (installPromptLaterBtn) {
+  installPromptLaterBtn.addEventListener("click", () => {
+    hideInstallPromptUI();
+    clearTimeout(installPromptTimer);
+  });
+}
+
+if (installPromptInstallBtn) {
+  installPromptInstallBtn.addEventListener("click", async () => {
+    if (!deferredInstallPrompt) return;
+
+    deferredInstallPrompt.prompt();
+    await deferredInstallPrompt.userChoice;
+    deferredInstallPrompt = null;
+    hideInstallPromptUI();
+    clearTimeout(installPromptTimer);
+  });
+}
+
+if (iosInstallPromptCloseBtn) {
+  iosInstallPromptCloseBtn.addEventListener("click", () => {
+    hideIosInstallPromptUI();
+    clearTimeout(installPromptTimer);
+  });
+}
 
 /* =========================
    18) Init
@@ -2885,7 +2924,7 @@ if (topbarEl && window.ResizeObserver) {
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
-    navigator.serviceWorker.register("./service-workers.js")
+    navigator.serviceWorker.register("/ACC-app/service-workers.js")
       .then(registration => {
         if (registration.waiting) {
           pendingServiceWorker = registration.waiting;
