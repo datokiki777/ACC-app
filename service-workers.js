@@ -1,13 +1,13 @@
-const CACHE_NAME = "accounts-pwa-v28";
+const CACHE_NAME = "accounts-pwa-v1";
 
 const ASSETS_TO_CACHE = [
-  "./",
-  "./index.html",
-  "./style.css",
-  "./app.js",
-  "./manifest.json",
-  "./icon-192.png",
-  "./icon-512.png"
+  "/ACC-app/",
+  "/ACC-app/index.html",
+  "/ACC-app/style.css",
+  "/ACC-app/app.js",
+  "/ACC-app/manifest.json",
+  "/ACC-app/icon-192.png",
+  "/ACC-app/icon-512.png"
 ];
 
 self.addEventListener("install", event => {
