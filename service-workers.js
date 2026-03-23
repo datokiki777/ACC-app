@@ -1,4 +1,4 @@
-const CACHE_NAME = "accounts-pwa-v5.5";
+const CACHE_NAME = "accounts-pwa-v6.0";
 
 const ASSETS_TO_CACHE = [
   "/ACC-app/",
