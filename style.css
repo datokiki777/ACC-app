@@ -93,8 +93,8 @@ main{
   display:block;
   min-height:0;
   margin-top:0;
-  padding-top:210px;
-  padding-bottom:120px;
+  padding-top:130px;
+  padding-bottom:130px;
 }
 
 .green{ color:var(--green); }
@@ -566,7 +566,7 @@ main{
   border-radius: 18px;
   background: #2c4368;
   border: 1px solid var(--line);
-  box-shadow: 0 8px 22px rgba(0,0,0,0.16), inset 0 1px 0 rgba(255,255,255,0.10);
+  box-shadow: 0 10px 24px rgba(0,0,0,0.22), inset 0 1px 0 rgba(255,255,255,0.10);
   transform: translateY(0) scale(1);
   will-change: transform, box-shadow;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
@@ -713,25 +713,6 @@ main{
 .person-body-footer .totals-line{
   margin-top:0;
   margin-bottom:8px;
-}
-
-.stats-box {
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  justify-content: center;
-  min-height: 74px;
-  padding: 12px 14px;
-  border-radius: 18px;
-  background: #dfe7f3;
-  border: 1px solid #31415c;
-  box-shadow: none;
-  text-align: left;
-  transition: transform 0.2s ease;
-}
-
-.stats-box:hover {
-  transform: translateY(-2px);
 }
 
 
@@ -1303,6 +1284,10 @@ main{
   text-align:left;
 }
 
+ .stats-box:hover{
+  transform:translateY(-2px);
+}
+
 .stats-box:nth-child(1),
 .stats-box:nth-child(2){
   background:linear-gradient(135deg,#eef6ff,#dfeeff);
@@ -1372,12 +1357,18 @@ main{
   position:fixed;
   left:0;
   right:0;
+  bottom:0;
+  top:auto;
   z-index:29;
   background:var(--bg);
   border-top:1px solid var(--line);
   display:none;
   flex-direction:column;
   overflow:hidden;
+  max-height:85vh;
+  border-radius:24px 24px 0 0;
+  animation:slideUp 0.3s ease;
+  box-shadow:0 -4px 20px rgba(0,0,0,0.15);
 }
 
 .stats-overview-panel.active{
@@ -1444,17 +1435,6 @@ main{
 }
 
 /* დაამატე stats-overview-panel-ის ქვემოთ */
-.stats-overview-panel {
-  position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  top: auto;
-  max-height: 85vh;
-  border-radius: 24px 24px 0 0;
-  animation: slideUp 0.3s ease;
-  box-shadow: 0 -4px 20px rgba(0,0,0,0.15);
-}
 
 @keyframes slideUp {
   from { transform: translateY(100%); }
@@ -1817,13 +1797,13 @@ main{
   right:18px;
   bottom:26px;
   z-index:110;
-  width:66px;
-  height:66px;
+  width:62px;
+  height:62px;
   border:none;
   border-radius:50%;
   background:linear-gradient(180deg, #2d7cff, #1f6feb);
   color:#fff;
-  font-size:36px;
+  font-size:32px;
   box-shadow:
     0 18px 34px rgba(31,111,235,0.34),
     0 0 0 rgba(45,124,255,0.00);
@@ -2113,14 +2093,6 @@ body.light-theme .stats-value.red{
 
 body.light-theme .stats-value.gray{
   color:#7b8794;
-}
-
-body.light-theme .stats-wrap{
-  background:linear-gradient(180deg, #d6e1ee, #cad7e6);
-  border:1px solid rgba(36,55,84,0.15);
-  box-shadow:
-    0 10px 24px rgba(20,40,70,0.08),
-    inset 0 1px 0 rgba(255,255,255,0.70);
 }
 
 body.light-theme .stats-wrap::before{
@@ -2482,30 +2454,6 @@ body.install-open .fab{
    App prompts (Install / Update)
 ========================= */
 
-.app-prompt-sheet{
-  width:min(100%, 760px);
-  max-width:100%;
-  overflow:hidden;
-}
-
-.app-prompt-badge{
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  max-width:100%;
-  margin:0 0 12px 0;
-  padding:8px 12px;
-  border-radius:999px;
-  font-size:12px;
-  font-weight:800;
-  line-height:1;
-  letter-spacing:.02em;
-  background:rgba(76,141,255,0.12);
-  color:var(--primary);
-  border:1px solid rgba(76,141,255,0.18);
-  white-space:nowrap;
-}
-
 .app-prompt-title{
   margin:0 0 10px;
   font-size:20px;
@@ -2573,24 +2521,24 @@ body.light-theme .app-prompt-badge{
    23) Offline Indicator
 ========================= */
 
-.offline-indicator {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  background: #ffa502;
-  color: white;
-  text-align: center;
-  padding: 8px;
-  font-size: 13px;
-  font-weight: 600;
-  z-index: 2000;
-  transform: translateY(-100%);
-  transition: transform 0.3s ease;
+.offline-indicator{
+  position:fixed;
+  top:0;
+  left:0;
+  right:0;
+  background:#ffa502;
+  color:#fff;
+  text-align:center;
+  padding:8px;
+  font-size:13px;
+  font-weight:600;
+  z-index:2000;
+  transform:translateY(-100%);
+  transition:transform 0.3s ease;
 }
 
-.offline-indicator {
-  display: none;
+.offline-indicator.show{
+  transform:translateY(0);
 }
 
 body.light-theme .offline-indicator {
