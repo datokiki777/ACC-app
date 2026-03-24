@@ -6,6 +6,9 @@ const ASSETS_TO_CACHE = [
   "./style.css",
   "./app.js",
   "./manifest.json",
+  "./icons/icon-152.png",
+  "./icons/icon-167.png",
+  "./icons/icon-180.png",
   "./icons/icon-192.png",
   "./icons/icon-512.png"
 ];
@@ -30,12 +33,59 @@ self.addEventListener("activate", event => {
   );
 });
 
+self.addEventListener("message", event => {
+  if (event.data && event.data.type === "SKIP_WAITING") {
+    self.skipWaiting();
+  }
+});
+
 self.addEventListener("fetch", event => {
   if (event.request.method !== "GET") return;
 
+  const requestUrl = new URL(event.request.url);
+  if (requestUrl.origin !== self.location.origin) return;
+
+  const isHtmlRequest =
+    event.request.mode === "navigate" ||
+    requestUrl.pathname.endsWith(".html");
+
+  if (isHtmlRequest) {
+    event.respondWith(
+      fetch(event.request)
+        .then(networkResponse => {
+          if (networkResponse && networkResponse.status === 200) {
+            const responseClone = networkResponse.clone();
+            caches.open(CACHE_NAME).then(cache => {
+              cache.put(event.request, responseClone);
+            });
+          }
+          return networkResponse;
+        })
+        .catch(() => caches.match(event.request) || caches.match("./index.html"))
+    );
+    return;
+  }
+
   event.respondWith(
-    caches.match(event.request).then(res => {
-      return res || fetch(event.request);
+    caches.match(event.request).then(cachedResponse => {
+      if (cachedResponse) return cachedResponse;
+
+      return fetch(event.request).then(networkResponse => {
+        if (
+          !networkResponse ||
+          networkResponse.status !== 200 ||
+          networkResponse.type !== "basic"
+        ) {
+          return networkResponse;
+        }
+
+        const responseClone = networkResponse.clone();
+        caches.open(CACHE_NAME).then(cache => {
+          cache.put(event.request, responseClone);
+        });
+
+        return networkResponse;
+      });
     })
   );
 });
