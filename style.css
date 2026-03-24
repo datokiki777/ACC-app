@@ -2589,8 +2589,8 @@ body.light-theme .app-prompt-badge{
   transition: transform 0.3s ease;
 }
 
-.offline-indicator.show {
-  transform: translateY(0);
+.offline-indicator {
+  display: none;
 }
 
 body.light-theme .offline-indicator {
