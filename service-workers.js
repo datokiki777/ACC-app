@@ -1,4 +1,4 @@
-const CACHE_NAME = "accounts-pwa-v7.0";
+const CACHE_NAME = "accounts-pwa-v4.5";
 
 const ASSETS_TO_CACHE = [
   "./",
@@ -6,11 +6,14 @@ const ASSETS_TO_CACHE = [
   "./style.css",
   "./app.js",
   "./manifest.json",
+
   "./icons/icon-152.png",
   "./icons/icon-167.png",
   "./icons/icon-180.png",
   "./icons/icon-192.png",
-  "./icons/icon-512.png"
+  "./icons/icon-192-maskable.png",
+  "./icons/icon-512.png",
+  "./icons/icon-512-maskable.png"
 ];
 
 self.addEventListener("install", event => {
@@ -24,9 +27,12 @@ self.addEventListener("activate", event => {
     (async () => {
       const keys = await caches.keys();
       await Promise.all(
-        keys
-          .filter(key => key !== CACHE_NAME)
-          .map(key => caches.delete(key))
+        keys.map(key => {
+          if (key !== CACHE_NAME) {
+            return caches.delete(key);
+          }
+          return Promise.resolve();
+        })
       );
       await self.clients.claim();
     })()
@@ -43,10 +49,12 @@ self.addEventListener("fetch", event => {
   if (event.request.method !== "GET") return;
 
   const requestUrl = new URL(event.request.url);
-  if (requestUrl.origin !== self.location.origin) return;
+  const isSameOrigin = requestUrl.origin === self.location.origin;
+
+  if (!isSameOrigin) return;
 
   const isHtmlRequest =
-    event.request.mode === "navigate" ||
+    requestUrl.pathname === "/" ||
     requestUrl.pathname.endsWith(".html");
 
   if (isHtmlRequest) {
@@ -55,35 +63,28 @@ self.addEventListener("fetch", event => {
         .then(networkResponse => {
           if (networkResponse && networkResponse.status === 200) {
             const responseClone = networkResponse.clone();
-            caches.open(CACHE_NAME).then(cache => {
-              cache.put(event.request, responseClone);
-            });
+            caches.open(CACHE_NAME).then(cache => cache.put(event.request, responseClone));
           }
           return networkResponse;
         })
-        .catch(() => caches.match(event.request) || caches.match("./index.html"))
+        .catch(() => caches.match(event.request))
     );
     return;
   }
 
   event.respondWith(
     caches.match(event.request).then(cachedResponse => {
-      if (cachedResponse) return cachedResponse;
+      if (cachedResponse) {
+        return cachedResponse;
+      }
 
       return fetch(event.request).then(networkResponse => {
-        if (
-          !networkResponse ||
-          networkResponse.status !== 200 ||
-          networkResponse.type !== "basic"
-        ) {
+        if (!networkResponse || networkResponse.status !== 200 || networkResponse.type !== "basic") {
           return networkResponse;
         }
 
         const responseClone = networkResponse.clone();
-        caches.open(CACHE_NAME).then(cache => {
-          cache.put(event.request, responseClone);
-        });
-
+        caches.open(CACHE_NAME).then(cache => cache.put(event.request, responseClone));
         return networkResponse;
       });
     })

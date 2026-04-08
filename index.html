@@ -1,29 +1,40 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <!-- =========================
+       Meta
+  ========================= -->
+  <meta charset="UTF-8" />
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+  />
 
+  <!-- =========================
+       Title
+  ========================= -->
+  <title>ACC</title>
+
+  <!-- =========================
+       PWA / Theme
+  ========================= -->
   <meta name="theme-color" content="#0f2447" />
-  <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="ACC" />
+  <meta name="mobile-web-app-capable" content="yes" />
 
-  <link rel="manifest" href="./manifest.json">
-  <link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png">
+  <!-- =========================
+       Assets
+  ========================= -->
+  <link rel="stylesheet" href="style.css" />
+  <link rel="manifest" href="manifest.json" />
   <link rel="apple-touch-icon" sizes="152x152" href="./icons/icon-152.png" />
-  <link rel="apple-touch-icon" sizes="167x167" href="./icons/icon-167.png" />
-  <link rel="apple-touch-icon" sizes="180x180" href="./icons/icon-180.png" />
-  <link rel="stylesheet" href="./style.css">
+<link rel="apple-touch-icon" sizes="167x167" href="./icons/icon-167.png" />
+<link rel="apple-touch-icon" sizes="180x180" href="./icons/icon-180.png" />
 </head>
 <body>
-
-<div class="offline-indicator" id="offlineIndicator">
-  📴 You're offline - changes will sync when connection returns
-</div>
-
-<div class="app">
+  <div class="app">
 
     <!-- =========================
          Topbar
@@ -33,8 +44,8 @@
         <button class="icon-btn" id="menuBtn" aria-label="Import / Export">⇄</button>
 
         <div class="mode-switch topbar-mode-switch">
-          <button id="modePersonal" class="mode-btn active" aria-label="Switch to personal mode">Personal</button>
-          <button id="modeWork" class="mode-btn" aria-label="Switch to work mode">Work</button>
+          <button id="modePersonal" class="mode-btn active">Personal</button>
+          <button id="modeWork" class="mode-btn">Work</button>
         </div>
 
         <button class="theme-switch" id="themeToggleBtn" aria-label="Toggle theme">
@@ -63,7 +74,7 @@
   <!-- =========================
        Floating Action Button
   ========================= -->
-  <button class="fab" id="fab" aria-label="Add new person or entry">+</button>
+  <button class="fab" id="fab" aria-label="Add">+</button>
 
   <!-- =========================
        Legacy hidden elements

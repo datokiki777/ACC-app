@@ -82,18 +82,6 @@ function uid() {
   return Math.random().toString(36).slice(2, 10);
 }
 
-function debounce(func, wait) {
-  let timeout;
-  return function executedFunction(...args) {
-    const later = () => {
-      clearTimeout(timeout);
-      func(...args);
-    };
-    clearTimeout(timeout);
-    timeout = setTimeout(later, wait);
-  };
-}
-
 function todayStr() {
   const d = new Date();
   const y = d.getFullYear();
@@ -242,7 +230,7 @@ function personOpenBalance(person) {
 }
 
 function getOrderedCurrencyEntries(totalsMap) {
-  const preferredOrder = ["EUR", "USD", "CAD", "GEL"];
+  const preferredOrder = ["GEL", "CAD", "USD", "EUR"];
   const entries = Object.entries(totalsMap || {});
 
   return entries.sort((a, b) => {
@@ -263,6 +251,22 @@ function getOpenCurrencyTotals(people = state.people) {
   (people || []).forEach(person => {
     (person.stages || [])
       .filter(stage => !stage.closed)
+      .forEach(stage => {
+        const currency = stageCurrency(stage);
+        const balance = stageBalance(stage);
+        totals[currency] = (totals[currency] || 0) + balance;
+      });
+  });
+
+  return totals;
+}
+
+function getClosedCurrencyTotals(people = state.people) {
+  const totals = {};
+
+  (people || []).forEach(person => {
+    (person.stages || [])
+      .filter(stage => stage.closed)
       .forEach(stage => {
         const currency = stageCurrency(stage);
         const balance = stageBalance(stage);
@@ -313,16 +317,23 @@ function getOverviewBalanceSummary(people = state.people) {
   };
 }
 
-function renderCurrencyBreakdown(entries) {
+function renderCurrencyBreakdown(entries, options = {}) {
   if (!entries || !entries.length) return "";
+
+  const icon = options.icon
+    ? `<span class="currency-breakdown-icon">${options.icon}</span>`
+    : "";
 
   return `
     <div class="currency-breakdown">
-      ${entries.map(([currency, amount]) => `
-        <span class="currency-chip ${balanceClass(amount)}">
-          ${formatMoneyPlain(amount, currency)}
-        </span>
-      `).join("")}
+      ${icon}
+      <div class="currency-breakdown-chips">
+        ${entries.map(([currency, amount]) => `
+          <span class="currency-chip ${balanceClass(amount)}">
+            ${formatMoneyPlain(amount, currency)}
+          </span>
+        `).join("")}
+      </div>
     </div>
   `;
 }
@@ -1248,6 +1259,9 @@ function renderStats() {
 
   const peopleCount = state.people.length;
   const balanceSummary = getOverviewBalanceSummary(state.people);
+  const closedTotalsMap = getClosedCurrencyTotals(state.people);
+  const closedBreakdown = getOrderedCurrencyEntries(closedTotalsMap)
+    .filter(([, amount]) => Math.abs(Number(amount || 0)) > 0.000001);
 
   const sortedPeople = [...state.people]
     .filter(person => (person.name || "").toLowerCase().includes(state.search.trim().toLowerCase()))
@@ -1301,13 +1315,28 @@ function renderStats() {
       document.body.appendChild(overviewPanel);
     }
     overviewPanel.innerHTML = `
-      <div class="stats-overview-panel-fixed">
-        ${
-          state.mode === "personal" && balanceSummary.breakdown.length > 1
-            ? `<div class="stats-breakdown-wrap">${renderCurrencyBreakdown(balanceSummary.breakdown)}</div>`
-            : ""
-        }
-        <div class="stats-search-wrap">
+  <div class="stats-overview-panel-fixed">
+    ${
+      state.mode === "personal" && balanceSummary.breakdown.length > 1
+        ? `
+          <div class="stats-breakdown-wrap">
+            ${renderCurrencyBreakdown(balanceSummary.breakdown, { icon: "🟢" })}
+          </div>
+        `
+        : ""
+    }
+
+    ${
+  closedBreakdown.length
+    ? `
+      <div class="stats-breakdown-wrap stats-breakdown-wrap-closed">
+        ${renderCurrencyBreakdown(closedBreakdown, { icon: "🔒" })}
+      </div>
+    `
+    : ""
+}
+
+    <div class="stats-search-wrap">
           <div class="search-box overview-search-box">
             <span class="search-icon">🔍</span>
             <input
@@ -1487,11 +1516,8 @@ function adjustMainPadding() {
 
 function syncFab() {
   if (fab.classList.contains("fab-back")) return; // modal ღიაა — არ შევეხოთ
-  
   const anyExpanded = state.people.some(p => p.expanded);
-  const isPromptOpen = document.querySelector('.overlay.show') !== null;
-  
-  if (anyExpanded || isPromptOpen) {
+  if (anyExpanded) {
     fab.classList.add("fab-hidden");
   } else {
     fab.classList.remove("fab-hidden");
@@ -2579,10 +2605,9 @@ function openChoosePersonForEntry() {
 ========================= */
 
 if (searchInput) {
-  const debouncedRender = debounce(() => render(), 300);
   searchInput.addEventListener("input", e => {
     state.search = e.target.value;
-    debouncedRender();
+    render();
   });
 }
 
@@ -2914,6 +2939,185 @@ if (iosInstallPromptCloseBtn) {
 }
 
 /* =========================
+   17.5) Pro Debug Toolkit
+========================= */
+
+const DEBUG = {
+  enabled:
+    location.hostname === "localhost" ||
+    location.hostname === "127.0.0.1" ||
+    location.search.includes("debug=1") ||
+    localStorage.getItem("acc_debug") === "1"
+};
+
+function getStorageSizeBytes() {
+  try {
+    let total = 0;
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i) || "";
+      const value = localStorage.getItem(key) || "";
+      total += key.length + value.length;
+    }
+    return total * 2;
+  } catch (error) {
+    return 0;
+  }
+}
+
+function formatBytes(bytes) {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(2)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+}
+
+function collectDebugSnapshot() {
+  const people = state.people || [];
+
+  let stagesTotal = 0;
+  let openStages = 0;
+  let closedStages = 0;
+  let entriesTotal = 0;
+
+  people.forEach(person => {
+    (person.stages || []).forEach(stage => {
+      stagesTotal++;
+      if (stage.closed) closedStages++;
+      else openStages++;
+      entriesTotal += (stage.entries || []).length;
+    });
+  });
+
+  return {
+    time: new Date().toISOString(),
+    mode: state.mode,
+    people: people.length,
+    stagesTotal,
+    openStages,
+    closedStages,
+    entriesTotal,
+    search: state.search,
+    openTotals: getOpenCurrencyTotals(people),
+    closedTotals: getClosedCurrencyTotals(people),
+    storageUsed: formatBytes(getStorageSizeBytes()),
+    storageKeys: Object.keys(localStorage),
+    userAgent: navigator.userAgent,
+    online: navigator.onLine,
+    standalone: window.matchMedia("(display-mode: standalone)").matches
+  };
+}
+
+function logDebugSnapshot(label = "ACC DEBUG") {
+  if (!DEBUG.enabled) return;
+
+  const snapshot = collectDebugSnapshot();
+  console.group(`%c${label}`, "color:#4c8dff;font-weight:bold;");
+  console.table({
+    mode: snapshot.mode,
+    people: snapshot.people,
+    stagesTotal: snapshot.stagesTotal,
+    openStages: snapshot.openStages,
+    closedStages: snapshot.closedStages,
+    entriesTotal: snapshot.entriesTotal,
+    search: snapshot.search,
+    storageUsed: snapshot.storageUsed,
+    online: snapshot.online,
+    standalone: snapshot.standalone
+  });
+  console.log("Open totals:", snapshot.openTotals);
+  console.log("Closed totals:", snapshot.closedTotals);
+  console.log("Full snapshot:", snapshot);
+  console.groupEnd();
+}
+
+function validateDataShape() {
+  const errors = [];
+
+  (state.people || []).forEach((person, pIndex) => {
+    if (!person.id) errors.push(`Person[${pIndex}] missing id`);
+    if (!Array.isArray(person.stages)) errors.push(`Person[${pIndex}] stages is not array`);
+
+    (person.stages || []).forEach((stage, sIndex) => {
+      if (!stage.id) errors.push(`Person[${pIndex}] Stage[${sIndex}] missing id`);
+      if (!stage.currency) errors.push(`Person[${pIndex}] Stage[${sIndex}] missing currency`);
+      if (!Array.isArray(stage.entries)) errors.push(`Person[${pIndex}] Stage[${sIndex}] entries is not array`);
+
+      (stage.entries || []).forEach((entry, eIndex) => {
+        if (!entry.id) errors.push(`Person[${pIndex}] Stage[${sIndex}] Entry[${eIndex}] missing id`);
+        if (entry.type !== "Gave" && entry.type !== "Received") {
+          errors.push(`Person[${pIndex}] Stage[${sIndex}] Entry[${eIndex}] invalid type`);
+        }
+        if (Number.isNaN(Number(entry.amount))) {
+          errors.push(`Person[${pIndex}] Stage[${sIndex}] Entry[${eIndex}] invalid amount`);
+        }
+      });
+    });
+  });
+
+  if (DEBUG.enabled) {
+    if (errors.length) {
+      console.warn("ACC validation errors:", errors);
+    } else {
+      console.info("ACC validation: OK");
+    }
+  }
+
+  return errors;
+}
+
+window.ACC_DEBUG = {
+  on() {
+    localStorage.setItem("acc_debug", "1");
+    console.info("ACC debug enabled");
+  },
+  off() {
+    localStorage.removeItem("acc_debug");
+    console.info("ACC debug disabled");
+  },
+  snapshot() {
+    const data = collectDebugSnapshot();
+    console.log(data);
+    return data;
+  },
+  log() {
+    logDebugSnapshot();
+  },
+  validate() {
+    return validateDataShape();
+  },
+  exportState() {
+    const blob = new Blob(
+      [JSON.stringify({ state, snapshot: collectDebugSnapshot() }, null, 2)],
+      { type: "application/json" }
+    );
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `acc-debug-${todayStr()}.json`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+  },
+  sw() {
+    if (!("serviceWorker" in navigator)) {
+      console.warn("Service worker not supported");
+      return;
+    }
+
+    navigator.serviceWorker.getRegistration().then(reg => {
+      console.log("SW registration:", reg || "none");
+      if (reg) {
+        console.log("SW scope:", reg.scope);
+        console.log("SW active:", reg.active?.state || "none");
+        console.log("SW waiting:", reg.waiting?.state || "none");
+        console.log("SW installing:", reg.installing?.state || "none");
+      }
+    });
+  },
+  rerender() {
+    render();
+    console.info("ACC rerender done");
+  }
+};
+
+/* =========================
    18) Init
 ========================= */
 
@@ -2926,24 +3130,12 @@ state.people = loadDataByMode(state.mode).map(person => ({
 
 state.statsExpanded = false;
 syncModeButtons();
-
-// Offline ინდიკატორის კონტროლი
-const offlineIndicator = document.getElementById('offlineIndicator');
-
-function updateOfflineIndicator() {
-  if (!navigator.onLine) {
-    offlineIndicator.classList.add('show');
-  } else {
-    offlineIndicator.classList.remove('show');
-  }
-}
-
-window.addEventListener('online', updateOfflineIndicator);
-window.addEventListener('offline', updateOfflineIndicator);
-
-updateOfflineIndicator();
 render();
 maybeShowIosInstallPrompt();
+if (DEBUG.enabled) {
+  logDebugSnapshot("ACC INIT");
+  validateDataShape();
+}
 
 const topbarEl = document.querySelector(".topbar");
 if (topbarEl && window.ResizeObserver) {
