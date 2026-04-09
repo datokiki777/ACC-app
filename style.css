@@ -620,32 +620,44 @@ main{
 }
 
 .balance{
-  font-size:15px;
-  font-weight:600;
+  font-size:13.5px;
+  font-weight:700;
   white-space:nowrap;
-  padding:8px 14px;
+
+  padding:5px 10px;
   border-radius:999px;
-  background:#f3f5f8;
-  box-shadow:inset 0 1px 0 rgba(255,255,255,0.7);
-  letter-spacing:-0.02em;
+
+  display:flex;
+  align-items:center;
+  justify-content:center;
+
+  width:110px;       /* ერთნაირი სიგრძე */
+  text-align:center;
+
+  letter-spacing:-0.01em;
   transition:all .25s ease;
+
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.08),
+    0 3px 8px rgba(0,0,0,0.10);
 }
 
 .balance.green{
-  color:#2e9b5f;
-  background:rgba(46,155,95,0.12);
-  border:1px solid rgba(46,155,95,0.25);
+  color:#49d37d;
+  background:linear-gradient(180deg, rgba(53,194,107,0.18), rgba(36,86,56,0.28));
+  border:1px solid rgba(83,217,132,0.34);
 }
 
 .balance.red{
-  color:#d14a4a;
-  background:rgba(209,74,74,0.12);
-  border:1px solid rgba(209,74,74,0.25);
+  color:#ff7e7e;
+  background:linear-gradient(180deg, rgba(255,107,107,0.18), rgba(96,44,55,0.30));
+  border:1px solid rgba(255,120,120,0.34);
 }
 
 .balance.gray{
-  background:rgba(123,135,148,0.14);
-  border:1px solid rgba(123,135,148,0.10);
+  color:#c1d0e6;
+  background:linear-gradient(180deg, rgba(170,185,210,0.12), rgba(74,94,128,0.24));
+  border:1px solid rgba(170,185,210,0.20);
 }
 
 .person-card:hover .balance.green{
@@ -1398,7 +1410,17 @@ main{
 .stats-search-wrap,
 .stats-breakdown-wrap{
   width:100%;
-  margin-bottom:4px;
+  margin-bottom:6px;
+}
+
+.stats-breakdown-wrap{
+  padding:10px 12px;
+  border-radius:18px;
+  background:linear-gradient(180deg, rgba(24,49,88,0.82), rgba(18,40,74,0.92));
+  border:1px solid rgba(106,140,198,0.18);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.05),
+    0 10px 24px rgba(0,0,0,0.12);
 }
 
 .stats-breakdown-wrap-closed{
@@ -1775,25 +1797,33 @@ main{
   display:inline-flex;
   align-items:center;
   justify-content:center;
-  width:22px;
-  height:22px;
+  width:28px;
+  height:28px;
   flex:0 0 auto;
+  border-radius:999px;
   font-size:16px;
   line-height:1;
-  opacity:.95;
+  opacity:1;
+  background:rgba(255,255,255,0.06);
+  border:1px solid rgba(255,255,255,0.10);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,0.05);
 }
 
 .currency-chip{
   display:inline-flex;
   align-items:center;
   justify-content:center;
-  padding:8px 12px;
+  min-height:38px;
+  padding:8px 14px;
   border-radius:999px;
   font-size:13px;
   font-weight:800;
   line-height:1;
-  background:var(--gray-soft);
-  border:1px solid var(--line);
+  background:linear-gradient(180deg,#2c4a78,#243f69);
+  border:1px solid rgba(128,160,214,0.20);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.05),
+    0 4px 10px rgba(0,0,0,0.10);
 }
 
 .currency-chip.green{ color:var(--green); }
@@ -2547,4 +2577,169 @@ body.light-theme .app-prompt-badge{
 
 .overlay.app-prompt-overlay{
   padding:16px;
+}
+
+/* =========================
+   Review chips - compact
+========================= */
+
+.stats-breakdown-wrap .currency-chip{
+  padding:5px 10px;
+  font-size:12.5px;
+  min-height:30px;
+
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+
+  gap:6px; /* ⬅️ spacing icon + text */
+
+  border-radius:999px;
+
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.05),
+    0 2px 6px rgba(0,0,0,0.08);
+}
+
+.stats-breakdown-wrap .currency-breakdown-icon{
+  width:24px;
+  height:24px;
+  font-size:14px;
+}
+
+/* =========================
+   Light theme fixes - working overrides
+========================= */
+
+body.light-theme .balance.green{
+  color:#3ea86a;
+  background:linear-gradient(180deg, rgba(53,194,107,0.08), rgba(36,86,56,0.12));
+  border:1px solid rgba(83,217,132,0.16);
+}
+
+body.light-theme .balance.red{
+  color:#d46868;
+  background:linear-gradient(180deg, rgba(255,107,107,0.08), rgba(96,44,55,0.12));
+  border:1px solid rgba(255,120,120,0.16);
+}
+
+body.light-theme .balance.gray{
+  color:#7f8da0;
+  background:linear-gradient(180deg, rgba(170,185,210,0.06), rgba(74,94,128,0.10));
+  border:1px solid rgba(170,185,210,0.14);
+}
+
+body.light-theme .stats-breakdown-wrap{
+  background:linear-gradient(180deg, #eef3f8, #e7edf5);
+  border:1px solid #d8e1ec;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.75),
+    0 4px 10px rgba(20,30,50,0.04);
+}
+
+body.light-theme .stats-breakdown-wrap .currency-breakdown-icon{
+  background:rgba(120,140,170,0.10);
+  border:1px solid rgba(120,140,170,0.16);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,0.55);
+}
+
+body.light-theme .stats-breakdown-wrap .currency-chip{
+  background:#ffffff;
+  border:1px solid #d8e0ea;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.90),
+    0 2px 5px rgba(0,0,0,0.04);
+}
+
+/* =========================
+   Light theme - overview open/closed stage cards
+========================= */
+
+body.light-theme .open-stage-mini-card{
+  background:linear-gradient(180deg, #dfe8f4, #d2dfee);
+  border:1px solid rgba(56,84,126,0.16);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.72),
+    0 3px 8px rgba(20,40,70,0.05);
+}
+
+body.light-theme .closed-stage-item{
+  background:linear-gradient(180deg, #dbe5f2, #cedbeb);
+  border:1px solid rgba(56,84,126,0.16);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.72),
+    0 3px 8px rgba(20,40,70,0.05);
+}
+
+body.light-theme .open-stage-mini-title,
+body.light-theme .closed-stage-item .sheet-item-title{
+  color:#21324a;
+}
+
+body.light-theme .open-stage-mini-note,
+body.light-theme .closed-stage-item .sheet-item-sub{
+  color:#61738b;
+}
+
+.closed-stage-date-range{
+  font-size:12px;
+  font-weight:700;
+  color:var(--muted);
+  white-space:nowrap;
+}
+
+.closed-stage-summary-card{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  margin-bottom:10px;
+  padding:10px 12px;
+  border-radius:12px;
+  background:rgba(255,255,255,0.05);
+  border:1px solid rgba(255,255,255,0.08);
+}
+
+.closed-stage-summary-label{
+  font-size:13px;
+  font-weight:800;
+  color:var(--muted);
+}
+
+.closed-stage-summary-total{
+  font-size:13px;
+  font-weight:900;
+  white-space:nowrap;
+}
+
+body.light-theme .closed-stage-date-range{
+  color:#6f8097;
+}
+
+body.light-theme .closed-stage-summary-card{
+  background:#edf2f8;
+  border:1px solid #d8e1ec;
+}
+
+body.light-theme .closed-stage-summary-label{
+  color:#4d617c;
+}
+
+/* =========================
+   Overview closed stages separator
+========================= */
+
+.section-label.overview-closed-label{
+  margin:18px 0 12px;
+  padding-top:12px;
+  border-top:1px solid rgba(255,255,255,0.10);
+  font-size:12px;
+  font-weight:900;
+  letter-spacing:.10em;
+  opacity:1;
+}
+
+body.light-theme .section-label.overview-closed-label{
+  border-top:1px solid rgba(36,55,84,0.10);
+  color:#5f7188;
 }

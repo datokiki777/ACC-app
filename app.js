@@ -106,16 +106,22 @@ function currencyLabel(currency) {
   return "€";
 }
 
-function formatMoney(value, currency = "EUR") {
+function normalizeAmount(value) {
   const num = Number(value || 0);
+  if (!Number.isFinite(num)) return 0;
+  return Math.round(num);
+}
+
+function formatMoney(value, currency = "EUR") {
+  const num = normalizeAmount(value);
   const sign = num > 0 ? "+" : "";
-  return `${sign}${num.toFixed(2)}${currencyLabel(currency)}`;
+  return `${sign}${num}${currencyLabel(currency)}`;
 }
 
 function formatMoneyPlain(value, currency = "EUR") {
-  const num = Number(value || 0);
+  const num = normalizeAmount(value);
   const sign = num < 0 ? "-" : "";
-  return `${sign}${Math.abs(num).toFixed(2)}${currencyLabel(currency)}`;
+  return `${sign}${Math.abs(num)}${currencyLabel(currency)}`;
 }
 
 function balanceClass(value) {
@@ -146,7 +152,7 @@ function highlightMatch(text, query) {
 }
 
 function entryEffect(type, amount) {
-  const n = Number(amount || 0);
+  const n = normalizeAmount(amount);
   if (type === "Gave") return n;
   if (type === "Received") return -n;
   return 0;
@@ -211,7 +217,7 @@ function stageTotals(stage) {
   let received = 0;
 
   (stage.entries || []).forEach(entry => {
-    const amount = Number(entry.amount || 0);
+    const amount = normalizeAmount(entry.amount);
     if (entry.type === "Gave") gave += amount;
     if (entry.type === "Received") received += amount;
   });
@@ -864,7 +870,8 @@ function buildPdfHtml(people, title = "ACC Export") {
                 ${entry.comment ? `<div style="font-size:12px;color:${muted};margin-top:2px;">${escapeHtml(entry.comment)}</div>` : ""}
               </div>
               <div class="entry-right">
-                <div class="entry-amount" style="color:${colorFor(ef)}">${Number(entry.amount).toFixed(2)}${currencyLabel(cur)}</div>
+                <div class="entry-amount" style="color:${colorFor(ef)}">${normalizeAmount(entry.amount)}${currencyLabel(cur)}</div>Out <span>${normalizeAmount(totals.gave)}${currencyLabel(cur)}</span> &nbsp;
+In <span>${normalizeAmount(totals.received)}${currencyLabel(cur)}</span> &nbsp;
                 <div class="entry-meta">${formatDate(entry.date)}</div>
               </div>
             </div>`;
@@ -2086,7 +2093,7 @@ function openEntryForm(personId, stageId, entryId = null, reopenOverviewPersonId
       <form class="form" id="entryForm">
         <div class="field">
           <label for="entryAmount">Amount</label>
-          <input id="entryAmount" name="amount" type="number" step="0.01" min="0.01" required placeholder="Example: 50" value="${entry ? escapeHtml(entry.amount) : ""}">
+          <input id="entryAmount" name="amount" type="number" step="1" min="1" required placeholder="Example: 50" value="${entry ? escapeHtml(normalizeAmount(entry.amount)) : ""}">
         </div>
 
         <div class="field">
@@ -2173,7 +2180,8 @@ function openEntryForm(personId, stageId, entryId = null, reopenOverviewPersonId
         e.preventDefault();
 
         const fd = new FormData(form);
-        const amount = Number(fd.get("amount") || 0);
+        const amount = normalizeAmount(fd.get("amount"));
+if (amount < 1) return;
         const type = String(fd.get("type") || "");
         const date = String(fd.get("date") || todayStr());
         const comment = String(fd.get("comment") || "").trim();
@@ -2454,7 +2462,6 @@ function openOverviewPersonDetail(personId) {
                   <div class="open-stage-mini-left">
                     <div class="stage-title-row">
                       <span class="open-stage-mini-title">${escapeHtml(openStage.name)}</span>
-                      <span class="mini-count-badge">${(openStage.entries || []).length}</span>
                     </div>
                     ${""}
                   </div>
@@ -2488,53 +2495,70 @@ function openOverviewPersonDetail(personId) {
       ${
         closedStages.length
           ? `
-            <div class="section-label">Closed Stages</div>
+            <div class="section-label overview-closed-label">Closed Stages</div>
             <div class="sheet-list">
-              ${closedStages.map(stage => {
-                const isExpanded = !!state.overviewClosedExpanded[stage.id];
+              ${closedStages.map((stage, index) => {
+  const isExpanded = !!state.overviewClosedExpanded[stage.id];
+  const entries = stage.entries || [];
 
-                return `
-                  <div
-                    class="sheet-item closed-stage-item swipe-card"
-                    data-action-type="stage"
-                    data-person-id="${person.id}"
-                    data-stage-id="${stage.id}"
-                    data-source="overview"
-                  >
-                    <div class="swipe-content">
-                      <div class="closed-stage-head" data-toggle-closed-stage="${stage.id}">
-                        <div class="closed-stage-col closed-stage-left">
-                          <div class="stage-title-row">
-                            <span class="sheet-item-title">${escapeHtml(stage.name)}</span>
-                            <span class="mini-count-badge">${(stage.entries || []).length}</span>
-                          </div>
-                        </div>
+  const dates = entries
+    .map(entry => entry.date)
+    .filter(Boolean)
+    .slice()
+    .sort();
 
-                        <div class="closed-stage-col closed-stage-right">
-                          <span class="closed-stage-balance ${balanceClass(stageBalance(stage))}">
-                            ${formatMoney(stageBalance(stage), stageCurrency(stage))}
-                          </span>
-                          <span class="closed-stage-chev ${isExpanded ? "open" : ""}">›</span>
-                        </div>
-                      </div>
+  const fromDate = dates.length ? formatDate(dates[0]) : "";
+  const toDate = dates.length ? formatDate(dates[dates.length - 1]) : "";
+  const dateRange = fromDate && toDate ? `${fromDate} → ${toDate}` : "";
 
-                      ${
-                        isExpanded
-                          ? `
-                            <div class="closed-stage-body">
-                              ${
-                                (stage.entries || []).length
-                                  ? stage.entries.map(entry => renderEntry(person.id, stage.id, stage, entry, "overview")).join("")
-                                  : `<div class="empty-state mini-empty">No entries</div>`
-                              }
-                            </div>
-                          `
-                          : ""
-                      }
-                    </div>
-                  </div>
-                `;
-              }).join("")}
+  const stageNumber = (person.stages || []).findIndex(s => s.id === stage.id) + 1;
+
+  return `
+    <div
+      class="sheet-item closed-stage-item swipe-card"
+      data-action-type="stage"
+      data-person-id="${person.id}"
+      data-stage-id="${stage.id}"
+      data-source="overview"
+    >
+      <div class="swipe-content">
+        <div class="closed-stage-head" data-toggle-closed-stage="${stage.id}">
+          <div class="closed-stage-col closed-stage-left">
+            <div class="stage-title-row">
+              <span class="sheet-item-title">${escapeHtml(stage.name)}</span>
+            </div>
+          </div>
+
+          <div class="closed-stage-col closed-stage-right">
+            <span class="closed-stage-date-range">${escapeHtml(dateRange)}</span>
+            <span class="closed-stage-chev ${isExpanded ? "open" : ""}">›</span>
+          </div>
+        </div>
+
+        ${
+          isExpanded
+            ? `
+              <div class="closed-stage-body">
+                <div class="closed-stage-summary-card">
+                  <span class="closed-stage-summary-label">Entry ${entries.length}</span>
+                  <span class="closed-stage-summary-total ${balanceClass(stageBalance(stage))}">
+                    ${formatMoney(stageBalance(stage), stageCurrency(stage))}
+                  </span>
+                </div>
+
+                ${
+                  entries.length
+                    ? entries.map(entry => renderEntry(person.id, stage.id, stage, entry, "overview")).join("")
+                    : `<div class="empty-state mini-empty">No entries</div>`
+                }
+              </div>
+            `
+            : ""
+        }
+      </div>
+    </div>
+  `;
+}).join("")}
             </div>
           `
           : ""
