@@ -428,25 +428,80 @@ function saveMode() {
   localStorage.setItem(MODE_STORAGE_KEY, state.mode);
 }
 
-function applyTheme(theme) {
-  if (theme === "light") {
+function getSystemTheme() {
+  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+}
+
+function getSavedThemeMode() {
+  const saved = localStorage.getItem(THEME_KEY);
+
+  if (saved === "system" || saved === "dark" || saved === "light") {
+    return saved;
+  }
+
+  return "system";
+}
+
+function getEffectiveTheme(mode) {
+  return mode === "system" ? getSystemTheme() : mode;
+}
+
+function updateThemeButton(mode) {
+  const iconEl = document.getElementById("themeIcon");
+  if (!themeToggleBtn || !iconEl) return;
+
+  if (mode === "system") {
+    iconEl.textContent = "🌓";
+    themeToggleBtn.setAttribute("aria-label", "Theme: Auto");
+    themeToggleBtn.setAttribute("title", "Theme: Auto");
+  } else if (mode === "dark") {
+    iconEl.textContent = "🌙";
+    themeToggleBtn.setAttribute("aria-label", "Theme: Dark");
+    themeToggleBtn.setAttribute("title", "Theme: Dark");
+  } else {
+    iconEl.textContent = "☀️";
+    themeToggleBtn.setAttribute("aria-label", "Theme: Light");
+    themeToggleBtn.setAttribute("title", "Theme: Light");
+  }
+}
+
+function applyTheme(mode) {
+  const effectiveTheme = getEffectiveTheme(mode);
+
+  if (effectiveTheme === "light") {
     document.body.classList.add("light-theme");
   } else {
     document.body.classList.remove("light-theme");
   }
+
+  updateThemeButton(mode);
 }
 
 function loadTheme() {
-  const savedTheme = localStorage.getItem(THEME_KEY) || "dark";
-  applyTheme(savedTheme);
+  const mode = getSavedThemeMode();
+  applyTheme(mode);
 }
 
-function toggleTheme() {
-  const isLight = document.body.classList.contains("light-theme");
-  const nextTheme = isLight ? "dark" : "light";
-  localStorage.setItem(THEME_KEY, nextTheme);
-  applyTheme(nextTheme);
+function cycleThemeMode() {
+  const current = getSavedThemeMode();
+
+  let next = "system";
+
+  if (current === "system") next = "dark";
+  else if (current === "dark") next = "light";
+  else if (current === "light") next = "system";
+
+  localStorage.setItem(THEME_KEY, next);
+  applyTheme(next);
 }
+
+window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => {
+  const mode = getSavedThemeMode();
+
+  if (mode === "system") {
+    applyTheme("system");
+  }
+});
 
 function loadRawData(key) {
   try {
@@ -2646,7 +2701,7 @@ if (menuBtn) {
 
 if (themeToggleBtn) {
   themeToggleBtn.addEventListener("click", () => {
-    toggleTheme();
+    cycleThemeMode();
   });
 }
 
