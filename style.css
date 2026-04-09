@@ -92,7 +92,7 @@ main{
   display:block;
   min-height:0;
   margin-top:0;
-  padding-top:210px;
+  padding-top:110px;
   padding-bottom:120px;
 }
 
@@ -139,8 +139,8 @@ main{
   max-width:none;
   transform:none;
   background:var(--bg);
-  padding:10px 12px 8px;
-  box-shadow:0 8px 24px rgba(0,0,0,0.06);
+  padding:4px 8px 2px;
+  box-shadow:0 4px 12px rgba(0,0,0,0.08);
 }
 
 .topbar-main-row{
@@ -149,7 +149,7 @@ main{
   display:grid;
   grid-template-columns:40px minmax(0, 1fr) 68px;
   align-items:center;
-  gap:10px;
+  gap:6px;
 }
 
 .topbar .stats-bar{
@@ -181,7 +181,7 @@ main{
   background:var(--card);
   color:var(--text);
   box-shadow:var(--shadow);
-  font-size:22px;
+  font-size:20px;
   font-weight:900;
 }
 
@@ -1531,9 +1531,9 @@ main{
 ========================= */
 
 .theme-switch{
-  width:48px;
-  height:48px;
-  min-height:48px;
+  width:42px;
+  height:42px;
+  min-height:42px;
   display:flex;
   align-items:center;
   justify-content:center;
@@ -1559,7 +1559,7 @@ main{
   justify-content:center;
   width:100%;
   height:100%;
-  font-size:24px;
+  font-size:20px;
   line-height:1;
   text-align:center;
 }
@@ -1599,12 +1599,12 @@ body.light-theme .theme-switch{
 .mode-switch{
   position:relative;
   display:flex;
-  gap:6px;
-  width:200px;
+  gap:4px;
+  width:180px;
   min-width:0;
-  margin:10px auto 6px;
-  padding:6px;
-  border-radius:18px;
+  margin:4px auto 2px;
+  padding:4px;
+  border-radius:16px;
   background:rgba(255,255,255,0.06);
   border:1px solid rgba(255,255,255,0.10);
   box-shadow:
@@ -1637,9 +1637,9 @@ body.light-theme .theme-switch{
 .mode-btn{
   flex:1;
   border:none;
-  border-radius:14px;
-  padding:7px 0;
-  font-size:13px;
+  border-radius:12px;
+  padding:5px 0;
+  font-size:12px;
   font-weight:800;
   letter-spacing:0.02em;
   background:transparent;
@@ -1652,9 +1652,9 @@ body.light-theme .theme-switch{
 }
 
 .topbar-mode-switch .mode-btn{
-  min-height:40px;
-  padding:8px 0;
-  font-size:13px;
+  min-height:34px;
+  padding:6px 0;
+  font-size:12px;
 }
 
 .mode-btn.active{
