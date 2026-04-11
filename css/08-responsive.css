@@ -1,0 +1,100 @@
+/* =========================================================
+   08-responsive.css — Media Queries
+========================================================= */
+
+@media (max-width: 540px) {
+  .summary-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .app-title {
+    font-size: 26px;
+  }
+
+  .balance {
+    font-size: 18px;
+  }
+
+  .person-head {
+    padding: 12px 14px;
+  }
+
+  .stage-head {
+    padding: 10px 12px 8px;
+  }
+
+  .entry-top {
+    align-items: flex-start;
+  }
+
+  .sheet-item {
+    padding: 12px;
+    border-radius: 16px;
+  }
+
+  .sheet-item-title {
+    font-size: 15px;
+  }
+
+  .sheet-item-sub {
+    font-size: 12px;
+  }
+
+  .form-actions {
+    gap: 6px;
+  }
+
+  .form-actions .secondary-btn,
+  .form-actions .danger-btn,
+  .form-actions .primary-btn {
+    min-height: 42px;
+    padding: 9px 10px;
+    font-size: 13px;
+  }
+
+  .edit-person-row strong {
+    font-size: 17px;
+  }
+
+  .topbar-main-row {
+    grid-template-columns: 40px minmax(0, 1fr) 68px;
+    gap: 8px;
+  }
+
+  .compact-search {
+    padding: 8px 10px;
+  }
+
+  .compact-search input {
+    font-size: 14px;
+  }
+
+  .stats-summary-left {
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .stats-box {
+    min-height: 68px;
+    padding: 10px 12px;
+  }
+
+  .stats-value {
+    font-size: 16px;
+  }
+
+  .closed-stage-head {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .closed-stage-right {
+    justify-content: flex-start;
+    text-align: left;
+  }
+
+  .overview-summary-label,
+  .overview-summary-value {
+    font-size: 14px;
+  }
+}

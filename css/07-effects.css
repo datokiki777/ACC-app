@@ -1,0 +1,87 @@
+/* =========================================================
+   07-effects.css — Animations, Transitions, Swipe, Press Effects
+========================================================= */
+
+/* Swipe Actions */
+.swipe-card {
+  position: relative;
+  overflow: hidden;
+  touch-action: pan-y;
+  -webkit-touch-callout: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.swipe-content {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  min-width: 100%;
+  display: block;
+  background: inherit;
+  border-radius: inherit;
+  will-change: transform;
+  transition: transform 0.18s ease;
+}
+
+.swipe-delete-action {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 96px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1;
+  border: none;
+  outline: none;
+  padding: 0;
+  opacity: 0;
+  background: linear-gradient(180deg, #ff7b7b, #ea4f4f);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 900;
+  letter-spacing: 0.02em;
+  transition: opacity 0.14s ease;
+}
+
+.swipe-delete-action span {
+  pointer-events: none;
+}
+
+.swipe-card:not(.swipe-open) .swipe-delete-action {
+  pointer-events: none;
+  opacity: 0;
+}
+
+.swipe-card.swipe-open .swipe-delete-action {
+  pointer-events: auto;
+  opacity: 1;
+}
+
+/* Animations */
+@keyframes fabGlow {
+  0% {
+    box-shadow: 0 18px 34px rgba(31, 111, 235, 0.34), 0 0 0 rgba(45, 124, 255, 0);
+  }
+  50% {
+    box-shadow: 0 20px 40px rgba(31, 111, 235, 0.42), 0 0 26px rgba(45, 124, 255, 0.22);
+  }
+  100% {
+    box-shadow: 0 18px 34px rgba(31, 111, 235, 0.34), 0 0 0 rgba(45, 124, 255, 0);
+  }
+}
+
+/* Install prompt helper */
+.install-open .fab {
+  opacity: 0;
+  pointer-events: none;
+  transform: scale(0.9);
+}
+
+body.install-open .fab {
+  opacity: 0 !important;
+  pointer-events: none !important;
+  transform: scale(0.82) !important;
+}

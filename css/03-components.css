@@ -1,0 +1,212 @@
+/* =========================================================
+   03-components.css — Cards, Buttons, Pills, Empty States, UI Blocks
+========================================================= */
+
+.person-card,
+.stage-card,
+.entry-card {
+  background: var(--card);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  border: 1px solid var(--line);
+}
+
+.sheet-item {
+  width: 100%;
+  display: block;
+  margin-bottom: 8px;
+  border: none;
+  border-radius: 18px;
+  padding: 14px;
+  text-align: left;
+  background: var(--gray-soft);
+  color: var(--text);
+}
+
+.sheet-item-title {
+  display: block;
+  font-size: 16px;
+  font-weight: 900;
+  line-height: 1.2;
+}
+
+.sheet-item-sub {
+  display: block;
+  margin-top: 5px;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--muted);
+}
+
+.section-label {
+  margin: 16px 0 10px;
+  font-size: 13px;
+  font-weight: 600;
+  opacity: 0.7;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.inline-note {
+  margin: 10px 0 12px;
+  padding: 14px 18px;
+  border-radius: 18px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 4px 10px rgba(0, 0, 0, 0.05);
+  font-size: 18px;
+  font-weight: 800;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+  color: var(--text);
+}
+
+.search-mark {
+  background: rgba(31, 111, 235, 0.14);
+  color: inherit;
+  padding: 0 4px;
+  border-radius: 8px;
+}
+
+/* Buttons */
+.primary-btn,
+.secondary-btn,
+.danger-btn {
+  border: none;
+  border-radius: 14px;
+  padding: 12px 14px;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.primary-btn {
+  background: var(--primary);
+  color: #fff;
+}
+
+.secondary-btn {
+  background: #e4ebf3;
+  color: #253754;
+}
+
+.danger-btn {
+  background: #ffe5e5;
+  color: #c0392b;
+}
+
+.secondary-btn:active {
+  transform: scale(0.97);
+}
+
+.full-btn {
+  width: 100%;
+}
+
+.form-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.form-actions .primary-btn,
+.form-actions .secondary-btn,
+.form-actions .danger-btn,
+.confirm-actions .secondary-btn,
+.confirm-actions .danger-btn {
+  flex: 1;
+  min-height: 44px;
+  padding: 10px 12px;
+  font-size: 14px;
+  border-radius: 14px;
+}
+
+.person-actions,
+.stage-actions,
+.entry-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.person-actions {
+  padding-bottom: 0;
+}
+
+.person-actions .primary-btn,
+.person-actions .secondary-btn,
+.person-actions .danger-btn,
+.stage-actions .primary-btn,
+.stage-actions .secondary-btn,
+.stage-actions .danger-btn,
+.entry-actions .secondary-btn,
+.entry-actions .danger-btn {
+  flex: 1 1 auto;
+}
+
+.edit-person-block .secondary-btn,
+.stage-open .secondary-btn,
+.stage-closed .secondary-btn {
+  min-height: 44px;
+  font-weight: 800;
+}
+
+.quick-actions-row {
+  display: grid;
+  gap: 10px;
+  margin-top: 6px;
+}
+
+.quick-actions-row-2 {
+  grid-template-columns: 1fr 1fr;
+}
+
+.quick-actions-row-3 {
+  grid-template-columns: 1fr 1fr 1fr;
+}
+
+.quick-actions-row .primary-btn,
+.quick-actions-row .secondary-btn {
+  min-height: 48px;
+  border-radius: 14px;
+  font-weight: 800;
+  font-size: 15px;
+}
+
+/* Empty States */
+.empty-state {
+  background: var(--card);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 28px 18px;
+  text-align: center;
+  color: var(--muted);
+}
+
+.empty-state.mini-empty {
+  border-radius: 16px;
+}
+
+.empty-icon {
+  font-size: 44px;
+  margin-bottom: 8px;
+}
+
+.empty-title {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--text);
+  margin-bottom: 6px;
+}
+
+.empty-text {
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.mini-empty {
+  padding: 12px 14px;
+  font-size: 14px;
+}

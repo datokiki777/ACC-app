@@ -1,0 +1,85 @@
+/* =========================================================
+   02-layout.css — Shell, Topbar, Grids, Spacing
+========================================================= */
+
+.app {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 16px 14px 170px;
+  position: relative;
+}
+
+.people-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-bottom: 8px;
+}
+
+.topbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 30;
+  width: 100%;
+  max-width: none;
+  transform: none;
+  background: var(--bg);
+  padding: calc(env(safe-area-inset-top, 0px) + 8px) 12px 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
+}
+
+.topbar-main-row {
+  max-width: 732px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) 68px;
+  align-items: center;
+  gap: 6px;
+}
+
+.topbar .stats-bar {
+  max-width: 732px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.app-title {
+  margin: 0;
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.icon-btn {
+  width: 40px;
+  height: 40px;
+  border: none;
+  border-radius: 13px;
+  background: var(--card);
+  color: var(--text);
+  box-shadow: var(--shadow);
+  font-size: 20px;
+  font-weight: 900;
+}
+
+#menuBtn {
+  font-size: 30px;
+  font-weight: 900;
+  letter-spacing: 2px;
+}
+
+#menuBtn.transfer-btn {
+  font-size: 18px;
+  font-weight: 900;
+  letter-spacing: 0.02em;
+}

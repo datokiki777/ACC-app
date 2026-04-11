@@ -1,0 +1,145 @@
+/* =========================================================
+   04-modals.css — Overlay, Sheet, Confirm Dialogs
+========================================================= */
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: none;
+  align-items: flex-end;
+  justify-content: center;
+  background: rgba(15, 23, 42, 0.45);
+  padding: 12px;
+}
+
+.overlay.show {
+  display: flex;
+}
+
+.sheet {
+  position: relative;
+  width: min(100%, 760px);
+  max-height: 92vh;
+  overflow: auto;
+  background: var(--card);
+  border-radius: 24px 24px 18px 18px;
+  box-shadow: 0 20px 48px rgba(15, 23, 42, 0.24);
+}
+
+.modal-sheet,
+.confirm-sheet {
+  align-self: center;
+  border-radius: 22px;
+}
+
+.sheet-header {
+  padding: 16px 14px 10px;
+}
+
+.sheet-header h2 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 900;
+  line-height: 1.2;
+}
+
+.sheet-body {
+  padding: 0 14px 14px;
+}
+
+.sheet-footer {
+  padding: 0 16px 16px;
+}
+
+.confirm-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.confirm-text {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+.sheet-list,
+.stage-list,
+.entry-list,
+.closed-stage-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.danger-sheet-item {
+  background: #f3dfe2;
+  color: #8f2f3d;
+}
+
+.danger-sheet-item .sheet-item-title {
+  color: #8f2f3d;
+}
+
+.danger-sheet-item .sheet-item-sub {
+  color: #a14b58;
+}
+
+/* App prompts (install/update) overlays */
+.app-prompt-title {
+  margin: 0 0 10px;
+  font-size: 20px;
+  font-weight: 900;
+  line-height: 1.2;
+}
+
+.app-prompt-text {
+  margin: 0 0 16px;
+  font-size: 15px;
+  line-height: 1.45;
+  color: var(--muted);
+}
+
+.app-prompt-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.app-prompt-actions-2 > button {
+  flex: 1;
+}
+
+.app-prompt-export-btn {
+  width: 100%;
+  margin-bottom: 12px;
+}
+
+.app-prompt-sheet {
+  width: min(100%, 760px);
+  max-width: 100%;
+  overflow: hidden;
+  padding: 20px 22px 22px;
+}
+
+.app-prompt-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  max-width: 100%;
+  margin: 0 0 12px 0;
+  padding: 8px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: 0.02em;
+  background: rgba(76, 141, 255, 0.12);
+  color: var(--primary);
+  border: 1px solid rgba(76, 141, 255, 0.18);
+  white-space: nowrap;
+}
+
+.overlay.app-prompt-overlay {
+  padding: 16px;
+}

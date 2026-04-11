@@ -1,0 +1,79 @@
+/* =========================================================
+   01-base.css — Reset, Root, Typography, Base Elements
+========================================================= */
+
+:root {
+  --bg: #13294d;
+  --card: #1b3158;
+  --text: #eef4ff;
+  --muted: #a7b6cf;
+  --line: #466087;
+  --primary: #4c8dff;
+  --primary-soft: #28446e;
+  --green: #35c26b;
+  --green-soft: #234b35;
+  --red: #ff6b6b;
+  --red-soft: #53303a;
+  --gray: #9aaac4;
+  --gray-soft: #274066;
+  --shadow: 0 12px 30px rgba(0, 0, 0, 0.22);
+  --radius: 18px;
+}
+
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+  overflow-x: hidden;
+}
+
+body {
+  min-height: 100vh;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+  transition: transform 0.16s ease, opacity 0.16s ease, box-shadow 0.2s ease;
+}
+
+button:active {
+  transform: scale(0.97);
+}
+
+main {
+  display: block;
+  min-height: 0;
+  margin-top: 0;
+  padding-top: 110px;
+  padding-bottom: 120px;
+}
+
+.green {
+  color: var(--green);
+}
+.red {
+  color: var(--red);
+}
+.gray {
+  color: var(--gray);
+}
+
+.balance,
+.stats-value {
+  font-variant-numeric: tabular-nums;
+}
