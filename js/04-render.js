@@ -50,6 +50,7 @@ function renderEntry(personId, stageId, stage, entry, source = "main") {
 
 function renderPerson(person) {
   const openStage = findOpenStage(person.id);
+  const openStages = (person.stages || []).filter(s => !s.closed);
   const closedStages = (person.stages || []).filter(stage => stage.closed);
   const openBalance = personOpenBalance(person);
   const entries = openStage ? (openStage.entries || []) : [];
@@ -63,7 +64,7 @@ function renderPerson(person) {
             <div class="person-main">
               <div class="person-name">${highlightMatch(person.name, state.search)}</div>
               <div class="subtext">
-                ${openStage ? escapeHtml(openStage.name) : "No open stage"} • ${currencyLabel(currentCurrency)} • ${closedStages.length} closed
+                ${openStage ? escapeHtml(openStage.name) : "No open stage"} • ${currencyLabel(currentCurrency)} • ${openStages.length} open • ${closedStages.length} closed
               </div>
             </div>
             <div class="balance ${balanceClass(openBalance)}" data-animated-balance data-value="${openBalance}" data-prev-value="${state.personBalancePrev[person.id] ?? 0}" data-currency="${currentCurrency}">
@@ -95,6 +96,7 @@ function renderStatsPeopleList(filteredPeople) {
   if (!filteredPeople.length) return `<div class="empty-state mini-empty">No people yet</div>`;
   return filteredPeople.map(person => {
     const openStage = findOpenStage(person.id);
+    const openCount = (person.stages || []).filter(stage => !stage.closed).length;
     const closedCount = (person.stages || []).filter(stage => stage.closed).length;
     const currentCurrency = openStage ? stageCurrency(openStage) : "EUR";
     return `
@@ -103,7 +105,7 @@ function renderStatsPeopleList(filteredPeople) {
           <span class="sheet-item-title">${escapeHtml(person.name)}</span>
           <span class="stats-person-balance ${balanceClass(personOpenBalance(person))}">${formatMoney(personOpenBalance(person), currentCurrency)}</span>
         </div>
-        <span class="sheet-item-sub">${openStage ? escapeHtml(openStage.name) : "No open stage"} • ${closedCount} closed</span>
+        <span class="sheet-item-sub">${openStage ? escapeHtml(openStage.name) : "No open stage"} • ${openCount} open • ${closedCount} closed</span>
       </div>
     `;
   }).join("");
@@ -141,7 +143,7 @@ function renderStats() {
     }
     overviewPanel.innerHTML = `
       <div class="stats-overview-panel-fixed">
-        ${state.mode === "personal" && balanceSummary.breakdown.length > 1 ? `<div class="stats-breakdown-wrap">${renderCurrencyBreakdown(balanceSummary.breakdown, { icon: "🟢" })}</div>` : ""}
+        ${balanceSummary.breakdown.length > 1 ? `<div class="stats-breakdown-wrap">${renderCurrencyBreakdown(balanceSummary.breakdown, { icon: "🟢" })}</div>` : ""}
         ${closedBreakdown.length ? `<div class="stats-breakdown-wrap stats-breakdown-wrap-closed">${renderCurrencyBreakdown(closedBreakdown, { icon: "🔒" })}</div>` : ""}
         <div class="stats-search-wrap"><div class="search-box overview-search-box"><span class="search-icon">🔍</span><input type="text" id="overviewSearchInput" placeholder="Search by name..." autocomplete="off" value="${escapeHtml(state.search)}" /></div></div>
       </div>

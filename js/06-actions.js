@@ -132,66 +132,158 @@ function deleteByPayload(payload) {
 function setupActionCard(card) {
   if (card.dataset.actionsBound === "1") return;
   card.dataset.actionsBound = "1";
+
   const payload = getActionPayloadFromCard(card);
   if (!payload.type) return;
+
   const swipeArea = card.querySelector(".swipe-content") || card;
+
   setupLongPress(swipeArea, () => {
-    let onToggleStage = null, onExportPerson = null;
+    let onToggleStage = null;
+    let onExportPerson = null;
+    let onRenameStage = null;
+
     if (payload.type === "stage") {
       const stage = findStage(payload.personId, payload.stageId);
+
       if (stage) {
         const isClosed = !!stage.closed;
+
         const toggleFn = async () => {
           if (!isClosed) {
-            confirmDelete("Close this stage? You can reopen it later.", async () => {
-              stage.closed = true; await saveData(); render();
-              if (payload.source === "overview") openOverviewPersonDetail(payload.personId);
-            }, false, "Close");
+            confirmDelete(
+              "Close this stage? You can reopen it later.",
+              async () => {
+                stage.closed = true;
+                await saveData();
+                render();
+
+                if (payload.source === "overview") {
+                  openOverviewPersonDetail(payload.personId);
+                }
+              },
+              false,
+              "Close"
+            );
           } else {
             const existingOpen = findOpenStage(payload.personId);
+
             if (existingOpen) {
-              confirmDelete("This person already has an open stage. Close it first.", () => openOverviewPersonDetail(payload.personId), false, "OK");
+              confirmDelete(
+                "This person already has an open stage. Close it first.",
+                () => openOverviewPersonDetail(payload.personId),
+                false,
+                "OK"
+              );
               return;
             }
-            stage.closed = false; await saveData(); render();
-            if (payload.source === "overview") openOverviewPersonDetail(payload.personId);
+
+            stage.closed = false;
+            await saveData();
+            render();
+
+            if (payload.source === "overview") {
+              openOverviewPersonDetail(payload.personId);
+            }
           }
         };
+
         toggleFn._label = isClosed ? "🔓 Reopen Stage" : "🔒 Close Stage";
         onToggleStage = toggleFn;
+
+        onRenameStage = () => {
+          openStageForm(
+            payload.personId,
+            payload.stageId,
+            false,
+            false,
+            payload.source === "overview" ? payload.personId : null
+          );
+        };
       }
     }
-    if (payload.type === "person") onExportPerson = () => exportPersonPdf(payload.personId);
+
+    if (payload.type === "person") {
+      onExportPerson = () => exportPersonPdf(payload.personId);
+    }
+
     const allowEdit = !(payload.type === "stage" && payload.source === "overview");
+
     openQuickActions({
       title: payload.type === "person" ? "Person" : payload.type === "stage" ? "Stage" : "Entry",
       onEdit: allowEdit ? () => openEditByPayload(payload) : null,
-      onToggleStage, onExportPerson,
-      onCancel: () => { if (payload.source === "overview") openOverviewPersonDetail(payload.personId); }
+      onRenameStage,
+      onToggleStage,
+      onExportPerson,
+      onCancel: () => {
+        if (payload.source === "overview") openOverviewPersonDetail(payload.personId);
+      }
     });
   });
+
   setupSwipeDelete(card, () => deleteByPayload(payload));
 }
 
-function openQuickActions({ title = "", onEdit, onToggleStage, onExportPerson, onCancel }) {
+function openQuickActions({ title = "", onEdit, onRenameStage, onToggleStage, onExportPerson, onCancel }) {
   const hasEdit = typeof onEdit === "function";
-  const hasStageToggle = typeof onToggleStage === "function";
-  const hasExport = typeof onExportPerson === "function";
-  let actionsHtml = "";
+const hasRenameStage = typeof onRenameStage === "function";
+const hasStageToggle = typeof onToggleStage === "function";
+const hasExport = typeof onExportPerson === "function";
+let actionsHtml = "";
   if (!hasEdit && hasStageToggle) {
-    actionsHtml = `<div class="quick-actions-row quick-actions-row-2"><button type="button" class="secondary-btn" id="quickCancelBtn">Cancel</button><button type="button" class="primary-btn" id="quickToggleStageBtn"></button></div>`;
-  } else {
-    actionsHtml = `${hasStageToggle ? `<div style="margin-bottom:10px;"><button type="button" class="secondary-btn full-btn" id="quickToggleStageBtn" style="min-height:48px;border-radius:14px;font-weight:800;font-size:15px;"></button></div>` : ""}${hasExport ? `<div style="margin-bottom:10px;"><button type="button" class="secondary-btn full-btn" id="quickExportPersonBtn" style="min-height:48px;border-radius:14px;font-weight:800;font-size:15px;">📄 Export PDF</button></div>` : ""}<div class="quick-actions-row ${hasEdit ? "quick-actions-row-2" : ""}" style="${hasEdit ? "" : "display:grid;grid-template-columns:1fr;"}"><button type="button" class="secondary-btn ${hasEdit ? "" : "full-btn"}" id="quickCancelBtn">Cancel</button>${hasEdit ? `<button type="button" class="primary-btn" id="quickEditBtn">Edit</button>` : ""}</div>`;
-  }
+  actionsHtml = `
+    ${hasRenameStage ? `
+      <div style="margin-bottom:10px;">
+        <button type="button" class="secondary-btn full-btn" id="quickRenameStageBtn" style="min-height:40px;border-radius:12px;font-weight:800;font-size:14px;">
+          Rename Stage
+        </button>
+      </div>
+    ` : ""}
+    <div class="quick-actions-row quick-actions-row-2">
+      <button type="button" class="secondary-btn" id="quickCancelBtn">Cancel</button>
+      <button type="button" class="primary-btn" id="quickToggleStageBtn"></button>
+    </div>
+  `;
+} else {
+  actionsHtml = `
+    ${hasRenameStage ? `
+      <div style="margin-bottom:10px;">
+        <button type="button" class="secondary-btn full-btn" id="quickRenameStageBtn" style="min-height:40px;border-radius:12px;font-weight:800;font-size:14px;">
+          Rename Stage
+        </button>
+      </div>
+    ` : ""}
+    ${hasStageToggle ? `
+      <div style="margin-bottom:10px;">
+        <button type="button" class="secondary-btn full-btn" id="quickToggleStageBtn" style="min-height:48px;border-radius:14px;font-weight:800;font-size:15px;"></button>
+      </div>
+    ` : ""}
+    ${hasExport ? `
+      <div style="margin-bottom:10px;">
+        <button type="button" class="secondary-btn full-btn" id="quickExportPersonBtn" style="min-height:48px;border-radius:14px;font-weight:800;font-size:15px;">📄 Export PDF</button>
+      </div>
+    ` : ""}
+    <div class="quick-actions-row ${hasEdit ? "quick-actions-row-2" : ""}" style="${hasEdit ? "" : "display:grid;grid-template-columns:1fr;"}">
+      <button type="button" class="secondary-btn ${hasEdit ? "" : "full-btn"}" id="quickCancelBtn">Cancel</button>
+      ${hasEdit ? `<button type="button" class="primary-btn" id="quickEditBtn">Edit</button>` : ""}
+    </div>
+  `;
+}
   openModal(title || "Actions", actionsHtml, () => {
     const cancelBtn = document.getElementById("quickCancelBtn");
-    const editBtn = document.getElementById("quickEditBtn");
-    const toggleBtn = document.getElementById("quickToggleStageBtn");
-    const exportBtn = document.getElementById("quickExportPersonBtn");
-    if (cancelBtn) cancelBtn.onclick = () => { closeModal(); if (typeof onCancel === "function") onCancel(); };
-    if (editBtn && hasEdit) editBtn.onclick = () => { closeModal(); onEdit(); };
-    if (toggleBtn && hasStageToggle) { toggleBtn.textContent = onToggleStage._label || "Toggle Stage"; toggleBtn.onclick = () => { closeModal(); onToggleStage(); }; }
-    if (exportBtn && hasExport) exportBtn.onclick = () => { closeModal(); onExportPerson(); };
+const editBtn = document.getElementById("quickEditBtn");
+const renameBtn = document.getElementById("quickRenameStageBtn");
+const toggleBtn = document.getElementById("quickToggleStageBtn");
+const exportBtn = document.getElementById("quickExportPersonBtn");
+
+if (cancelBtn) cancelBtn.onclick = () => { closeModal(); if (typeof onCancel === "function") onCancel(); };
+if (editBtn && hasEdit) editBtn.onclick = () => { closeModal(); onEdit(); };
+if (renameBtn && hasRenameStage) renameBtn.onclick = () => { closeModal(); onRenameStage(); };
+if (toggleBtn && hasStageToggle) {
+  toggleBtn.textContent = onToggleStage._label || "Toggle Stage";
+  toggleBtn.onclick = () => { closeModal(); onToggleStage(); };
+}
+if (exportBtn && hasExport) exportBtn.onclick = () => { closeModal(); onExportPerson(); };
   });
 }
 
@@ -278,7 +370,10 @@ function openOverviewPersonDetail(personId) {
       <div class="overview-summary-row"><span class="overview-summary-label overview-summary-label-with-badge"><span>Closed Stages</span><span class="mini-count-badge">${closedSummary.count}</span></span><span class="overview-summary-value"><span class="${balanceClass(closedSummary.balance)}">${formatMoney(closedSummary.balance, closedSummary.currency)}</span></span></div>
     </div>
     ${openStage ? `<div class="open-stage-mini-card swipe-card" data-action-type="stage" data-person-id="${person.id}" data-stage-id="${openStage.id}" data-source="overview"><div class="swipe-content"><div class="open-stage-mini-inner" data-toggle-open-entries="${person.id}"><div class="open-stage-mini-left"><div class="stage-title-row"><span class="open-stage-mini-title">${escapeHtml(openStage.name)}</span></div></div><div class="open-stage-mini-right"><div class="open-stage-mini-balance ${balanceClass(stageBalance(openStage))}">${formatMoney(stageBalance(openStage), stageCurrency(openStage))}</div><span class="closed-stage-chev ${openEntriesExpanded ? "open" : ""}">›</span></div></div></div></div>${openEntriesExpanded ? `<div class="entry-list" style="margin-top:8px;">${(openStage.entries || []).length ? openStage.entries.map(entry => renderEntry(person.id, openStage.id, openStage, entry, "overview")).join("") : `<div class="empty-state mini-empty">No entries</div>`}</div>` : ""}` : ""}
-    ${closedStages.length ? `<div class="section-label overview-closed-label">Closed Stages</div><div class="sheet-list">${closedStages.map(stage => { const isExpanded = !!state.overviewClosedExpanded[stage.id]; const entries = stage.entries || []; const dates = entries.map(e => e.date).filter(Boolean).slice().sort(); const fromDate = dates.length ? formatDate(dates[0]) : ""; const toDate = dates.length ? formatDate(dates[dates.length - 1]) : ""; const dateRange = fromDate && toDate ? `${fromDate} → ${toDate}` : ""; return `<div class="sheet-item closed-stage-item swipe-card" data-action-type="stage" data-person-id="${person.id}" data-stage-id="${stage.id}" data-source="overview"><div class="swipe-content"><div class="closed-stage-head" data-toggle-closed-stage="${stage.id}"><div class="closed-stage-col closed-stage-left"><div class="stage-title-row"><span class="sheet-item-title">${escapeHtml(stage.name)}</span></div></div><div class="closed-stage-col closed-stage-right"><span class="closed-stage-date-range">${escapeHtml(dateRange)}</span><span class="closed-stage-chev ${isExpanded ? "open" : ""}">›</span></div></div>${isExpanded ? `<div class="closed-stage-body"><div class="closed-stage-summary-card"><span class="closed-stage-summary-label">Entry ${entries.length}</span><span class="closed-stage-summary-total ${balanceClass(stageBalance(stage))}">${formatMoney(stageBalance(stage), stageCurrency(stage))}</span></div>${entries.length ? entries.map(entry => renderEntry(person.id, stage.id, stage, entry, "overview")).join("") : `<div class="empty-state mini-empty">No entries</div>`}</div>` : ""}</div></div>`; }).join("")}</div>` : ""}`, () => {
+    ${closedStages.length ? `<div class="section-label overview-closed-label">Closed Stages</div><div class="sheet-list">${closedStages.map((stage, index) => { const isExpanded = !!state.overviewClosedExpanded[stage.id]; const entries = stage.entries || []; const dates = entries.map(e => e.date).filter(Boolean).slice().sort(); const fromDate = dates.length ? formatDate(dates[0]) : ""; const toDate = dates.length ? formatDate(dates[dates.length - 1]) : ""; const dateRange = fromDate && toDate ? `${fromDate} → ${toDate}` : ""; 
+    const accentClasses = ["accent-blue", "accent-red", "accent-orange", "accent-cyan", "accent-pink"];
+    const accent = accentClasses[index % accentClasses.length];
+    return `<div class="sheet-item closed-stage-item ${accent} swipe-card" data-action-type="stage" data-person-id="${person.id}" data-stage-id="${stage.id}" data-source="overview"><div class="swipe-content"><div class="closed-stage-head" data-toggle-closed-stage="${stage.id}"><div class="closed-stage-col closed-stage-left"><div class="stage-title-row"><span class="sheet-item-title">${escapeHtml(stage.name)}</span></div></div><div class="closed-stage-col closed-stage-right"><span class="closed-stage-date-range">${escapeHtml(dateRange)}</span><span class="closed-stage-chev ${isExpanded ? "open" : ""}">›</span></div></div>${isExpanded ? `<div class="closed-stage-body"><div class="closed-stage-summary-card"><span class="closed-stage-summary-label">Entry ${entries.length}</span><span class="closed-stage-summary-total ${balanceClass(stageBalance(stage))}">${formatMoney(stageBalance(stage), stageCurrency(stage))}</span></div>${entries.length ? entries.map(entry => renderEntry(person.id, stage.id, stage, entry, "overview")).join("") : `<div class="empty-state mini-empty">No entries</div>`}</div>` : ""}</div></div>`; }).join("")}</div>` : ""}`, () => {
     document.querySelectorAll("[data-toggle-open-entries]").forEach(btn => { btn.onclick = e => { if (state.longPressTriggered || e.target.closest(".swipe-delete-action")) return; state.overviewOpenExpanded[person.id] = !state.overviewOpenExpanded[person.id]; openOverviewPersonDetail(personId); }; });
     document.querySelectorAll("[data-toggle-closed-stage]").forEach(btn => { btn.onclick = () => { if (state.longPressTriggered) return; const stageId = btn.dataset.toggleClosedStage; state.overviewClosedExpanded[stageId] = !state.overviewClosedExpanded[stageId]; openOverviewPersonDetail(personId); }; });
     document.querySelectorAll(".swipe-card").forEach(card => setupActionCard(card));

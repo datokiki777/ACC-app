@@ -108,14 +108,13 @@ function openStageForm(personId, stageId = null, openEntryAfterSave = false, reo
         <div class="field">
           <label for="stageName">Stage Name</label>
           <input
-            id="stageName"
-            name="name"
-            type="text"
-            maxlength="100"
-            required
-            placeholder="Example: Main Job"
-            value="${stage ? escapeHtml(stage.name) : ""}"
-          >
+        id="stageName"
+        name="name"
+        type="text"
+        maxlength="100"
+        placeholder="Example: Main Job"
+        value="${stage ? escapeHtml(stage.name) : ""}"
+         >
         </div>
 
         <div class="field">
@@ -177,8 +176,6 @@ function openStageForm(personId, stageId = null, openEntryAfterSave = false, reo
         const currency = String(fd.get("currency") || "EUR");
         const oldCurrency = stage ? stageCurrency(stage) : "EUR";
         const hasEntries = !!(stage && (stage.entries || []).length);
-
-        if (!name) return;
 
         let savedStageId = stageId;
 
