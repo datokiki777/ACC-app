@@ -1,4 +1,5 @@
-// ==================== Event Binding and UI Listeners ====================
+// ==================== 07-events.js ====================
+// Event Binding and UI Listeners
 
 function bindStatsEvents() {
   const overviewSearchInput = document.getElementById("overviewSearchInput");
@@ -16,25 +17,47 @@ function bindStatsEvents() {
 
 function bindPremiumPressEffects() {
   document.querySelectorAll(".person-card").forEach(card => {
+    if (card.dataset.pressBound === "1") return;
+    card.dataset.pressBound = "1";
+
     const head = card.querySelector(".person-head");
     if (!head) return;
-    const pressStart = () => card.style.transform = "translateY(1px) scale(0.992)";
-    const pressEnd = () => card.style.transform = "";
+
+    const pressStart = () => {
+      card.style.transform = "translateY(1px) scale(0.992)";
+    };
+
+    const pressEnd = () => {
+      card.style.transform = "";
+    };
+
     head.addEventListener("touchstart", pressStart, { passive: true });
     head.addEventListener("touchend", pressEnd, { passive: true });
     head.addEventListener("touchcancel", pressEnd, { passive: true });
+
     head.addEventListener("mousedown", pressStart);
     head.addEventListener("mouseup", pressEnd);
     head.addEventListener("mouseleave", pressEnd);
   });
+
   const statsSummary = document.getElementById("statsSummaryToggle");
   const statsWrap = document.querySelector(".stats-wrap");
-  if (statsSummary && statsWrap) {
-    const pressStart = () => statsWrap.style.transform = "translateY(1px) scale(0.992)";
-    const pressEnd = () => statsWrap.style.transform = "";
+
+  if (statsSummary && statsWrap && statsSummary.dataset.pressBound !== "1") {
+    statsSummary.dataset.pressBound = "1";
+
+    const pressStart = () => {
+      statsWrap.style.transform = "translateY(1px) scale(0.992)";
+    };
+
+    const pressEnd = () => {
+      statsWrap.style.transform = "";
+    };
+
     statsSummary.addEventListener("touchstart", pressStart, { passive: true });
     statsSummary.addEventListener("touchend", pressEnd, { passive: true });
     statsSummary.addEventListener("touchcancel", pressEnd, { passive: true });
+
     statsSummary.addEventListener("mousedown", pressStart);
     statsSummary.addEventListener("mouseup", pressEnd);
     statsSummary.addEventListener("mouseleave", pressEnd);
@@ -155,17 +178,35 @@ confirmOk.addEventListener("click", () => { if (typeof state.confirmAction === "
 importFile.addEventListener("change", async e => {
   const file = e.target.files?.[0];
   if (!file) return;
+
   try {
     const text = await file.text();
     const data = JSON.parse(text);
-    const isFullBackup = data && typeof data === "object" && !Array.isArray(data) && Array.isArray(data.personal) && Array.isArray(data.work);
+    const isFullBackup =
+      data &&
+      typeof data === "object" &&
+      !Array.isArray(data) &&
+      Array.isArray(data.personal) &&
+      Array.isArray(data.work);
+
     if (!isFullBackup) throw new Error("Invalid backup file");
+
     await dbSet(PERSONAL_STORAGE_KEY, JSON.stringify(data.personal));
     await dbSet(WORK_STORAGE_KEY, JSON.stringify(data.work));
-    state.people = (await loadDataByMode(state.mode)).map(p => ({ ...p, expanded: false }));
-    render(); closeModal();
-  } catch (error) { alert("Could not read the backup file."); }
-  finally { importFile.value = ""; }
+
+    await loadDataByMode(state.mode);
+    state.people = (state.people || []).map(p => ({
+      ...p,
+      expanded: false
+    }));
+
+    render();
+    closeModal();
+  } catch (error) {
+    alert("Could not read the backup file.");
+  } finally {
+    importFile.value = "";
+  }
 });
 
 document.addEventListener("click", e => {
@@ -177,19 +218,43 @@ document.addEventListener("keydown", e => { if (e.key === "Escape") closeAllSwip
 
 function syncModeButtons() {
   if (!btnPersonal || !btnWork) return;
-  btnPersonal.classList.toggle("active", state.mode === "personal");
-  btnWork.classList.toggle("active", state.mode === "work");
+
+  const isPersonal = state.mode === "personal";
+  const isWork = state.mode === "work";
+
+  btnPersonal.classList.toggle("active", isPersonal);
+  btnWork.classList.toggle("active", isWork);
+
+  btnPersonal.setAttribute("aria-pressed", isPersonal ? "true" : "false");
+  btnWork.setAttribute("aria-pressed", isWork ? "true" : "false");
 }
 async function switchMode(nextMode) {
   if (nextMode !== "personal" && nextMode !== "work") return;
   if (state.mode === nextMode) return;
+
   state.mode = nextMode;
   await saveMode();
   state.search = "";
   state.statsExpanded = false;
-  state.people = (await loadDataByMode(state.mode)).map(p => ({ ...p, expanded: false }));
+
+  await loadDataByMode(state.mode);
+  state.people = (state.people || []).map(p => ({
+    ...p,
+    expanded: false
+  }));
+
   syncModeButtons();
   render();
 }
-if (btnPersonal) btnPersonal.addEventListener("click", () => switchMode("personal"));
-if (btnWork) btnWork.addEventListener("click", () => switchMode("work"));
+
+if (btnPersonal) {
+  btnPersonal.addEventListener("click", async () => {
+    await switchMode("personal");
+  });
+}
+
+if (btnWork) {
+  btnWork.addEventListener("click", async () => {
+    await switchMode("work");
+  });
+}

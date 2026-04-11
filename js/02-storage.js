@@ -1,4 +1,9 @@
-// ==================== IndexedDB + Storage Operations ====================
+// ==================== 02-storage.js ====================
+// IndexedDB + Storage Operations + Theme
+
+const DB_NAME = "acc-db";
+const DB_STORE = "kv";
+let _db = null;
 
 function openDB() {
   return new Promise((resolve, reject) => {
@@ -58,23 +63,27 @@ async function dbClear() {
   });
 }
 
-function currentStorageKey() {
-  return state.mode === "work" ? WORK_STORAGE_KEY : PERSONAL_STORAGE_KEY;
-}
-
+// ✅ CORRECT saveData (uses state.mode directly)
 async function saveData() {
-  await dbSet(currentStorageKey(), JSON.stringify(state.people));
+  const key = state.mode === "work" ? WORK_STORAGE_KEY : PERSONAL_STORAGE_KEY;
+  await dbSet(key, JSON.stringify(state.people));
 }
 
-async function loadDataByMode(mode) {
+// ✅ CORRECT loadDataByMode
+async function loadDataByMode(mode = state.mode) {
   try {
     const key = mode === "work" ? WORK_STORAGE_KEY : PERSONAL_STORAGE_KEY;
     const raw = await dbGet(key);
-    if (!raw) return [];
+
+    if (!raw) {
+      state.people = [];
+      return;
+    }
+
     const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : [];
+    state.people = Array.isArray(parsed) ? parsed : [];
   } catch (error) {
-    return [];
+    state.people = [];
   }
 }
 

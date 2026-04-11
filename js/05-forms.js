@@ -1,34 +1,86 @@
-// ==================== Form Modals (Add/Edit Person, Stage, Entry) ====================
+// ==================== 05-forms.js ====================
+// Form Modals (Add/Edit Person, Stage, Entry)
 
 function openPersonForm(personId = null, reopenEditPanel = false) {
   const person = personId ? findPerson(personId) : null;
+
   openModal(
-    person ? (state.mode === "work" ? "Edit Team" : "Edit Person") : (state.mode === "work" ? "Add Team" : "Add Person"),
-    `<form class="form" id="personForm"><div class="field"><label for="personName">Name</label><input id="personName" name="name" type="text" maxlength="80" required placeholder="Example: John" value="${person ? escapeHtml(person.name) : ""}"></div><div class="form-actions"><button type="button" class="secondary-btn" id="cancelModalBtn">Cancel</button><button type="submit" class="primary-btn">Save</button></div></form>`,
+    person
+      ? (state.mode === "work" ? "Edit Team" : "Edit Person")
+      : (state.mode === "work" ? "Add Team" : "Add Person"),
+    `
+      <form class="form" id="personForm">
+        <div class="field">
+          <label for="personName">Name</label>
+          <input
+            id="personName"
+            name="name"
+            type="text"
+            maxlength="80"
+            required
+            placeholder="Example: John"
+            value="${person ? escapeHtml(person.name) : ""}"
+          >
+        </div>
+
+        <div class="form-actions">
+          <button type="button" class="secondary-btn" id="cancelModalBtn">Cancel</button>
+          <button type="submit" class="primary-btn">Save</button>
+        </div>
+      </form>
+    `,
     () => {
       const form = document.getElementById("personForm");
       const cancelBtn = document.getElementById("cancelModalBtn");
-      cancelBtn.onclick = () => { if (reopenEditPanel) openEditStagesPanel(); else closeModal(); };
+
+      cancelBtn.onclick = () => {
+        if (reopenEditPanel) {
+          openEditStagesPanel();
+        } else {
+          closeModal();
+        }
+      };
+
       form.onsubmit = async e => {
         e.preventDefault();
+
         const fd = new FormData(form);
         const name = String(fd.get("name") || "").trim();
+
         if (!name) return;
+
         if (person) {
           person.name = name;
           await saveData();
           render();
-          if (reopenEditPanel) openEditStagesPanel(); else closeModal();
+
+          if (reopenEditPanel) {
+            openEditStagesPanel();
+          } else {
+            closeModal();
+          }
         } else {
           const newId = uid();
-          state.people.unshift({ id: newId, name, expanded: true, stages: [] });
+
+          state.people.unshift({
+            id: newId,
+            name,
+            expanded: false,
+            stages: []
+          });
+
           await saveData();
           closeModal();
+
           requestAnimationFrame(() => {
             render();
+
             requestAnimationFrame(() => {
               const card = document.querySelector(`[data-person-id="${newId}"]`);
-              if (card) card.scrollIntoView({ behavior: "smooth", block: "start" });
+              if (card) {
+                card.scrollIntoView({ behavior: "smooth", block: "start" });
+              }
+
               openStageForm(newId, null, true);
             });
           });
@@ -41,55 +93,153 @@ function openPersonForm(personId = null, reopenEditPanel = false) {
 function openStageForm(personId, stageId = null, openEntryAfterSave = false, reopenEditPanel = false, reopenOverviewPersonId = null) {
   const person = findPerson(personId);
   const stage = stageId ? findStage(personId, stageId) : null;
+
   if (!person) return;
+
   if (!stage && findOpenStage(personId)) {
     alert("This person already has an open stage.");
     return;
   }
+
   openModal(
     stage ? "Edit Stage" : "Add Stage",
-    `<form class="form" id="stageForm"><div class="field"><label for="stageName">Stage Name</label><input id="stageName" name="name" type="text" maxlength="100" required placeholder="Example: Main Job" value="${stage ? escapeHtml(stage.name) : ""}"></div><div class="field"><label for="stageCurrency">Currency</label><select id="stageCurrency" name="currency"><option value="EUR" ${(stage?.currency || "EUR") === "EUR" ? "selected" : ""}>€</option><option value="USD" ${(stage?.currency || "EUR") === "USD" ? "selected" : ""}>$</option><option value="GEL" ${(stage?.currency || "EUR") === "GEL" ? "selected" : ""}>₾</option><option value="CAD" ${(stage?.currency || "EUR") === "CAD" ? "selected" : ""}>CAD</option></select></div><div class="form-actions"><button type="button" class="secondary-btn" id="cancelModalBtn">Cancel</button><button type="submit" class="primary-btn">Save</button></div></form>`,
+    `
+      <form class="form" id="stageForm">
+        <div class="field">
+          <label for="stageName">Stage Name</label>
+          <input
+            id="stageName"
+            name="name"
+            type="text"
+            maxlength="100"
+            required
+            placeholder="Example: Main Job"
+            value="${stage ? escapeHtml(stage.name) : ""}"
+          >
+        </div>
+
+        <div class="field">
+          <label for="stageCurrency">Currency</label>
+          <input
+               type="hidden"
+               id="stageCurrency"
+               name="currency"
+               value="${stage?.currency || "EUR"}"
+         />
+
+       <div class="currency-inline-picker">
+          <button type="button" class="currency-choice-btn ${((stage?.currency || "EUR") === "EUR") ? "active" : ""}" data-stage-currency-choice="EUR">€</button>
+          <button type="button" class="currency-choice-btn ${((stage?.currency || "EUR") === "USD") ? "active" : ""}" data-stage-currency-choice="USD">$</button>
+          <button type="button" class="currency-choice-btn ${((stage?.currency || "EUR") === "GEL") ? "active" : ""}" data-stage-currency-choice="GEL">₾</button>
+          <button type="button" class="currency-choice-btn ${((stage?.currency || "EUR") === "CAD") ? "active" : ""}" data-stage-currency-choice="CAD">CAD</button>
+            </div>
+        </div>
+
+        <div class="form-actions">
+          <button type="button" class="secondary-btn" id="cancelModalBtn">Cancel</button>
+          <button type="submit" class="primary-btn">Save</button>
+        </div>
+      </form>
+    `,
     () => {
       const form = document.getElementById("stageForm");
+      const currencyInput = document.getElementById("stageCurrency");
+      const currencyChoiceButtons = document.querySelectorAll("[data-stage-currency-choice]");
+
+     currencyChoiceButtons.forEach(btn => {
+       btn.onclick = () => {
+     const nextCurrency = btn.dataset.stageCurrencyChoice || "EUR";
+     currencyInput.value = nextCurrency;
+
+    currencyChoiceButtons.forEach(b => {
+      b.classList.toggle("active", b.dataset.stageCurrencyChoice === nextCurrency);
+    });
+  };
+});
       const cancelBtn = document.getElementById("cancelModalBtn");
+
       cancelBtn.onclick = () => {
-        if (reopenOverviewPersonId) openOverviewPersonDetail(reopenOverviewPersonId);
-        else if (reopenEditPanel) openEditStagesPanel();
-        else closeModal();
+        if (reopenOverviewPersonId) {
+          openOverviewPersonDetail(reopenOverviewPersonId);
+        } else if (reopenEditPanel) {
+          openEditStagesPanel();
+        } else {
+          closeModal();
+        }
       };
+
       form.onsubmit = async e => {
         e.preventDefault();
+
         const fd = new FormData(form);
         const name = String(fd.get("name") || "").trim();
         const note = "";
         const currency = String(fd.get("currency") || "EUR");
         const oldCurrency = stage ? stageCurrency(stage) : "EUR";
         const hasEntries = !!(stage && (stage.entries || []).length);
+
         if (!name) return;
+
         let savedStageId = stageId;
+
         if (stage && hasEntries && currency !== oldCurrency) {
-          confirmDelete("This stage already has entries. Do you really want to change the currency?", async () => {
-            stage.name = name; stage.note = note; stage.currency = currency;
-            await saveData(); render();
-            if (openEntryAfterSave && savedStageId) openEntryForm(personId, savedStageId, null, reopenOverviewPersonId);
-            else if (reopenOverviewPersonId) openOverviewPersonDetail(reopenOverviewPersonId);
-            else if (reopenEditPanel) openEditStagesPanel();
-            else closeModal();
-          }, false, "Change");
+          confirmDelete(
+            "This stage already has entries. Do you really want to change the currency?",
+            async () => {
+              stage.name = name;
+              stage.note = note;
+              stage.currency = currency;
+
+              await saveData();
+              render();
+
+              if (openEntryAfterSave && savedStageId) {
+                openEntryForm(personId, savedStageId, null, reopenOverviewPersonId);
+              } else if (reopenOverviewPersonId) {
+                openOverviewPersonDetail(reopenOverviewPersonId);
+              } else if (reopenEditPanel) {
+                openEditStagesPanel();
+              } else {
+                closeModal();
+              }
+            },
+            false,
+            "Change"
+          );
           return;
         }
+
         if (stage) {
-          stage.name = name; stage.note = note; stage.currency = currency;
+          stage.name = name;
+          stage.note = note;
+          stage.currency = currency;
         } else {
-          person.expanded = true;
-          const newStage = { id: uid(), name, note, currency, createdAt: todayStr(), closed: false, expanded: true, entries: [] };
+          person.expanded = false;
+
+          const newStage = {
+            id: uid(),
+            name,
+            note,
+            currency,
+            createdAt: todayStr(),
+            closed: false,
+            expanded: false,
+            entries: []
+          };
+
           person.stages.unshift(newStage);
           savedStageId = newStage.id;
         }
+
         await saveData();
-        if (openEntryAfterSave && savedStageId) openEntryForm(personId, savedStageId);
-        else if (reopenEditPanel) openEditStagesPanel();
-        else closeModal();
+
+        if (openEntryAfterSave && savedStageId) {
+          openEntryForm(personId, savedStageId);
+        } else if (reopenEditPanel) {
+          openEditStagesPanel();
+        } else {
+          closeModal();
+        }
       };
     }
   );

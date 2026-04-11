@@ -1,4 +1,5 @@
-// ==================== Modal and Confirm Dialogs ====================
+// ==================== 08-modals.js ====================
+// Modal and Confirm Dialogs Engine
 
 let _suppressPopstate = false;
 

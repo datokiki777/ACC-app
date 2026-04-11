@@ -1,4 +1,5 @@
-// ==================== Rendering Logic ====================
+// ==================== 04-render.js ====================
+// Rendering Logic
 
 function animateValue(el, start, end, duration = 450, currency = "EUR") {
   const startTime = performance.now();

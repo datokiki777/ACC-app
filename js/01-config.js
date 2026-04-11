@@ -1,14 +1,11 @@
-// ==================== Constants, State, DOM Elements ====================
+// ==================== 01-config.js ====================
+// Constants, State, DOM Elements
 
 const PERSONAL_STORAGE_KEY = "accounts-personal-v1";
 const WORK_STORAGE_KEY = "accounts-work-v1";
 const MODE_STORAGE_KEY = "accounts-mode-v1";
 const THEME_KEY = "accounts-theme";
 const DEBUG_KEY = "acc_debug";
-
-const DB_NAME = "acc-db";
-const DB_STORE = "kv";
-let _db = null;
 
 // Global state
 const state = {
@@ -53,7 +50,6 @@ const confirmOk = document.getElementById("confirmOk");
 const btnPersonal = document.getElementById("modePersonal");
 const btnWork = document.getElementById("modeWork");
 
-// PWA elements
 const installPromptOverlay = document.getElementById("installPromptOverlay");
 const installPromptLaterBtn = document.getElementById("installPromptLaterBtn");
 const installPromptInstallBtn = document.getElementById("installPromptInstallBtn");

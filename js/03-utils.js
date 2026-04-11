@@ -1,4 +1,5 @@
-// ==================== Helper Functions ====================
+// ==================== 03-utils.js ====================
+// Helper Functions, Finders, Currency Helpers, Gesture Helpers
 
 function uid() {
   return Math.random().toString(36).slice(2, 10);
@@ -253,3 +254,9 @@ function getFilteredPeople() {
     .filter(person => (person.name || "").toLowerCase().includes(query))
     .sort((a, b) => personLastActivityTs(b) - personLastActivityTs(a));
 }
+
+// Finders (used across many modules)
+function findPerson(personId) { return state.people.find(p => p.id === personId) || null; }
+function findStage(personId, stageId) { const p = findPerson(personId); return p ? (p.stages || []).find(s => s.id === stageId) || null : null; }
+function findEntry(personId, stageId, entryId) { const s = findStage(personId, stageId); return s ? (s.entries || []).find(e => e.id === entryId) || null : null; }
+function findOpenStage(personId) { const p = findPerson(personId); return p ? (p.stages || []).find(s => !s.closed) || null : null; }

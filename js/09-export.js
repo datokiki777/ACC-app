@@ -1,4 +1,5 @@
-// ==================== PDF, JSON Export/Import, Menus ====================
+// ==================== 09-export.js ====================
+// PDF, JSON Export/Import, Transfer Menu
 
 function buildPdfHtml(people, title = "ACC Export") {
   const isLight = document.body.classList.contains("light-theme");
@@ -83,7 +84,6 @@ async function exportJsonBackup() {
   URL.revokeObjectURL(a.href);
 }
 
-// Menu functions that open modals
 function openTransferActionsModal() {
   openModal("Data Transfer", `
     <div class="quick-actions-row quick-actions-row-2" style="margin-bottom:10px;">
@@ -113,53 +113,5 @@ function openTransferActionsModal() {
 function openChoosePersonForPdf() {
   openModal("Choose a Person", state.people.map(person => `<div class="sheet-item choose-person-pdf" data-person-id="${person.id}"><span class="sheet-item-title">${escapeHtml(person.name)}</span><span class="sheet-item-sub">${formatMoney(personOpenBalance(person))}</span></div>`).join(""), () => {
     document.querySelectorAll(".choose-person-pdf").forEach(btn => { btn.onclick = () => { const personId = btn.dataset.personId; closeModal(); exportPersonPdf(personId); }; });
-  });
-}
-
-function openMainAddMenu() {
-  const isWork = state.mode === "work";
-  openModal("Add New", `<div class="sheet-list"><div class="sheet-item" id="quickAddPerson"><span class="sheet-item-title">${isWork ? "Add Team" : "Add Person"}</span><span class="sheet-item-sub">${isWork ? "Create a new team" : "Create a new person"}</span></div><div class="sheet-item" id="quickAddEntry"><span class="sheet-item-title">Add Entry</span><span class="sheet-item-sub">${isWork ? "Choose a team" : "Choose a person"}</span></div></div>`, () => {
-    const addPersonBtn = document.getElementById("quickAddPerson");
-    const addEntryBtn = document.getElementById("quickAddEntry");
-    if (addPersonBtn) addPersonBtn.onclick = () => openPersonForm();
-    if (addEntryBtn) addEntryBtn.onclick = () => { if (!state.people.length) alert(isWork ? "Add a team first." : "Add a person first."); else openChoosePersonForEntry(); };
-  });
-}
-
-function openEditStagesPanel() {
-  openModal("Edit", `<div class="empty-state mini-empty">Long press any card to edit. Swipe left to delete.</div>`, () => {});
-}
-
-function personTotalBalanceByCurrency(person) {
-  const totals = {};
-  (person.stages || []).forEach(stage => { const currency = stageCurrency(stage); const balance = stageBalance(stage); totals[currency] = (totals[currency] || 0) + balance; });
-  return totals;
-}
-
-function openOverviewPersonDetail(personId) {
-  const person = findPerson(personId);
-  if (!person) return;
-  const openStage = findOpenStage(person.id);
-  const closedStages = (person.stages || []).filter(stage => stage.closed);
-  const closedSummary = closedStagesSummary(person);
-  const openEntriesExpanded = !!state.overviewOpenExpanded[person.id];
-  openModal(`${escapeHtml(person.name)} — Details`, `
-    <div class="inline-note overview-summary-grid">
-      <div class="overview-summary-row"><span class="overview-summary-label">Total Balance</span><span class="overview-summary-value">${(() => { const totals = personTotalBalanceByCurrency(person); const ordered = getOrderedCurrencyEntries(totals); if (!ordered.length) return `<span class="gray">${formatMoney(0, "EUR")}</span>`; if (ordered.length === 1) { const [currency, amount] = ordered[0]; return `<span class="${balanceClass(amount)}">${formatMoney(amount, currency)}</span>`; } return `<span class="overview-summary-value-stack">${ordered.map(([currency, amount]) => `<span class="${balanceClass(amount)}">${formatMoney(amount, currency)}</span>`).join("")}</span>`; })()}</span></div>
-      <div class="overview-summary-row"><span class="overview-summary-label">Open Stage</span><span class="overview-summary-value">${openStage ? escapeHtml(openStage.name) : "None"}</span></div>
-      <div class="overview-summary-row"><span class="overview-summary-label overview-summary-label-with-badge"><span>Closed Stages</span><span class="mini-count-badge">${closedSummary.count}</span></span><span class="overview-summary-value"><span class="${balanceClass(closedSummary.balance)}">${formatMoney(closedSummary.balance, closedSummary.currency)}</span></span></div>
-    </div>
-    ${openStage ? `<div class="open-stage-mini-card swipe-card" data-action-type="stage" data-person-id="${person.id}" data-stage-id="${openStage.id}" data-source="overview"><div class="swipe-content"><div class="open-stage-mini-inner" data-toggle-open-entries="${person.id}"><div class="open-stage-mini-left"><div class="stage-title-row"><span class="open-stage-mini-title">${escapeHtml(openStage.name)}</span></div></div><div class="open-stage-mini-right"><div class="open-stage-mini-balance ${balanceClass(stageBalance(openStage))}">${formatMoney(stageBalance(openStage), stageCurrency(openStage))}</div><span class="closed-stage-chev ${openEntriesExpanded ? "open" : ""}">›</span></div></div></div></div>${openEntriesExpanded ? `<div class="entry-list" style="margin-top:8px;">${(openStage.entries || []).length ? openStage.entries.map(entry => renderEntry(person.id, openStage.id, openStage, entry, "overview")).join("") : `<div class="empty-state mini-empty">No entries</div>`}</div>` : ""}` : ""}
-    ${closedStages.length ? `<div class="section-label overview-closed-label">Closed Stages</div><div class="sheet-list">${closedStages.map(stage => { const isExpanded = !!state.overviewClosedExpanded[stage.id]; const entries = stage.entries || []; const dates = entries.map(e => e.date).filter(Boolean).slice().sort(); const fromDate = dates.length ? formatDate(dates[0]) : ""; const toDate = dates.length ? formatDate(dates[dates.length - 1]) : ""; const dateRange = fromDate && toDate ? `${fromDate} → ${toDate}` : ""; return `<div class="sheet-item closed-stage-item swipe-card" data-action-type="stage" data-person-id="${person.id}" data-stage-id="${stage.id}" data-source="overview"><div class="swipe-content"><div class="closed-stage-head" data-toggle-closed-stage="${stage.id}"><div class="closed-stage-col closed-stage-left"><div class="stage-title-row"><span class="sheet-item-title">${escapeHtml(stage.name)}</span></div></div><div class="closed-stage-col closed-stage-right"><span class="closed-stage-date-range">${escapeHtml(dateRange)}</span><span class="closed-stage-chev ${isExpanded ? "open" : ""}">›</span></div></div>${isExpanded ? `<div class="closed-stage-body"><div class="closed-stage-summary-card"><span class="closed-stage-summary-label">Entry ${entries.length}</span><span class="closed-stage-summary-total ${balanceClass(stageBalance(stage))}">${formatMoney(stageBalance(stage), stageCurrency(stage))}</span></div>${entries.length ? entries.map(entry => renderEntry(person.id, stage.id, stage, entry, "overview")).join("") : `<div class="empty-state mini-empty">No entries</div>`}</div>` : ""}</div></div>`; }).join("")}</div>` : ""}`, () => {
-    document.querySelectorAll("[data-toggle-open-entries]").forEach(btn => { btn.onclick = e => { if (state.longPressTriggered || e.target.closest(".swipe-delete-action")) return; state.overviewOpenExpanded[person.id] = !state.overviewOpenExpanded[person.id]; openOverviewPersonDetail(personId); }; });
-    document.querySelectorAll("[data-toggle-closed-stage]").forEach(btn => { btn.onclick = () => { if (state.longPressTriggered) return; const stageId = btn.dataset.toggleClosedStage; state.overviewClosedExpanded[stageId] = !state.overviewClosedExpanded[stageId]; openOverviewPersonDetail(personId); }; });
-    document.querySelectorAll(".swipe-card").forEach(card => setupActionCard(card));
-    closeAllSwipes();
-  });
-}
-
-function openChoosePersonForEntry() {
-  openModal("Choose a Person", state.people.map(person => `<div class="sheet-item choose-person-entry" data-person-id="${person.id}"><span class="sheet-item-title">${escapeHtml(person.name)}</span><span class="sheet-item-sub">Balance: ${formatMoney(personOpenBalance(person))}</span></div>`).join(""), () => {
-    document.querySelectorAll(".choose-person-entry").forEach(btn => { btn.onclick = () => { const personId = btn.dataset.personId; const openStage = findOpenStage(personId); if (openStage) openEntryForm(personId, openStage.id); else openStageForm(personId, null, true); }; });
   });
 }
