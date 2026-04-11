@@ -1,55 +1,116 @@
 01-config.js
-- keys
-- state
-- DOM refs
+- app keys
+- global state
+- DOM references
 
 02-storage.js
-- IndexedDB
-- save/load
-- mode/theme storage
+- IndexedDB layer
+- openDB
+- dbGet
+- dbSet
+- dbDelete
+- dbClear
+- saveData
+- loadDataByMode
+- loadMode
+- saveMode
+- getSavedThemeMode
+- loadTheme
+- cycleThemeMode
+- loadRawData
+- getAllModeData
+- hasAnyDataInAnyMode
 
 03-utils.js
 - uid
-- formatters
-- money/date/html helpers
+- todayStr
+- formatDate
+- currencyLabel
+- normalizeAmount
+- formatMoney
+- formatMoneyPlain
+- balanceClass
+- escapeHtml
+- highlightMatch
+- entryEffect
+- typeLabelClass
+- isWorkMode
+- entryTypeVisual
+- entryTypeToggleContent
+- stageCurrency
+- stageBalance
+- stageTotals
+- personOpenBalance
+- currency breakdown helpers
+- personLastActivityTs
+- getFilteredPeople
+- gesture helpers
 
 04-render.js
 - render
 - renderPerson
 - renderEntry
 - renderStats
-- layout helpers
+- renderStatsPeopleList
+- refreshPeopleListsOnly
+- adjustMainPadding
+- syncFab
 
 05-forms.js
 - openPersonForm
 - openStageForm
 - openEntryForm
+- inline currency picker logic
+- stage form submit logic
+- entry form submit logic
 
 06-actions.js
+- openMainAddMenu
+- openQuickActions
+- openEditByPayload
 - deleteByPayload
 - setupActionCard
-- stage actions
-- quick actions
+- closeActiveStage
+- confirmCloseAndOpenNewStage
+- confirmEditActiveStage
+- openChoosePersonForEntry
+- add person / add entry launcher
 
 07-events.js
 - bindDynamicEvents
 - bindStatsEvents
+- bindPremiumPressEffects
 - static listeners
-- popstate handlers
+- fab.onclick = openMainAddMenu
+- menuBtn.addEventListener(...)
+- theme button click
+- confirm button listeners
+- import input listener
+- document click / keydown
+- syncModeButtons
+- switchMode
 
 08-modals.js
 - openModal
 - closeModal
 - confirmDelete
-- openMainAddMenu
-- openEditStagesPanel
+- closeConfirm
+- modal-related popstate
 
 09-export.js
-- PDF export
-- import/export backup
-- debug/export helpers
+- buildPdfHtml
+- triggerPdfPrint
+- exportAllPdf
+- exportPersonPdf
+- exportJsonBackup
+- openTransferActionsModal
+- openChoosePersonForPdf
+- other export/import helpers
 
 10-init.js
-- initApp
-- startup
-- service worker
+- install prompt logic
+- iOS install prompt logic
+- update prompt UI show/hide
+- debug init
+- initApp()
+- service worker registration/update detection

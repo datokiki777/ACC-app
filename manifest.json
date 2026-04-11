@@ -5,14 +5,14 @@
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
-  "display_override": ["standalone", "window-controls-overlay"],
+  "display_override": ["standalone"],
   "background_color": "#0f2447",
   "theme_color": "#0f2447",
   "orientation": "portrait",
   "description": "ACC app",
   "lang": "en",
   "dir": "ltr",
-  "categories": ["finance", "productivity", "business"],
+  "categories": ["finance", "business", "productivity"],
   "icons": [
     {
       "src": "./icons/icon-152.png",

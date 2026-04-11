@@ -1,4 +1,4 @@
-const CACHE_NAME = "acc-shell-v6.2";
+const CACHE_NAME = "acc-shell-v6.2.0";
 
 const APP_SHELL = [
   "./",
@@ -54,7 +54,6 @@ self.addEventListener("activate", event => {
           if (key !== CACHE_NAME) {
             return caches.delete(key);
           }
-          return Promise.resolve();
         })
       );
 
@@ -103,18 +102,31 @@ self.addEventListener("fetch", event => {
   }
 
   event.respondWith(
-    caches.match(event.request).then(cached => {
-      if (cached) return cached;
+  caches.match(event.request).then(cached => {
+    if (cached) {
+      fetch(event.request)
+        .then(response => {
+          if (!response || response.status !== 200 || response.type !== "basic") {
+            return;
+          }
 
-      return fetch(event.request).then(response => {
-        if (!response || response.status !== 200 || response.type !== "basic") {
-          return response;
-        }
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
+        })
+        .catch(() => {});
 
-        const clone = response.clone();
-        caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
+      return cached;
+    }
+
+    return fetch(event.request).then(response => {
+      if (!response || response.status !== 200 || response.type !== "basic") {
         return response;
-      });
-    })
-  );
+      }
+
+      const clone = response.clone();
+      caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
+      return response;
+    });
+  })
+);
 });

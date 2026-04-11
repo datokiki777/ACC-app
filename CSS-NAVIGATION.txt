@@ -30,16 +30,22 @@
 - confirm modal
 - modal actions
 - modal inner layout
+- sheet-item-title-row
+- sheet-item-icon
 
 05-forms.css
 - form wrappers
 - labels
 - inputs
 - textarea
-- select
 - form actions
 - type toggles
 - form-specific controls
+- type-toggle-row
+- type-toggle-btn
+- type-toggle-money
+- currency-inline-picker
+- currency-choice-btn
 
 06-sections.css
 - person card
@@ -69,4 +75,6 @@
 - light theme overrides
 - dark theme overrides
 - theme-specific component adjustments
+- currency light-theme overrides
+- icon light-theme overrides
 - theme polish
