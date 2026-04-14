@@ -6,7 +6,7 @@
 .stage-card,
 .entry-card {
   background: var(--card);
-  border-radius: var(--radius);
+  border-radius: 20px;
   box-shadow: var(--shadow);
   border: 1px solid var(--line);
 }

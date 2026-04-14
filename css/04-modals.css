@@ -144,21 +144,309 @@
   padding: 16px;
 }
 
-.sheet-item-title-row{
-  display:flex;
-  align-items:center;
-  gap:10px;
+.sheet-item-title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
-.sheet-item-icon{
-  width:28px;
-  height:28px;
-  flex:0 0 28px;
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  border-radius:10px;
-  background:rgba(255,255,255,0.08);
-  font-size:16px;
-  line-height:1;
+.sheet-item-icon {
+  width: 28px;
+  height: 28px;
+  flex: 0 0 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  background: rgba(255,255,255,0.08);
+  font-size: 16px;
+  line-height: 1;
 }
+
+/* ===== Top-left main menu ===== */
+
+#modalOverlay.overlay:has(.menu-sheet-list) {
+  align-items: flex-start;
+  justify-content: flex-start;
+  padding: calc(env(safe-area-inset-top, 0px) + 72px) 12px 12px;
+  background: rgba(15, 23, 42, 0.18);
+}
+
+#modalOverlay .modal-sheet:has(.menu-sheet-list) {
+  width: min(300px, calc(100vw - 24px));
+  max-height: none;
+  overflow: hidden;
+  border-radius: 26px;
+  align-self: flex-start;
+}
+
+#modalOverlay .sheet-body:has(.menu-sheet-list) {
+  padding: 12px;
+}
+
+.menu-sheet-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+#modalOverlay button.sheet-item.menu-sheet-item {
+  width: 100%;
+  display: block;
+  margin-bottom: 0;
+  text-align: left;
+  border-radius: 20px;
+  padding: 14px 16px;
+  color: #eef4ff !important;
+  border: 1px solid rgba(140, 170, 220, 0.18) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.08),
+    0 10px 22px rgba(0,0,0,0.16);
+}
+
+#modalOverlay button.sheet-item.menu-sheet-item .sheet-item-title {
+  color: #eef4ff !important;
+  font-size: 15px;
+  font-weight: 800;
+}
+
+#modalOverlay button.sheet-item.menu-sheet-item .sheet-item-icon {
+  background: rgba(255,255,255,0.10) !important;
+  color: #eef4ff !important;
+}
+
+#modalOverlay button.sheet-item.menu-sheet-item#menuExportPersonBtn {
+  min-height: 64px;
+  background: linear-gradient(180deg, #4f78c8, #355fae) !important;
+}
+
+#modalOverlay button.sheet-item.menu-sheet-item#menuExportAllBtn {
+  min-height: 64px;
+  background: linear-gradient(180deg, #2f8a74, #216b58) !important;
+}
+
+#modalOverlay button.sheet-item.menu-sheet-item#menuDataBackupBtn {
+  min-height: 98px;
+  background: linear-gradient(180deg, #7a63d9, #5f48c3) !important;
+  border-color: rgba(175, 170, 255, 0.34) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.12),
+    0 14px 28px rgba(0,0,0,0.20) !important;
+}
+
+/* ===== Data & Backup modal ===== */
+
+#modalOverlay .modal-sheet:has(.backup-sheet) {
+  width: min(100%, 520px);
+  border-radius: 24px;
+}
+
+#modalOverlay .sheet-body:has(.backup-sheet) {
+  padding: 0 10px 10px;
+}
+
+#modalOverlay .backup-sheet {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+#modalOverlay .backup-info-card {
+  border-radius: 18px;
+  padding: 10px 12px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.07), rgba(255,255,255,0.03));
+  border: 1px solid rgba(255,255,255,0.12);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.05),
+    0 8px 18px rgba(0,0,0,0.10);
+}
+
+#modalOverlay .backup-row {
+  display: grid;
+  grid-template-columns: max-content 1fr max-content;
+  align-items: center;
+  gap: 8px;
+  min-height: 32px;
+  padding: 0;
+}
+
+#modalOverlay .backup-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13.5px;
+  font-weight: 800;
+  white-space: nowrap;
+  line-height: 1;
+}
+
+#modalOverlay .backup-dots {
+  height: 2px;
+  align-self: center;
+  background-image: radial-gradient(circle, rgba(190, 208, 236, 0.42) 1.2px, transparent 1.2px);
+  background-size: 6px 2px;
+  background-repeat: repeat-x;
+  background-position: center;
+  margin: 0 6px;
+}
+
+#modalOverlay .backup-value {
+  justify-self: end;
+  font-size: 13.5px;
+  font-weight: 900;
+  text-align: right;
+  white-space: nowrap;
+  line-height: 1;
+}
+
+#modalOverlay .backup-status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 70px;
+  min-height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+#modalOverlay .backup-status-safe {
+  color: #62f39a;
+  background: rgba(53, 194, 107, 0.18);
+  border: 1px solid rgba(53, 194, 107, 0.34);
+}
+
+#modalOverlay .backup-status-warn {
+  color: #f3ca62;
+  background: rgba(229, 185, 75, 0.16);
+  border: 1px solid rgba(229, 185, 75, 0.28);
+}
+
+#modalOverlay .backup-status-risk {
+  color: #ff8b8b;
+  background: rgba(255, 118, 118, 0.16);
+  border: 1px solid rgba(255, 118, 118, 0.30);
+}
+
+#modalOverlay .backup-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+#modalOverlay .backup-actions .backup-action-main.secondary-btn {
+  min-height: 42px !important;
+  border-radius: 16px !important;
+  font-size: 13.5px !important;
+  font-weight: 900 !important;
+  background: linear-gradient(180deg, #61779a, #4b6182) !important;
+  color: #f4f8ff !important;
+  border: 1px solid rgba(196, 210, 232, 0.18) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.12),
+    0 8px 18px rgba(0,0,0,0.12) !important;
+}
+
+#modalOverlay .backup-close-row {
+  display: flex;
+  justify-content: flex-end;
+}
+
+#modalOverlay .backup-close-row .backup-close-btn.secondary-btn {
+  min-width: 104px !important;
+  min-height: 36px !important;
+  border-radius: 16px !important;
+  background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.03)) !important;
+  color: #eef4ff !important;
+  border: 1px solid rgba(255,255,255,0.10) !important;
+}
+
+/* ===== LIGHT THEME ONLY: MODAL POLISH FINAL ===== */
+
+body.light-theme #modalOverlay .sheet-item {
+  background: linear-gradient(180deg, #d8dfe8, #cad4df);
+  border: 1px solid #b6c2d1;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.58),
+    0 4px 10px rgba(70, 88, 112, 0.08);
+  color: #24344c;
+}
+
+body.light-theme #modalOverlay .sheet-item .sheet-item-title,
+body.light-theme #modalOverlay .sheet-item .sheet-item-sub {
+  color: #24344c;
+}
+
+/* edit modal neutral buttons */
+body.light-theme #modalOverlay .secondary-btn {
+  background: linear-gradient(180deg, #d7dee7, #c8d1dc);
+  color: #24344c;
+  border: 1px solid #b5c0cf;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.60),
+    0 4px 10px rgba(70, 88, 112, 0.08);
+}
+
+/* Data & Backup card */
+body.light-theme #modalOverlay .backup-info-card {
+  background: linear-gradient(180deg, #d7dee8, #cfd7e2);
+  border: 1px solid #b8c3d1;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.56),
+    0 6px 14px rgba(70, 88, 112, 0.08);
+}
+
+body.light-theme #modalOverlay .backup-label,
+body.light-theme #modalOverlay .backup-value {
+  color: #26364f;
+}
+
+body.light-theme #modalOverlay .backup-dots {
+  height: 2px;
+  background-image: radial-gradient(circle, rgba(110, 126, 146, 0.42) 1.1px, transparent 1.1px);
+  background-size: 6px 2px;
+  background-repeat: repeat-x;
+  background-position: center;
+  margin: 0 6px;
+}
+
+/* softer status */
+body.light-theme #modalOverlay .backup-status-safe {
+  color: #338a63;
+  background: rgba(51, 138, 99, 0.10);
+  border: 1px solid rgba(51, 138, 99, 0.18);
+}
+
+body.light-theme #modalOverlay .backup-status-warn {
+  color: #9b7b28;
+  background: rgba(155, 123, 40, 0.10);
+  border: 1px solid rgba(155, 123, 40, 0.18);
+}
+
+body.light-theme #modalOverlay .backup-status-risk {
+  color: #b26060;
+  background: rgba(178, 96, 96, 0.10);
+  border: 1px solid rgba(178, 96, 96, 0.18);
+}
+
+/* Backup / Restore */
+body.light-theme #modalOverlay .backup-actions .backup-action-main.secondary-btn {
+  background: linear-gradient(180deg, #b5c3d6, #a4b4c8) !important;
+  color: #24344c !important;
+  border: 1px solid #95a7bf !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.62),
+    0 4px 10px rgba(70, 88, 112, 0.08) !important;
+}
+
+/* Close darker */
+body.light-theme #modalOverlay .backup-close-row .backup-close-btn.secondary-btn {
+  background: linear-gradient(180deg, #c6d1dd, #b2bfd0) !important;
+  color: #24344c !important;
+  border: 1px solid #9eaec2 !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.66),
+    0 4px 10px rgba(70, 88, 112, 0.08) !important;
+}
+
