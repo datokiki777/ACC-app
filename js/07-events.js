@@ -160,10 +160,10 @@ if (searchInput) {
 }
 fab.onclick = openMainAddMenu;
 if (menuBtn) {
-  menuBtn.classList.add("transfer-btn");
-  menuBtn.textContent = "⇄";
-  menuBtn.setAttribute("aria-label", "Import / Export");
-  menuBtn.addEventListener("click", openTransferActionsModal);
+  menuBtn.classList.remove("transfer-btn");
+  menuBtn.textContent = "☰";
+  menuBtn.setAttribute("aria-label", "Menu");
+  menuBtn.addEventListener("click", openMainMenu);
 }
 if (themeToggleBtn) themeToggleBtn.addEventListener("click", () => cycleThemeMode());
 if (menuOverlay) menuOverlay.style.display = "none";

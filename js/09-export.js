@@ -84,6 +84,201 @@ async function exportJsonBackup() {
   URL.revokeObjectURL(a.href);
 }
 
+async function getStorageInfo() {
+  try {
+    if (navigator.storage && navigator.storage.estimate) {
+      const { usage = 0, quota = 0 } = await navigator.storage.estimate();
+      return {
+        usedBytes: usage,
+        quotaBytes: quota,
+        usedMB: (usage / 1024 / 1024).toFixed(2),
+        quotaMB: quota ? (quota / 1024 / 1024).toFixed(2) : "?"
+      };
+    }
+  } catch (err) {
+    console.warn("storage estimate failed", err);
+  }
+
+  const allData = await getAllModeData();
+  const size = new Blob([JSON.stringify(allData)]).size;
+
+  return {
+    usedBytes: size,
+    quotaBytes: 0,
+    usedMB: (size / 1024 / 1024).toFixed(2),
+    quotaMB: "?"
+  };
+}
+
+async function getBackupMeta() {
+  try {
+    const raw = await dbGet("acc_backup_meta_v1");
+    if (!raw) return { lastBackup: "", count: 0 };
+    const parsed = typeof raw === "string" ? JSON.parse(raw) : raw;
+    return {
+      lastBackup: parsed?.lastBackup || "",
+      count: Number(parsed?.count || 0)
+    };
+  } catch (err) {
+    console.warn("backup meta read failed", err);
+    return { lastBackup: "", count: 0 };
+  }
+}
+
+async function saveBackupMeta(meta) {
+  try {
+    await dbSet("acc_backup_meta_v1", JSON.stringify(meta));
+  } catch (err) {
+    console.warn("backup meta save failed", err);
+  }
+}
+
+function formatBackupDate(value) {
+  if (!value) return "Never";
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return "Never";
+  return d.toLocaleString("ka-GE");
+}
+
+function getStorageStatus(usedBytes, quotaBytes, lastBackupDate) {
+  const hasBackup = !!lastBackupDate;
+  const daysSinceBackup = hasBackup
+    ? (Date.now() - new Date(lastBackupDate).getTime()) / (1000 * 60 * 60 * 24)
+    : Infinity;
+
+  const usageRatio = quotaBytes > 0 ? usedBytes / quotaBytes : 0;
+
+  if ((usageRatio < 0.20 && daysSinceBackup < 14) || (usageRatio < 0.10 && !hasBackup)) {
+    return { label: "Safe", tone: "safe" };
+  }
+
+  if (usageRatio < 0.50 && daysSinceBackup < 45) {
+    return { label: "Warning", tone: "warn" };
+  }
+
+  return { label: "Risk", tone: "risk" };
+}
+
+function getPersonalStats(people = []) {
+  const personCount = people.length;
+  const stageCount = people.reduce((sum, person) => sum + ((person.stages || []).length), 0);
+  const entryCount = people.reduce(
+    (sum, person) =>
+      sum + (person.stages || []).reduce((stageSum, stage) => stageSum + ((stage.entries || []).length), 0),
+    0
+  );
+
+  return { personCount, stageCount, entryCount };
+}
+
+function getWorkStats(groups = []) {
+  const groupCount = groups.length;
+  const stageCount = groups.reduce((sum, group) => sum + ((group.stages || []).length), 0);
+  const entryCount = groups.reduce(
+    (sum, group) =>
+      sum + (group.stages || []).reduce((stageSum, stage) => stageSum + ((stage.entries || []).length), 0),
+    0
+  );
+
+  return { groupCount, stageCount, entryCount };
+}
+
+async function openDataBackupModal() {
+  const storage = await getStorageInfo();
+  const allData = await getAllModeData();
+  const backupMeta = await getBackupMeta();
+
+  const personalStats = getPersonalStats(allData.personal || []);
+  const workStats = getWorkStats(allData.work || []);
+  const status = getStorageStatus(storage.usedBytes, storage.quotaBytes, backupMeta.lastBackup);
+
+  openModal(
+  "💾 Data & Backup",
+    `
+      <div class="backup-sheet">
+        <div class="backup-info-card">
+  <div class="backup-row">
+    <span class="backup-label">💾 Used Storage</span>
+    <span class="backup-dots"></span>
+    <span class="backup-value">${storage.usedMB} MB</span>
+  </div>
+
+  <div class="backup-row">
+    <span class="backup-label">👤 Personal</span>
+    <span class="backup-dots"></span>
+    <span class="backup-value">${personalStats.personCount} p • ${personalStats.stageCount} s • ${personalStats.entryCount} e</span>
+  </div>
+
+  <div class="backup-row">
+    <span class="backup-label">🏢 Work</span>
+    <span class="backup-dots"></span>
+    <span class="backup-value">${workStats.groupCount} g • ${workStats.stageCount} s • ${workStats.entryCount} e</span>
+  </div>
+
+  <div class="backup-row">
+    <span class="backup-label">🕓 Last Backup</span>
+    <span class="backup-dots"></span>
+    <span class="backup-value">${formatBackupDate(backupMeta.lastBackup)}</span>
+  </div>
+
+  <div class="backup-row">
+    <span class="backup-label">📁 Backups</span>
+    <span class="backup-dots"></span>
+    <span class="backup-value">${backupMeta.count}</span>
+  </div>
+
+  <div class="backup-row">
+    <span class="backup-label">🛡 Status</span>
+    <span class="backup-dots"></span>
+    <span class="backup-value">
+      <span class="backup-status backup-status-${status.tone}">${status.label}</span>
+    </span>
+  </div>
+</div>
+
+<div class="backup-actions">
+  <button type="button" class="secondary-btn backup-action-btn backup-action-main" id="backupNowBtn">💾 Backup</button>
+  <button type="button" class="secondary-btn backup-action-btn backup-action-main" id="restoreNowBtn">♻️ Restore</button>
+</div>
+
+<div class="backup-close-row">
+  <button type="button" class="secondary-btn backup-close-btn" id="backupCloseBtn">Close</button>
+</div>
+
+    `,
+    () => {
+      const backupBtn = document.getElementById("backupNowBtn");
+      const restoreBtn = document.getElementById("restoreNowBtn");
+      const closeBtn = document.getElementById("backupCloseBtn");
+
+      if (backupBtn) {
+        backupBtn.onclick = async () => {
+          await exportJsonBackup();
+
+          const nextMeta = {
+            lastBackup: new Date().toISOString(),
+            count: Number(backupMeta.count || 0) + 1
+          };
+
+          await saveBackupMeta(nextMeta);
+          closeModal();
+        };
+      }
+
+      if (restoreBtn) {
+        restoreBtn.onclick = () => {
+          closeModal();
+          importFile.click();
+        };
+      }
+
+      if (closeBtn) {
+        closeBtn.onclick = () => closeModal();
+      }
+    }
+  );
+}
+
 function isNonEmptyValue(value) {
   return value !== undefined && value !== null && String(value).trim() !== "";
 }
@@ -487,3 +682,4 @@ function openChoosePersonForPdf() {
     document.querySelectorAll(".choose-person-pdf").forEach(btn => { btn.onclick = () => { const personId = btn.dataset.personId; closeModal(); exportPersonPdf(personId); }; });
   });
 }
+

@@ -25,7 +25,7 @@ function currencyLabel(currency) {
   if (c === "EUR") return "€";
   if (c === "USD") return "$";
   if (c === "GEL") return "₾";
-  if (c === "CAD") return "CAD";
+  if (c === "CAD") return "C$";
   return "€";
 }
 
