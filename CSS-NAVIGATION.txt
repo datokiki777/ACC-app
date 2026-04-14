@@ -32,6 +32,12 @@
 - modal inner layout
 - sheet-item-title-row
 - sheet-item-icon
+- main menu modal
+- Data & Backup modal
+- backup rows / dots / status pill
+- backup / restore / close button styling
+- light-theme modal polish
+
 
 05-forms.css
 - form wrappers
@@ -55,6 +61,10 @@
 - search section
 - overview section
 - section-specific UI
+- overview detail compact cards
+- open stage accent card
+- closed stage accent variants
+- closed-stage-head inner tinted card styling
 
 07-effects.css
 - transitions
@@ -78,3 +88,7 @@
 - currency light-theme overrides
 - icon light-theme overrides
 - theme polish
+- topbar light-theme polish
+- mode switch light-theme styling
+- theme button / menu button light-theme styling
+- modal light-theme overrides

@@ -75,6 +75,9 @@
 - confirmEditActiveStage
 - openChoosePersonForEntry
 - add person / add entry launcher
+- openOverviewPersonDetail
+- closed stage accent class assignment by index
+- overview stage detail card rendering
 
 07-events.js
 - bindDynamicEvents
@@ -106,6 +109,16 @@
 - openTransferActionsModal
 - openChoosePersonForPdf
 - other export/import helpers
+- openDataBackupModal
+- getStorageInfo
+- getBackupMeta
+- saveBackupMeta
+- formatBackupDate
+- getStorageStatus
+- getPersonalStats
+- getWorkStats
+- Data & Backup modal rendering
+- backup / restore / close actions
 
 10-init.js
 - install prompt logic
