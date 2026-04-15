@@ -85,3 +85,77 @@ body.install-open .fab {
   pointer-events: none !important;
   transform: scale(0.82) !important;
 }
+
+/* =========================
+   STARTUP SPLASH — APP STORE STYLE
+========================= */
+
+@keyframes splashFadeSlide {
+  0% {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes splashLogoPop {
+  0% {
+    opacity: 0;
+    transform: scale(0.88);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.045);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes splashGlowPulse {
+  0% {
+    opacity: 0.55;
+    transform: scaleX(0.9);
+  }
+  50% {
+    opacity: 1;
+    transform: scaleX(1.08);
+  }
+  100% {
+    opacity: 0.7;
+    transform: scaleX(1);
+  }
+}
+
+#startupSplash .startup-box {
+  animation: splashFadeSlide 0.5s ease-out both;
+}
+
+#startupSplash .startup-logo {
+  animation: splashLogoPop 0.72s cubic-bezier(0.22, 1, 0.36, 1) both;
+  will-change: transform, opacity;
+}
+
+#startupSplash .startup-subtitle,
+#startupSplash .startup-title {
+  opacity: 0;
+  animation: splashFadeSlide 0.45s ease-out both;
+}
+
+#startupSplash .startup-subtitle {
+  animation-delay: 0.12s;
+}
+
+#startupSplash .startup-title {
+  animation-delay: 0.2s;
+}
+
+#startupSplash .startup-glow {
+  animation: splashGlowPulse 1.5s ease-in-out infinite;
+  animation-delay: 0.15s;
+  will-change: transform, opacity;
+}
