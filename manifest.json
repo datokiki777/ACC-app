@@ -5,56 +5,56 @@
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
-  "display_override": ["standalone"],
-  "background_color": "#0f2447",
-  "theme_color": "#0f2447",
+  "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
+  "background_color": "#071633",
+  "theme_color": "#071633",
   "orientation": "portrait",
-  "description": "ACC app",
+  "description": "ACC - personal and work money tracking app",
   "lang": "en",
   "dir": "ltr",
   "categories": ["finance", "business", "productivity"],
   "icons": [
     {
-      "src": "./icons/icon-152.png",
-      "sizes": "152x152",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "./icons/icon-167.png",
+      "src": "./icons/icon-167x167.png",
       "sizes": "167x167",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "./icons/icon-180.png",
+      "src": "./icons/icon-180x180.png",
       "sizes": "180x180",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "./icons/icon-192.png",
+      "src": "./icons/icon-192x192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "./icons/icon-192-maskable.png",
+      "src": "./icons/icon-192x192-maskable.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "maskable"
     },
     {
-      "src": "./icons/icon-512.png",
+      "src": "./icons/icon-512x512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "./icons/icon-512-maskable.png",
+      "src": "./icons/icon-512x512-maskable.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
+    },
+    {
+      "src": "./icons/icon-1024x1024.png",
+      "sizes": "1024x1024",
+      "type": "image/png",
+      "purpose": "any"
     }
   ]
 }
