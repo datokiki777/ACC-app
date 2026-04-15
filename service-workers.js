@@ -1,4 +1,4 @@
-const CACHE_NAME = "acc-shell-v7.0";
+const CACHE_NAME = "acc-shell-v7.1";
 
 const APP_SHELL = [
   "./",
@@ -26,13 +26,13 @@ const APP_SHELL = [
   "./js/09-export.js",
   "./js/10-init.js",
 
-  "./icons/icon-152.png",
-  "./icons/icon-167.png",
-  "./icons/icon-180.png",
-  "./icons/icon-192.png",
-  "./icons/icon-192-maskable.png",
-  "./icons/icon-512.png",
-  "./icons/icon-512-maskable.png"
+  "./icons/icon-167x167.png",
+  "./icons/icon-180x180.png",
+  "./icons/icon-192x192.png",
+  "./icons/icon-192x192-maskable.png",
+  "./icons/icon-512x512.png",
+  "./icons/icon-512x512-maskable.png",
+  "./icons/icon-1024x1024.png"
 ];
 
 self.addEventListener("install", event => {
