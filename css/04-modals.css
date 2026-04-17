@@ -303,7 +303,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 70px;
+  min-width: 90px;
   min-height: 28px;
   padding: 0 10px;
   border-radius: 999px;
@@ -333,6 +333,20 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 10px;
+}
+
+#modalOverlay .backup-cloud-note {
+  margin-top: 10px;
+  text-align: center;
+  font-size: 12px;
+  line-height: 1.35;
+  color: var(--muted);
+}
+
+#modalOverlay .backup-status-pending {
+  color: #3b82f6;
+  background: rgba(59, 130, 246, 0.16);
+  border: 1px solid rgba(59, 130, 246, 0.28);
 }
 
 #modalOverlay .backup-actions .backup-action-main.secondary-btn {
