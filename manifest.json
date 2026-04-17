@@ -1,4 +1,6 @@
 {
+  "name": "ACC",
+  "short_name": "ACC",
   "start_url": "/acc/",
   "scope": "/acc/",
   "display": "standalone",
