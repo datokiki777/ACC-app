@@ -105,7 +105,11 @@ function deleteByPayload(payload) {
   if (payload.type === "person") {
     confirmDelete("Delete this person? All stages and entries will be deleted.", async () => {
       state.people = state.people.filter(p => p.id !== payload.personId);
-      await saveData(); render();
+      await saveData();
+      if (typeof triggerAccImmediateSync === "function") {
+        triggerAccImmediateSync();
+      }
+     render();
     });
     return;
   }
@@ -114,7 +118,11 @@ function deleteByPayload(payload) {
       const person = findPerson(payload.personId);
       if (!person) return;
       person.stages = (person.stages || []).filter(s => s.id !== payload.stageId);
-      await saveData(); render();
+      await saveData();
+      if (typeof triggerAccImmediateSync === "function") {
+        triggerAccImmediateSync();
+      }
+      render();
       if (payload.source === "overview") openOverviewPersonDetail(payload.personId);
     });
     return;
@@ -124,7 +132,11 @@ function deleteByPayload(payload) {
       const stage = findStage(payload.personId, payload.stageId);
       if (!stage) return;
       stage.entries = (stage.entries || []).filter(e => e.id !== payload.entryId);
-      await saveData(); render();
+      await saveData();
+      if (typeof triggerAccImmediateSync === "function") {
+        triggerAccImmediateSync();
+      }
+      render();
     });
   }
 }
@@ -156,6 +168,9 @@ function setupActionCard(card) {
               async () => {
                 stage.closed = true;
                 await saveData();
+                if (typeof triggerAccImmediateSync === "function") {
+                  triggerAccImmediateSync();
+                }
                 render();
 
                 if (payload.source === "overview") {
@@ -180,6 +195,9 @@ function setupActionCard(card) {
 
             stage.closed = false;
             await saveData();
+            if (typeof triggerAccImmediateSync === "function") {
+              triggerAccImmediateSync();
+            }
             render();
 
             if (payload.source === "overview") {

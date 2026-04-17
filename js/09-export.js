@@ -234,12 +234,22 @@ async function openDataBackupModal() {
       <span class="backup-status backup-status-${status.tone}">${status.label}</span>
     </span>
   </div>
+<div class="backup-row">
+    <span class="backup-label">☁️ Cloud Sync</span>
+    <span class="backup-dots"></span>
+    <span class="backup-value">
+      <span class="backup-status backup-status-risk" id="accCloudSyncStatus">—</span>
+    </span>
+  </div>
 </div>
 
 <div class="backup-actions">
   <button type="button" class="secondary-btn backup-action-btn backup-action-main" id="backupNowBtn">💾 Backup</button>
   <button type="button" class="secondary-btn backup-action-btn backup-action-main" id="restoreNowBtn">♻️ Restore</button>
+  <button type="button" class="secondary-btn backup-action-btn backup-action-main" id="cloudSaveBtn">⛅ Save Cloud</button>
+  <button type="button" class="secondary-btn backup-action-btn backup-action-main" id="cloudLoadBtn">⛅ Load Cloud</button>
 </div>
+<div class="backup-cloud-note">Cloud sync stores the latest ACC snapshot separately from local backup.</div>
 
 <div class="backup-close-row">
   <button type="button" class="secondary-btn backup-close-btn" id="backupCloseBtn">Close</button>
@@ -249,6 +259,8 @@ async function openDataBackupModal() {
     () => {
       const backupBtn = document.getElementById("backupNowBtn");
       const restoreBtn = document.getElementById("restoreNowBtn");
+      const cloudSaveBtn = document.getElementById("cloudSaveBtn");
+      const cloudLoadBtn = document.getElementById("cloudLoadBtn");
       const closeBtn = document.getElementById("backupCloseBtn");
 
       if (backupBtn) {
@@ -269,6 +281,22 @@ async function openDataBackupModal() {
         restoreBtn.onclick = () => {
           closeModal();
           importFile.click();
+        };
+      }
+      
+      if (typeof accRefreshCloudStatusFromServer === "function") {
+        accRefreshCloudStatusFromServer();
+      }
+
+      if (cloudSaveBtn) {
+        cloudSaveBtn.onclick = async () => {
+          await handleAccCloudSave();
+        };
+      }
+
+      if (cloudLoadBtn) {
+        cloudLoadBtn.onclick = async () => {
+          await handleAccCloudLoad();
         };
       }
 

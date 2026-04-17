@@ -333,6 +333,12 @@ async function initApp() {
   state.statsExpanded = false;
   syncModeButtons();
   render();
+  if (typeof accRefreshCloudStatusFromServer === "function") {
+    accRefreshCloudStatusFromServer();
+  }
+  if (typeof finalizeAccPendingHistoryDayIfNeeded === "function") {
+    await finalizeAccPendingHistoryDayIfNeeded();
+  }
   maybeShowIosInstallPrompt();
 
   if (DEBUG.enabled) {
