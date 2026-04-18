@@ -71,3 +71,54 @@ function closeConfirm() {
   confirmOverlay.classList.remove("show");
   fab.classList.remove("fab-hidden");
 }
+
+// ==================== RESTORE SOURCE PICKER ====================
+
+function askRestoreSource(options) {
+  return new Promise((resolve) => {
+    let selectedIndex = -1;
+
+    const listHtml = options.map((opt, i) => `
+      <div class="restore-item" data-index="${i}">
+        ${i + 1}. ${opt.label}
+      </div>
+    `).join("");
+
+    openModal("Restore source", `
+      <div class="restore-list">
+        ${listHtml}
+      </div>
+
+      <div class="confirm-actions" style="margin-top:14px;">
+        <button class="secondary-btn" id="restoreCancelBtn">Cancel</button>
+        <button class="primary-btn" id="restoreOkBtn" disabled>Restore</button>
+      </div>
+    `, () => {
+
+      const items = modalContent.querySelectorAll(".restore-item");
+      const okBtn = document.getElementById("restoreOkBtn");
+      const cancelBtn = document.getElementById("restoreCancelBtn");
+
+      items.forEach(el => {
+        el.onclick = () => {
+          items.forEach(i => i.classList.remove("active"));
+          el.classList.add("active");
+          selectedIndex = Number(el.dataset.index);
+          okBtn.disabled = false;
+        };
+      });
+
+      cancelBtn.onclick = () => {
+        closeModal();
+        resolve(null);
+      };
+
+      okBtn.onclick = () => {
+        if (selectedIndex < 0) return;
+        const picked = options[selectedIndex];
+        closeModal();
+        resolve(picked);
+      };
+    });
+  });
+}

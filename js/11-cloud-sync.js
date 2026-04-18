@@ -339,36 +339,38 @@ async function chooseAccCloudRestoreSource() {
     });
   });
 
-  if (!options.length) return null;
-  if (options.length === 1) return options[0];
-
-  const picked = prompt(
-    "Choose restore source:\n\n" +
-    options.map((opt, index) => `${index + 1}. ${opt.label}`).join("\n") +
-    "\n\nEnter number:"
-  );
-
-  if (!picked) return null;
-
-  const index = Number(String(picked).trim()) - 1;
-  if (!Number.isInteger(index) || index < 0 || index >= options.length) {
-    confirmDelete("Invalid selection.", () => {}, false, "OK");
-    return null;
+  if (!options.length) {
+    return { status: "empty", value: null };
   }
 
-  return options[index];
+  if (options.length === 1) {
+    return { status: "picked", value: options[0] };
+  }
+
+  const picked = await askRestoreSource(options);
+
+  if (!picked) {
+    return { status: "cancel", value: null };
+  }
+
+  return { status: "picked", value: picked };
 }
 
 async function handleAccCloudLoad() {
   try {
-    const selected = await chooseAccCloudRestoreSource();
+    const result = await chooseAccCloudRestoreSource();
 
-    if (!selected) {
-      confirmDelete("No cloud data found.", () => {}, false, "OK");
-      return;
-    }
+if (result.status === "cancel") {
+  return;
+}
 
-    const payload = selected.payload || {};
+if (result.status === "empty") {
+  confirmDelete("No cloud data found.", () => {}, false, "OK");
+  return;
+}
+
+const selected = result.value;
+const payload = selected.payload || {};
 
     confirmDelete(
       `Load this snapshot?\n\n${selected.label}\n\nThis will replace current local data in both Personal and Work modes.`,
@@ -393,11 +395,9 @@ async function handleAccCloudLoad() {
         render();
 
         setAccCloudStatus(
-          "synced",
-          payload.updatedAt || payload.savedAt || new Date().toISOString()
-        );
-
-        confirmDelete("Cloud Restore successful.", () => {}, false, "OK");
+  "synced",
+  payload.updatedAt || payload.savedAt || new Date().toISOString()
+);
       },
       false,
       "Load"
