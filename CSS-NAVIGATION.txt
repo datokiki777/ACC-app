@@ -29,6 +29,7 @@
 - backup rows / dots
 - status pill (🔹 cloud synced / error / local)
 - backup / restore buttons
+- restore source modal / restore-item list
 
 05-forms.css
 

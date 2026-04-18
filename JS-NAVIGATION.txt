@@ -103,6 +103,7 @@
 - confirmDelete
 - closeConfirm
 - modal-related popstate
+- askRestoreSource
 
 09-export.js
 
@@ -148,3 +149,4 @@
 - cloud status control
 - history snapshot creation
 - restore არჩევანი (Latest + History)
+- cloud restore source picker (cancel / empty / picked)
