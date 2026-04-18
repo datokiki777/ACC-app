@@ -1,8 +1,8 @@
 {
   "name": "ACC",
   "short_name": "ACC",
-  "start_url": "/acc/",
-  "scope": "/acc/",
+  "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
   "background_color": "#071633",
