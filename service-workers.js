@@ -26,6 +26,7 @@ const APP_SHELL = [
   "./js/08-modals.js",
   "./js/09-export.js",
   "./js/10-init.js",
+  "./js/11-cloud-sync.js",
 
   "./icons/favicon.ico",
   "./icons/favicon-32x32.png",
