@@ -582,6 +582,12 @@ async function applyImportedBackupReplace(data) {
 
   render();
   closeModal();
+
+  if (typeof scheduleAccAutoSync === "function") {
+    scheduleAccAutoSync();
+  } else if (typeof setAccCloudStatus === "function") {
+    setAccCloudStatus("local");
+  }
 }
 
 async function applyImportedBackupMerge(data) {
@@ -608,6 +614,12 @@ async function applyImportedBackupMerge(data) {
 
   render();
   closeModal();
+
+  if (typeof scheduleAccAutoSync === "function") {
+    scheduleAccAutoSync();
+  } else if (typeof setAccCloudStatus === "function") {
+    setAccCloudStatus("local");
+  }
 }
 
 function openImportModeModal(data) {

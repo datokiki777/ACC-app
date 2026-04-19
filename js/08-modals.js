@@ -2,8 +2,25 @@
 // Modal and Confirm Dialogs Engine
 
 let _suppressPopstate = false;
+let _modalHistoryActive = false;
+
+function resetModalUi() {
+  modalOverlay.classList.remove("show");
+  modalContent.innerHTML = "";
+  fab.classList.remove("fab-back");
+  fab.style.pointerEvents = "";
+  fab.style.opacity = "";
+  fab.textContent = "+";
+  fab.onclick = openMainAddMenu;
+
+  const anyExpanded = state.people.some(p => p.expanded);
+  if (anyExpanded) fab.classList.add("fab-hidden");
+  else fab.classList.remove("fab-hidden");
+}
 
 function openModal(title, html, afterOpen) {
+  const wasOpen = modalOverlay.classList.contains("show");
+
   modalTitle.textContent = title;
   modalContent.innerHTML = html;
   modalOverlay.classList.add("show");
@@ -13,45 +30,60 @@ function openModal(title, html, afterOpen) {
   fab.style.opacity = "";
   fab.textContent = "←";
   fab.onclick = closeModal;
-  history.pushState({ modal: true }, "");
+
+  if (!wasOpen) {
+    history.pushState({ modal: true }, "");
+    _modalHistoryActive = true;
+  } else if (_modalHistoryActive) {
+    history.replaceState({ modal: true }, "");
+  }
+
   if (typeof afterOpen === "function") afterOpen();
 }
 
 function closeModal() {
-  modalOverlay.classList.remove("show");
-  modalContent.innerHTML = "";
-  fab.classList.remove("fab-back");
-  fab.style.pointerEvents = "";
-  fab.style.opacity = "";
-  fab.textContent = "+";
-  fab.onclick = openMainAddMenu;
-  const anyExpanded = state.people.some(p => p.expanded);
-  if (anyExpanded) fab.classList.add("fab-hidden");
-  else fab.classList.remove("fab-hidden");
+  const shouldPopHistory = modalOverlay.classList.contains("show") && _modalHistoryActive;
+
+  resetModalUi();
+
+  if (shouldPopHistory) {
+    _modalHistoryActive = false;
+    _suppressPopstate = true;
+    history.back();
+  }
+
   requestAnimationFrame(() => render());
 }
 
 window.addEventListener("popstate", async () => {
-  if (_suppressPopstate) { _suppressPopstate = false; return; }
+  if (_suppressPopstate) {
+    _suppressPopstate = false;
+    return;
+  }
+
   if (modalOverlay.classList.contains("show")) {
-    modalOverlay.classList.remove("show");
-    modalContent.innerHTML = "";
-    fab.classList.remove("fab-back");
-    fab.style.pointerEvents = "";
-    fab.style.opacity = "";
-    fab.textContent = "+";
-    fab.onclick = openMainAddMenu;
-    const anyExpanded = state.people.some(p => p.expanded);
-    if (anyExpanded) fab.classList.add("fab-hidden");
-    else fab.classList.remove("fab-hidden");
+    _modalHistoryActive = false;
+    resetModalUi();
     requestAnimationFrame(() => render());
     return;
   }
-  if (confirmOverlay.classList.contains("show")) { closeConfirm(); return; }
-  if (state.statsExpanded) { state.statsExpanded = false; render(); return; }
+
+  if (confirmOverlay.classList.contains("show")) {
+    closeConfirm();
+    return;
+  }
+
+  if (state.statsExpanded) {
+    state.statsExpanded = false;
+    render();
+    return;
+  }
+
   const anyExpanded = state.people.some(p => p.expanded);
   if (anyExpanded) {
-    state.people.forEach(p => { p.expanded = false; });
+    state.people.forEach(p => {
+      p.expanded = false;
+    });
     await saveData();
     render();
   }
@@ -94,7 +126,6 @@ function askRestoreSource(options) {
         <button class="primary-btn" id="restoreOkBtn" disabled>Restore</button>
       </div>
     `, () => {
-
       const items = modalContent.querySelectorAll(".restore-item");
       const okBtn = document.getElementById("restoreOkBtn");
       const cancelBtn = document.getElementById("restoreCancelBtn");
