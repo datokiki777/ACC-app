@@ -1634,6 +1634,16 @@
 .cloud-sync-status-error { color: var(--red); }
 .cloud-sync-status-signed-out { color: var(--muted); }
 
+.cloud-save-btn {
+  border-color: rgba(76, 141, 255, 0.4) !important;
+  color: #a9c8ff !important;
+}
+
+.cloud-load-btn {
+  border-color: rgba(87, 219, 143, 0.4) !important;
+  color: #9ee8bd !important;
+}
+
 .choose-restore-source {
   border: 1px solid transparent;
   transition: border-color 0.16s ease, background 0.16s ease;

@@ -232,11 +232,8 @@ async function openDataBackupModal() {
 
 ${(typeof cloudUser !== "undefined" && cloudUser) ? `
 <div class="backup-actions" style="margin-top:10px;">
-  <button type="button" class="secondary-btn backup-action-btn backup-action-main" id="saveCloudBtn">☁️ Save Cloud</button>
-  <button type="button" class="secondary-btn backup-action-btn backup-action-main" id="loadCloudBtn">☁️ Load Cloud</button>
-</div>
-<div class="backup-actions" style="margin-top:10px;">
-  <button type="button" class="secondary-btn backup-action-btn backup-action-main" id="restoreCloudBtn" style="grid-column:1 / -1;">🕐 Restore from Backup</button>
+  <button type="button" class="secondary-btn backup-action-btn backup-action-main cloud-save-btn" id="saveCloudBtn">📤 Save Cloud</button>
+  <button type="button" class="secondary-btn backup-action-btn backup-action-main cloud-load-btn" id="loadCloudBtn">📥 Load Cloud</button>
 </div>
 ` : ""}
 
@@ -251,7 +248,6 @@ ${(typeof cloudUser !== "undefined" && cloudUser) ? `
       const closeBtn = document.getElementById("backupCloseBtn");
       const saveCloudBtn = document.getElementById("saveCloudBtn");
       const loadCloudBtn = document.getElementById("loadCloudBtn");
-      const restoreCloudBtn = document.getElementById("restoreCloudBtn");
 
       if (typeof setCloudStatus === "function") setCloudStatus(cloudSyncStatus);
 
@@ -261,14 +257,10 @@ ${(typeof cloudUser !== "undefined" && cloudUser) ? `
         };
       }
 
+      // Load Cloud opens the source picker (Latest Cloud + daily history),
+      // so picking "the latest" and picking "a specific day" both live here.
       if (loadCloudBtn) {
-        loadCloudBtn.onclick = async () => {
-          if (typeof pullMergeAndPush === "function") await pullMergeAndPush(state.mode);
-        };
-      }
-
-      if (restoreCloudBtn) {
-        restoreCloudBtn.onclick = () => {
+        loadCloudBtn.onclick = () => {
           closeModal();
           if (typeof openRestoreBackupModal === "function") openRestoreBackupModal();
         };
