@@ -64,11 +64,26 @@
       display: flex;
       align-items: center;
       justify-content: center;
+      /* Solid color matches manifest background_color exactly, so the first
+         frame looks identical to the OS-generated splash. No visible jump. */
+      background: #071633;
+      transition: opacity 0.35s ease, visibility 0.35s ease;
+    }
+
+    #startupSplash::before {
+      content: "";
+      position: absolute;
+      inset: 0;
       background:
         radial-gradient(circle at 50% 32%, rgba(255, 196, 64, 0.18), transparent 26%),
         radial-gradient(circle at 50% 18%, rgba(255, 255, 255, 0.08), transparent 18%),
         linear-gradient(180deg, #0b1d3f 0%, #071633 55%, #050f24 100%);
-      transition: opacity 0.35s ease, visibility 0.35s ease;
+      opacity: 0;
+      animation: splashGlowIn 0.5s ease 0.12s forwards;
+    }
+
+    @keyframes splashGlowIn {
+      to { opacity: 1; }
     }
 
     #startupSplash.is-hidden {
@@ -100,6 +115,8 @@
       font-weight: 800;
       letter-spacing: 0.04em;
       color: #ffffff;
+      opacity: 0;
+      animation: splashTextIn 0.4s ease 0.18s forwards;
     }
 
     .startup-subtitle {
@@ -108,6 +125,8 @@
       color: rgba(255, 255, 255, 0.72);
       letter-spacing: 0.08em;
       text-transform: uppercase;
+      opacity: 0;
+      animation: splashTextIn 0.4s ease 0.18s forwards;
     }
 
     .startup-glow {
@@ -121,6 +140,12 @@
         rgba(255,255,255,0.15)
       );
       box-shadow: 0 0 20px rgba(255, 196, 64, 0.35);
+      opacity: 0;
+      animation: splashTextIn 0.4s ease 0.18s forwards;
+    }
+
+    @keyframes splashTextIn {
+      to { opacity: 1; }
     }
   </style>
 
