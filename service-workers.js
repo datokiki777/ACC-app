@@ -1,5 +1,5 @@
-const CACHE_NAME = "acc-shell-v10.13";
-const RUNTIME_CACHE = "acc-runtime-v10.13";
+const CACHE_NAME = "acc-shell-v10.14";
+const RUNTIME_CACHE = "acc-runtime-v10.14";
 
 const APP_SHELL = [
   "./",
@@ -49,7 +49,10 @@ self.addEventListener("install", event => {
     (async () => {
       const cache = await caches.open(CACHE_NAME);
       await cache.addAll(APP_SHELL.map(path => new Request(path, { cache: "reload" })));
-      await self.skipWaiting();
+      // Do NOT call skipWaiting() here. The new worker must stay in the
+      // "waiting" state so the page can show the update-consent dialog.
+      // It only activates once the user approves and the page sends
+      // the SKIP_WAITING message (see the "message" listener below).
     })()
   );
 });
