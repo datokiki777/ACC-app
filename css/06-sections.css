@@ -1624,55 +1624,6 @@
   border: 1px solid rgba(255, 194, 82, 0.28);
 }
 
-.cloud-sync-status {
-  font-weight: 800;
-  font-size: 13px;
-}
-
-.cloud-sync-status-synced { color: var(--green); }
-.cloud-sync-status-syncing { color: var(--gold); }
-.cloud-sync-status-error { color: var(--red); }
-.cloud-sync-status-signed-out { color: var(--muted); }
-
-.cloud-save-btn {
-  border-color: rgba(76, 141, 255, 0.4) !important;
-  color: #a9c8ff !important;
-}
-
-.cloud-load-btn {
-  border-color: rgba(87, 219, 143, 0.4) !important;
-  color: #9ee8bd !important;
-}
-
-.cloud-save-btn, .cloud-load-btn {
-  letter-spacing: 0;
-}
-
-.cloud-btn-arrow {
-  display: inline-block;
-  font-weight: 900;
-  font-size: 17px;
-  margin: 0 2px 0 3px;
-}
-
-.cloud-save-btn .cloud-btn-arrow {
-  color: #5692ff;
-}
-
-.cloud-load-btn .cloud-btn-arrow {
-  color: #35c26b;
-}
-
-.choose-restore-source {
-  border: 1px solid transparent;
-  transition: border-color 0.16s ease, background 0.16s ease;
-}
-
-.choose-restore-source.choose-restore-selected {
-  border-color: rgba(76, 141, 255, 0.55);
-  background: rgba(76, 141, 255, 0.14);
-}
-
 /* ==================== Statistics Modal ==================== */
 
 .stats-scope-switch {
