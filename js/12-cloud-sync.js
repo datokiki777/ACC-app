@@ -15,7 +15,7 @@ function cloudStorageKey(mode) {
 
 function cloudDocRef(mode) {
   if (!cloudUser) return null;
-  return firebase.firestore().collection("users").doc(cloudUser.uid).collection("data").doc(mode);
+  return firebase.firestore().collection("acc_users").doc(cloudUser.uid).collection("data").doc(mode);
 }
 
 function setCloudStatus(status) {
