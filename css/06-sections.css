@@ -1644,11 +1644,15 @@
   color: #9ee8bd !important;
 }
 
+.cloud-save-btn, .cloud-load-btn {
+  letter-spacing: 0;
+}
+
 .cloud-btn-arrow {
   display: inline-block;
   font-weight: 900;
   font-size: 17px;
-  margin-right: 2px;
+  margin: 0 2px 0 3px;
 }
 
 .cloud-save-btn .cloud-btn-arrow {
