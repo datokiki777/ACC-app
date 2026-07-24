@@ -6,7 +6,7 @@ let cloudUser = null;
 let cloudSyncStatus = "signed-out"; // signed-out | syncing | synced | error
 let cloudUnsubscribers = [];
 let cloudPushTimers = {};
-const CLOUD_PUSH_DELAY = 2500;
+const CLOUD_PUSH_DELAY = 4000;
 const CLOUD_MODES = ["personal", "work"];
 
 function cloudStorageKey(mode) {
@@ -30,16 +30,14 @@ function cloudHistoryDocRef(mode, dayKey) {
   return firebase.firestore().collection("acc_users").doc(cloudUser.uid).collection(`history_${mode}`).doc(dayKey);
 }
 
-// One snapshot per calendar day per mode, so there's always something to
-// roll back to if a bad sync/merge or accidental mass-delete happens.
-async function saveHistorySnapshotIfNeeded(mode, people) {
+// One entry per calendar day per mode, always overwritten with the latest
+// push — so by the time the day ends, that day's history holds whatever the
+// data looked like last, not just its first save of the day.
+async function saveHistorySnapshot(mode, people) {
   const ref = cloudHistoryDocRef(mode, cloudDayKey());
   if (!ref) return;
-  const flagKey = `acc_cloud_history_saved_${mode}_${cloudDayKey()}`;
   try {
-    if (await dbGet(flagKey).catch(() => null)) return; // already saved today
     await ref.set({ people, savedAt: firebase.firestore.FieldValue.serverTimestamp() });
-    await dbSet(flagKey, "1");
   } catch (err) {
     console.warn("Cloud history snapshot failed:", err);
   }
@@ -99,7 +97,7 @@ async function pullMergeAndPush(mode) {
 
     await ref.set({ people: merged, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
     setCloudStatus("synced");
-    saveHistorySnapshotIfNeeded(mode, merged);
+    saveHistorySnapshot(mode, merged);
   } catch (err) {
     console.warn("Cloud sync (pull+merge) failed:", err);
     setCloudStatus("error");
@@ -152,7 +150,7 @@ async function pushToCloud(mode) {
     const people = raw ? JSON.parse(raw) : [];
     await ref.set({ people, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
     setCloudStatus("synced");
-    saveHistorySnapshotIfNeeded(mode, people);
+    saveHistorySnapshot(mode, people);
   } catch (err) {
     console.warn("Cloud push failed:", err);
     setCloudStatus("error");
@@ -308,6 +306,12 @@ function openCloudSyncModal() {
   });
 }
 
+function cloudFormatDayKey(dayKey) {
+  const [y, m, d] = String(dayKey || "").split("-");
+  if (!y || !m || !d) return dayKey || "";
+  return `${d}/${m}/${y}`;
+}
+
 async function openRestoreBackupModal() {
   const mode = state.mode;
   const modeLabel = mode === "work" ? "Work" : "Personal";
@@ -315,45 +319,86 @@ async function openRestoreBackupModal() {
   openModal("🕐 Restore Backup", `<div class="empty-state mini-empty">Loading ${escapeHtml(modeLabel)} backups…</div>`, () => {});
 
   try {
-    const snap = await firebase.firestore()
-      .collection("acc_users").doc(cloudUser.uid)
-      .collection(`history_${mode}`)
-      .orderBy(firebase.firestore.FieldPath.documentId(), "desc")
-      .limit(30)
-      .get();
+    const [latestSnap, historySnap] = await Promise.all([
+      cloudDocRef(mode).get(),
+      firebase.firestore()
+        .collection("acc_users").doc(cloudUser.uid)
+        .collection(`history_${mode}`)
+        .orderBy(firebase.firestore.FieldPath.documentId(), "desc")
+        .limit(30)
+        .get()
+    ]);
 
-    if (snap.empty) {
-      openModal("🕐 Restore Backup", `<div class="empty-state mini-empty">No ${escapeHtml(modeLabel)} backups yet. One is saved automatically once a day while you're signed in.</div>`, () => {});
+    const sources = [];
+
+    if (latestSnap.exists) {
+      const data = latestSnap.data();
+      const updatedAt = data.updatedAt && data.updatedAt.toDate ? data.updatedAt.toDate() : null;
+      sources.push({
+        type: "latest",
+        label: `Latest Cloud - ${updatedAt ? cloudFormatDayKey(cloudDayKey(updatedAt)) : "—"}`,
+        count: (data.people || []).length
+      });
+    }
+
+    historySnap.docs.forEach(doc => {
+      sources.push({
+        type: "history",
+        day: doc.id,
+        label: `History - ${cloudFormatDayKey(doc.id)}`,
+        count: (doc.data().people || []).length
+      });
+    });
+
+    if (!sources.length) {
+      openModal("🕐 Restore Backup", `<div class="empty-state mini-empty">No ${escapeHtml(modeLabel)} backups yet. One is saved automatically each day while you're signed in.</div>`, () => {});
       return;
     }
 
-    const days = snap.docs.map(doc => ({ day: doc.id, count: (doc.data().people || []).length }));
-
     openModal(`🕐 Restore ${modeLabel}`, `
       <div class="inline-note" style="margin-bottom:12px;">
-        Pick a day to restore from. This merges that day's data back in — nothing currently on your device is deleted.
+        Pick a source to restore from. This merges that backup into your current data — nothing currently on your device is deleted.
       </div>
-      <div class="sheet-list">
-        ${days.map(d => `
-          <div class="sheet-item choose-restore-day" data-day="${d.day}">
-            <span class="sheet-item-title">${escapeHtml(d.day)}</span>
-            <span class="sheet-item-sub">${d.count} ${d.count === 1 ? "person" : "people"}</span>
+      <div class="sheet-list" id="restoreSourceList">
+        ${sources.map((s, idx) => `
+          <div class="sheet-item choose-restore-source" data-index="${idx}">
+            <span class="sheet-item-title">${idx + 1}. ${escapeHtml(s.label)}</span>
+            <span class="sheet-item-sub">${s.count} ${s.count === 1 ? "person" : "people"}</span>
           </div>
         `).join("")}
       </div>
+      <div class="quick-actions-row quick-actions-row-2" style="margin-top:14px;">
+        <button type="button" class="secondary-btn" id="restoreCancelBtn">Cancel</button>
+        <button type="button" class="primary-btn" id="restoreConfirmBtn" disabled style="opacity:0.5;">Restore</button>
+      </div>
     `, () => {
-      document.querySelectorAll(".choose-restore-day").forEach(btn => {
-        btn.onclick = () => {
-          const day = btn.dataset.day;
-          closeModal();
-          confirmDelete(
-            `Restore ${modeLabel} data from ${day}? This merges that backup into your current data.`,
-            () => restoreFromHistoryDay(mode, day),
-            false,
-            "Restore"
-          );
+      let selected = null;
+      const items = document.querySelectorAll(".choose-restore-source");
+      const confirmBtn = document.getElementById("restoreConfirmBtn");
+      const cancelBtn = document.getElementById("restoreCancelBtn");
+
+      items.forEach(item => {
+        item.onclick = () => {
+          items.forEach(i => i.classList.remove("choose-restore-selected"));
+          item.classList.add("choose-restore-selected");
+          selected = sources[Number(item.dataset.index)];
+          confirmBtn.disabled = false;
+          confirmBtn.style.opacity = "1";
         };
       });
+
+      if (cancelBtn) cancelBtn.onclick = () => closeModal();
+
+      if (confirmBtn) confirmBtn.onclick = () => {
+        if (!selected) return;
+        closeModal();
+        confirmDelete(
+          `Restore ${modeLabel} from "${selected.label}"? This merges that backup into your current data.`,
+          () => restoreFromSource(mode, selected),
+          false,
+          "Restore"
+        );
+      };
     });
   } catch (err) {
     console.warn("Loading backups failed:", err);
@@ -361,12 +406,20 @@ async function openRestoreBackupModal() {
   }
 }
 
-async function restoreFromHistoryDay(mode, day) {
+async function restoreFromSource(mode, source) {
   try {
-    const ref = cloudHistoryDocRef(mode, day);
-    const snap = await ref.get();
-    if (!snap.exists) return;
-    const backupPeople = snap.data().people || [];
+    let backupPeople = [];
+
+    if (source.type === "latest") {
+      const snap = await cloudDocRef(mode).get();
+      if (!snap.exists) return;
+      backupPeople = snap.data().people || [];
+    } else {
+      const ref = cloudHistoryDocRef(mode, source.day);
+      const snap = await ref.get();
+      if (!snap.exists) return;
+      backupPeople = snap.data().people || [];
+    }
 
     const key = cloudStorageKey(mode);
     const localRaw = await dbGet(key).catch(() => null);

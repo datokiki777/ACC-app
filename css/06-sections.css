@@ -1634,6 +1634,16 @@
 .cloud-sync-status-error { color: var(--red); }
 .cloud-sync-status-signed-out { color: var(--muted); }
 
+.choose-restore-source {
+  border: 1px solid transparent;
+  transition: border-color 0.16s ease, background 0.16s ease;
+}
+
+.choose-restore-source.choose-restore-selected {
+  border-color: rgba(76, 141, 255, 0.55);
+  background: rgba(76, 141, 255, 0.14);
+}
+
 /* ==================== Statistics Modal ==================== */
 
 .stats-scope-switch {
