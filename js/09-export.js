@@ -362,12 +362,14 @@ function mergeEntriesArray(currentEntries = [], incomingEntries = []) {
 
     if (incomingEntry?.id) {
       matchIndex = result.findIndex(entry => entry?.id === incomingEntry.id);
-    }
-
-    if (matchIndex === -1) {
+      // A stable id that didn't match anything means this is genuinely a
+      // different entry — never fall back to fingerprint guessing for it,
+      // or two distinct same-day/same-amount entries get collapsed into one.
+    } else {
       const incomingFp = entryFingerprint(incomingEntry);
       matchIndex = result.findIndex((entry, idx) => {
         if (usedIndexes.has(idx)) return false;
+        if (entry?.id) return false; // don't guess-match against entries that already have a real id
         return entryFingerprint(entry) === incomingFp;
       });
     }
@@ -428,12 +430,11 @@ function mergePeopleArrays(currentPeople = [], incomingPeople = []) {
 
     if (incomingPerson?.id) {
       matchIndex = result.findIndex(person => person?.id === incomingPerson.id);
-    }
-
-    if (matchIndex === -1) {
+    } else {
       const incomingFp = personFingerprint(incomingPerson);
       matchIndex = result.findIndex((person, idx) => {
         if (usedIndexes.has(idx)) return false;
+        if (person?.id) return false; // don't guess-match against people who already have a real id
         return personFingerprint(person) === incomingFp;
       });
     }
