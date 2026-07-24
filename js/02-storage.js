@@ -67,6 +67,7 @@ async function dbClear() {
 async function saveData() {
   const key = state.mode === "work" ? WORK_STORAGE_KEY : PERSONAL_STORAGE_KEY;
   await dbSet(key, JSON.stringify(state.people));
+  if (typeof notifyCloudOfLocalSave === "function") notifyCloudOfLocalSave(state.mode);
 }
 
 // ✅ CORRECT loadDataByMode

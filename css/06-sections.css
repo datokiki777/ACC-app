@@ -1624,6 +1624,16 @@
   border: 1px solid rgba(255, 194, 82, 0.28);
 }
 
+.cloud-sync-status {
+  font-weight: 800;
+  font-size: 13px;
+}
+
+.cloud-sync-status-synced { color: var(--green); }
+.cloud-sync-status-syncing { color: var(--gold); }
+.cloud-sync-status-error { color: var(--red); }
+.cloud-sync-status-signed-out { color: var(--muted); }
+
 /* ==================== Statistics Modal ==================== */
 
 .stats-scope-switch {
