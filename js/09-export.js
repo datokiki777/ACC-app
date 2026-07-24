@@ -215,27 +215,12 @@ async function openDataBackupModal() {
       <span class="backup-status backup-status-${status.tone}">${status.label}</span>
     </span>
   </div>
-
-  ${(typeof cloudUser !== "undefined" && cloudUser) ? `
-  <div class="backup-row">
-    <span class="backup-label">☁️ Cloud Sync</span>
-    <span class="backup-dots"></span>
-    <span class="backup-value"><span class="cloud-sync-status"></span></span>
-  </div>
-  ` : ""}
 </div>
 
 <div class="backup-actions">
   <button type="button" class="secondary-btn backup-action-btn backup-action-main" id="backupNowBtn">💾 Backup</button>
   <button type="button" class="secondary-btn backup-action-btn backup-action-main" id="restoreNowBtn">♻️ Restore</button>
 </div>
-
-${(typeof cloudUser !== "undefined" && cloudUser) ? `
-<div class="backup-actions" style="margin-top:10px;">
-  <button type="button" class="secondary-btn backup-action-btn backup-action-main cloud-save-btn" id="saveCloudBtn">☁️<span class="cloud-btn-arrow">↑</span> Save Cloud</button>
-  <button type="button" class="secondary-btn backup-action-btn backup-action-main cloud-load-btn" id="loadCloudBtn">☁️<span class="cloud-btn-arrow">↓</span> Load Cloud</button>
-</div>
-` : ""}
 
 <div class="backup-close-row">
   <button type="button" class="secondary-btn backup-close-btn" id="backupCloseBtn">Close</button>
@@ -246,25 +231,6 @@ ${(typeof cloudUser !== "undefined" && cloudUser) ? `
       const backupBtn = document.getElementById("backupNowBtn");
       const restoreBtn = document.getElementById("restoreNowBtn");
       const closeBtn = document.getElementById("backupCloseBtn");
-      const saveCloudBtn = document.getElementById("saveCloudBtn");
-      const loadCloudBtn = document.getElementById("loadCloudBtn");
-
-      if (typeof setCloudStatus === "function") setCloudStatus(cloudSyncStatus);
-
-      if (saveCloudBtn) {
-        saveCloudBtn.onclick = async () => {
-          if (typeof pushToCloud === "function") await pushToCloud(state.mode);
-        };
-      }
-
-      // Load Cloud opens the source picker (Latest Cloud + daily history),
-      // so picking "the latest" and picking "a specific day" both live here.
-      if (loadCloudBtn) {
-        loadCloudBtn.onclick = () => {
-          closeModal();
-          if (typeof openRestoreBackupModal === "function") openRestoreBackupModal();
-        };
-      }
 
       if (backupBtn) {
         backupBtn.onclick = async () => {
