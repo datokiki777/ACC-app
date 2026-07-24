@@ -232,8 +232,8 @@ async function openDataBackupModal() {
 
 ${(typeof cloudUser !== "undefined" && cloudUser) ? `
 <div class="backup-actions" style="margin-top:10px;">
-  <button type="button" class="secondary-btn backup-action-btn backup-action-main cloud-save-btn" id="saveCloudBtn">📤 Save Cloud</button>
-  <button type="button" class="secondary-btn backup-action-btn backup-action-main cloud-load-btn" id="loadCloudBtn">📥 Load Cloud</button>
+  <button type="button" class="secondary-btn backup-action-btn backup-action-main cloud-save-btn" id="saveCloudBtn"><span class="cloud-btn-arrow">↑</span> Save Cloud</button>
+  <button type="button" class="secondary-btn backup-action-btn backup-action-main cloud-load-btn" id="loadCloudBtn"><span class="cloud-btn-arrow">↓</span> Load Cloud</button>
 </div>
 ` : ""}
 

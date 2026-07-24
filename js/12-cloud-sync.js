@@ -339,7 +339,7 @@ async function openRestoreBackupModal() {
 
     openModal(`🕐 Restore ${modeLabel}`, `
       <div class="inline-note" style="margin-bottom:12px;">
-        Pick a source to restore from. This merges that backup into your current data — nothing currently on your device is deleted.
+        Pick a source to restore from. You'll choose Merge or Replace on the next step.
       </div>
       <div class="sheet-list" id="restoreSourceList">
         ${sources.map((s, idx) => `
@@ -374,12 +374,7 @@ async function openRestoreBackupModal() {
       if (confirmBtn) confirmBtn.onclick = () => {
         if (!selected) return;
         closeModal();
-        confirmDelete(
-          `Restore ${modeLabel} from "${selected.label}"? This merges that backup into your current data.`,
-          () => restoreFromSource(mode, selected),
-          false,
-          "Restore"
-        );
+        openRestoreModeModal(mode, modeLabel, selected);
       };
     });
   } catch (err) {
@@ -388,7 +383,61 @@ async function openRestoreBackupModal() {
   }
 }
 
-async function restoreFromSource(mode, source) {
+async function openRestoreModeModal(mode, modeLabel, source) {
+  let backupCount = source.count;
+  let localCount = "?";
+  try {
+    const localRaw = await dbGet(cloudStorageKey(mode)).catch(() => null);
+    const localPeople = localRaw ? JSON.parse(localRaw) : [];
+    localCount = localPeople.length;
+  } catch (e) {}
+
+  openModal("Restore Mode", `
+    <div class="inline-note" style="margin-bottom:12px;">
+      Restoring <strong>${escapeHtml(modeLabel)}</strong> from "${escapeHtml(source.label)}" (${backupCount} ${backupCount === 1 ? "person" : "people"}).
+      Currently on this device: ${localCount} ${localCount === 1 ? "person" : "people"}.
+      <br><br>
+      <strong>Merge</strong> adds the backup's data into what you have now — nothing is deleted.<br>
+      <strong>Replace</strong> discards everything currently on this device and in the cloud for ${escapeHtml(modeLabel)}, using only the backup.
+    </div>
+    <div class="quick-actions-row quick-actions-row-2" style="margin-bottom:10px;">
+      <button type="button" class="secondary-btn" id="restoreMergeBtn">Merge</button>
+      <button type="button" class="danger-btn" id="restoreReplaceBtn">Replace</button>
+    </div>
+    <div class="quick-actions-row" style="display:grid;grid-template-columns:1fr;">
+      <button type="button" class="primary-btn" id="restoreModeCancelBtn" style="min-height:48px;border-radius:14px;font-weight:800;font-size:15px;">Cancel</button>
+    </div>
+  `, () => {
+    const mergeBtn = document.getElementById("restoreMergeBtn");
+    const replaceBtn = document.getElementById("restoreReplaceBtn");
+    const cancelBtn = document.getElementById("restoreModeCancelBtn");
+
+    if (cancelBtn) cancelBtn.onclick = () => closeModal();
+
+    if (mergeBtn) {
+      mergeBtn.onclick = () => {
+        closeModal();
+        restoreFromSource(mode, source, "merge");
+      };
+    }
+
+    if (replaceBtn) {
+      replaceBtn.onclick = () => {
+        confirmDelete(
+          `Replace will erase everything currently in ${modeLabel} (${localCount} ${localCount === 1 ? "person" : "people"}) on this device and in the cloud, keeping only the ${backupCount} from "${source.label}". This can't be undone. Continue?`,
+          () => {
+            closeModal();
+            restoreFromSource(mode, source, "replace");
+          },
+          false,
+          "Replace"
+        );
+      };
+    }
+  });
+}
+
+async function restoreFromSource(mode, source, action = "merge") {
   try {
     let backupPeople = [];
 
@@ -403,25 +452,28 @@ async function restoreFromSource(mode, source) {
       backupPeople = snap.data().people || [];
     }
 
+    const normalizedBackup = normalizeImportedPeopleArray(backupPeople);
     const key = cloudStorageKey(mode);
-    const localRaw = await dbGet(key).catch(() => null);
-    const localPeople = localRaw ? JSON.parse(localRaw) : [];
 
-    const merged = mergePeopleArrays(
-      normalizeImportedPeopleArray(localPeople),
-      normalizeImportedPeopleArray(backupPeople)
-    );
+    let finalPeople;
+    if (action === "replace") {
+      finalPeople = normalizedBackup;
+    } else {
+      const localRaw = await dbGet(key).catch(() => null);
+      const localPeople = localRaw ? JSON.parse(localRaw) : [];
+      finalPeople = mergePeopleArrays(normalizeImportedPeopleArray(localPeople), normalizedBackup);
+    }
 
-    await dbSet(key, JSON.stringify(merged));
+    await dbSet(key, JSON.stringify(finalPeople));
 
     if (state.mode === mode) {
-      state.people = merged.map(p => ({ ...p, expanded: false }));
+      state.people = finalPeople.map(p => ({ ...p, expanded: false }));
       render();
     }
 
     if (cloudUser) {
       const docRef = cloudDocRef(mode);
-      if (docRef) await docRef.set({ people: merged, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
+      if (docRef) await docRef.set({ people: finalPeople, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
     }
   } catch (err) {
     console.warn("Restore failed:", err);

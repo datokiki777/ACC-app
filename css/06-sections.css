@@ -1644,6 +1644,21 @@
   color: #9ee8bd !important;
 }
 
+.cloud-btn-arrow {
+  display: inline-block;
+  font-weight: 900;
+  font-size: 17px;
+  margin-right: 2px;
+}
+
+.cloud-save-btn .cloud-btn-arrow {
+  color: #5692ff;
+}
+
+.cloud-load-btn .cloud-btn-arrow {
+  color: #35c26b;
+}
+
 .choose-restore-source {
   border: 1px solid transparent;
   transition: border-color 0.16s ease, background 0.16s ease;
