@@ -281,32 +281,12 @@ function openMainMenu() {
             <span class="sheet-item-title">Data & Backup</span>
           </span>
         </button>
-
-        <button type="button" class="sheet-item menu-sheet-item menu-sheet-item-lg" id="menuAuthBtn">
-          <span class="sheet-item-title-row">
-            <span class="sheet-item-icon">${typeof cloudUser !== "undefined" && cloudUser ? "🔒" : "🔓"}</span>
-            <span class="sheet-item-title">${typeof cloudUser !== "undefined" && cloudUser ? "Sign Out" : "Sign In"}</span>
-          </span>
-        </button>
       </div>
     `,
     () => {
       const exportPersonBtn = document.getElementById("menuExportPersonBtn");
       const exportAllBtn = document.getElementById("menuExportAllBtn");
       const dataBackupBtn = document.getElementById("menuDataBackupBtn");
-      const authBtn = document.getElementById("menuAuthBtn");
-
-      if (authBtn) {
-        authBtn.onclick = async () => {
-          if (typeof cloudUser !== "undefined" && cloudUser) {
-            closeModal();
-            if (typeof cloudSignOut === "function") await cloudSignOut();
-          } else {
-            closeModal();
-            if (typeof openCloudSyncModal === "function") openCloudSyncModal();
-          }
-        };
-      }
 
       if (exportPersonBtn) {
         exportPersonBtn.onclick = () => {
