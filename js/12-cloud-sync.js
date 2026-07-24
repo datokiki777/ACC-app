@@ -18,6 +18,33 @@ function cloudDocRef(mode) {
   return firebase.firestore().collection("acc_users").doc(cloudUser.uid).collection("data").doc(mode);
 }
 
+function cloudDayKey(date = new Date()) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+function cloudHistoryDocRef(mode, dayKey) {
+  if (!cloudUser) return null;
+  return firebase.firestore().collection("acc_users").doc(cloudUser.uid).collection(`history_${mode}`).doc(dayKey);
+}
+
+// One snapshot per calendar day per mode, so there's always something to
+// roll back to if a bad sync/merge or accidental mass-delete happens.
+async function saveHistorySnapshotIfNeeded(mode, people) {
+  const ref = cloudHistoryDocRef(mode, cloudDayKey());
+  if (!ref) return;
+  const flagKey = `acc_cloud_history_saved_${mode}_${cloudDayKey()}`;
+  try {
+    if (await dbGet(flagKey).catch(() => null)) return; // already saved today
+    await ref.set({ people, savedAt: firebase.firestore.FieldValue.serverTimestamp() });
+    await dbSet(flagKey, "1");
+  } catch (err) {
+    console.warn("Cloud history snapshot failed:", err);
+  }
+}
+
 function setCloudStatus(status) {
   cloudSyncStatus = status;
   const el = document.getElementById("cloudSyncStatusBadge");
@@ -72,6 +99,7 @@ async function pullMergeAndPush(mode) {
 
     await ref.set({ people: merged, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
     setCloudStatus("synced");
+    saveHistorySnapshotIfNeeded(mode, merged);
   } catch (err) {
     console.warn("Cloud sync (pull+merge) failed:", err);
     setCloudStatus("error");
@@ -124,6 +152,7 @@ async function pushToCloud(mode) {
     const people = raw ? JSON.parse(raw) : [];
     await ref.set({ people, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
     setCloudStatus("synced");
+    saveHistorySnapshotIfNeeded(mode, people);
   } catch (err) {
     console.warn("Cloud push failed:", err);
     setCloudStatus("error");
@@ -190,6 +219,7 @@ function openCloudSyncModal() {
           <span class="backup-dots"></span>
           <span class="backup-value"><span id="cloudSyncStatusBadge" class="cloud-sync-status"></span></span>
         </div>
+        <button type="button" class="secondary-btn full-btn" id="cloudRestoreBtn" style="min-height:48px;border-radius:14px;font-weight:800;margin-bottom:10px;">🕐 Restore from Backup</button>
         <button type="button" class="danger-btn full-btn" id="cloudSignOutBtn" style="min-height:48px;border-radius:14px;font-weight:800;">Sign Out</button>
       </div>
     `, () => {
@@ -199,6 +229,8 @@ function openCloudSyncModal() {
         await cloudSignOut();
         closeModal();
       };
+      const restoreBtn = document.getElementById("cloudRestoreBtn");
+      if (restoreBtn) restoreBtn.onclick = () => openRestoreBackupModal();
     });
     return;
   }
@@ -274,4 +306,90 @@ function openCloudSyncModal() {
       }
     };
   });
+}
+
+async function openRestoreBackupModal() {
+  const mode = state.mode;
+  const modeLabel = mode === "work" ? "Work" : "Personal";
+
+  openModal("🕐 Restore Backup", `<div class="empty-state mini-empty">Loading ${escapeHtml(modeLabel)} backups…</div>`, () => {});
+
+  try {
+    const snap = await firebase.firestore()
+      .collection("acc_users").doc(cloudUser.uid)
+      .collection(`history_${mode}`)
+      .orderBy(firebase.firestore.FieldPath.documentId(), "desc")
+      .limit(30)
+      .get();
+
+    if (snap.empty) {
+      openModal("🕐 Restore Backup", `<div class="empty-state mini-empty">No ${escapeHtml(modeLabel)} backups yet. One is saved automatically once a day while you're signed in.</div>`, () => {});
+      return;
+    }
+
+    const days = snap.docs.map(doc => ({ day: doc.id, count: (doc.data().people || []).length }));
+
+    openModal(`🕐 Restore ${modeLabel}`, `
+      <div class="inline-note" style="margin-bottom:12px;">
+        Pick a day to restore from. This merges that day's data back in — nothing currently on your device is deleted.
+      </div>
+      <div class="sheet-list">
+        ${days.map(d => `
+          <div class="sheet-item choose-restore-day" data-day="${d.day}">
+            <span class="sheet-item-title">${escapeHtml(d.day)}</span>
+            <span class="sheet-item-sub">${d.count} ${d.count === 1 ? "person" : "people"}</span>
+          </div>
+        `).join("")}
+      </div>
+    `, () => {
+      document.querySelectorAll(".choose-restore-day").forEach(btn => {
+        btn.onclick = () => {
+          const day = btn.dataset.day;
+          closeModal();
+          confirmDelete(
+            `Restore ${modeLabel} data from ${day}? This merges that backup into your current data.`,
+            () => restoreFromHistoryDay(mode, day),
+            false,
+            "Restore"
+          );
+        };
+      });
+    });
+  } catch (err) {
+    console.warn("Loading backups failed:", err);
+    openModal("🕐 Restore Backup", `<div class="empty-state mini-empty">Couldn't load backups. Check your connection and try again.</div>`, () => {});
+  }
+}
+
+async function restoreFromHistoryDay(mode, day) {
+  try {
+    const ref = cloudHistoryDocRef(mode, day);
+    const snap = await ref.get();
+    if (!snap.exists) return;
+    const backupPeople = snap.data().people || [];
+
+    const key = cloudStorageKey(mode);
+    const localRaw = await dbGet(key).catch(() => null);
+    const localPeople = localRaw ? JSON.parse(localRaw) : [];
+
+    const merged = mergePeopleArrays(
+      normalizeImportedPeopleArray(localPeople),
+      normalizeImportedPeopleArray(backupPeople)
+    );
+
+    await dbSet(key, JSON.stringify(merged));
+
+    if (state.mode === mode) {
+      state.people = merged.map(p => ({ ...p, expanded: false }));
+      render();
+    }
+
+    if (cloudUser) {
+      const docRef = cloudDocRef(mode);
+      if (docRef) await docRef.set({ people: merged, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
+    }
+  } catch (err) {
+    console.warn("Restore failed:", err);
+    alert("Restore failed. Check your connection and try again.");
+  }
 }
