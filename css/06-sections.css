@@ -1851,3 +1851,101 @@
   font-size: 14px;
   font-weight: 900;
 }
+
+.stats-payroll-card {
+  padding: 12px 0 2px;
+}
+
+.stats-payroll-totals {
+  display: flex;
+  justify-content: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.stats-payroll-subtitle {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 14px 0 8px;
+}
+
+.stats-payroll-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.stats-payroll-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--gray-soft);
+}
+
+.stats-payroll-name {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--text);
+}
+
+.stats-payroll-amount {
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.stats-payroll-amount.due {
+  color: #ff9a9a;
+}
+
+.stats-payroll-amount.upcoming {
+  color: var(--gold);
+}
+
+.stats-payroll-amount.upcoming.pay-soon {
+  color: #ff9a9a;
+}
+
+.stats-payroll-date-col {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.stats-payroll-date {
+  font-size: 13px;
+  font-weight: 900;
+  color: var(--text);
+}
+
+.stats-payroll-names {
+  font-size: 11.5px;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.stats-payroll-date-side {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  flex: 0 0 auto;
+}
+
+.stats-payroll-days {
+  font-size: 10.5px;
+  font-weight: 800;
+  color: var(--muted);
+}
+
+.stats-payroll-days.pay-soon {
+  color: #ff9a9a;
+}
