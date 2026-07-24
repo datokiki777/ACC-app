@@ -43,13 +43,22 @@ async function saveHistorySnapshot(mode, people) {
   }
 }
 
+let cloudLastSyncedAt = null;
+
 function setCloudStatus(status) {
   cloudSyncStatus = status;
-  const el = document.getElementById("cloudSyncStatusBadge");
-  if (!el) return;
+  if (status === "synced") cloudLastSyncedAt = new Date();
+
   const labels = { "signed-out": "Not signed in", syncing: "Syncing…", synced: "Synced", error: "Sync error" };
-  el.textContent = labels[status] || status;
-  el.className = `cloud-sync-status cloud-sync-status-${status}`;
+  let text = labels[status] || status;
+  if (status === "synced" && cloudLastSyncedAt) {
+    text += ` - ${cloudLastSyncedAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })}`;
+  }
+
+  document.querySelectorAll(".cloud-sync-status").forEach(el => {
+    el.textContent = text;
+    el.className = `cloud-sync-status cloud-sync-status-${status}`;
+  });
 }
 
 // ---- Auth ----
@@ -206,33 +215,6 @@ function refreshCloudSyncModalIfOpen() {
 }
 
 function openCloudSyncModal() {
-  if (cloudUser) {
-    openModal("☁️ Cloud Sync", `
-      <div id="cloudSyncModalBody">
-        <div class="inline-note" style="margin-bottom:14px;">
-          Signed in as <strong>${escapeHtml(cloudUser.email || "")}</strong>
-        </div>
-        <div class="backup-row" style="margin-bottom:16px;">
-          <span class="backup-label">Status</span>
-          <span class="backup-dots"></span>
-          <span class="backup-value"><span id="cloudSyncStatusBadge" class="cloud-sync-status"></span></span>
-        </div>
-        <button type="button" class="secondary-btn full-btn" id="cloudRestoreBtn" style="min-height:48px;border-radius:14px;font-weight:800;margin-bottom:10px;">🕐 Restore from Backup</button>
-        <button type="button" class="danger-btn full-btn" id="cloudSignOutBtn" style="min-height:48px;border-radius:14px;font-weight:800;">Sign Out</button>
-      </div>
-    `, () => {
-      setCloudStatus(cloudSyncStatus);
-      const signOutBtn = document.getElementById("cloudSignOutBtn");
-      if (signOutBtn) signOutBtn.onclick = async () => {
-        await cloudSignOut();
-        closeModal();
-      };
-      const restoreBtn = document.getElementById("cloudRestoreBtn");
-      if (restoreBtn) restoreBtn.onclick = () => openRestoreBackupModal();
-    });
-    return;
-  }
-
   openModal("☁️ Cloud Sync", `
     <div id="cloudSyncModalBody">
       <div class="inline-note" style="margin-bottom:14px;">

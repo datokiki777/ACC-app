@@ -282,10 +282,10 @@ function openMainMenu() {
           </span>
         </button>
 
-        <button type="button" class="sheet-item menu-sheet-item menu-sheet-item-lg" id="menuCloudSyncBtn">
+        <button type="button" class="sheet-item menu-sheet-item menu-sheet-item-lg" id="menuAuthBtn">
           <span class="sheet-item-title-row">
-            <span class="sheet-item-icon">☁️</span>
-            <span class="sheet-item-title">Cloud Sync</span>
+            <span class="sheet-item-icon">${typeof cloudUser !== "undefined" && cloudUser ? "🔒" : "🔓"}</span>
+            <span class="sheet-item-title">${typeof cloudUser !== "undefined" && cloudUser ? "Sign Out" : "Sign In"}</span>
           </span>
         </button>
       </div>
@@ -294,12 +294,17 @@ function openMainMenu() {
       const exportPersonBtn = document.getElementById("menuExportPersonBtn");
       const exportAllBtn = document.getElementById("menuExportAllBtn");
       const dataBackupBtn = document.getElementById("menuDataBackupBtn");
-      const cloudSyncBtn = document.getElementById("menuCloudSyncBtn");
+      const authBtn = document.getElementById("menuAuthBtn");
 
-      if (cloudSyncBtn) {
-        cloudSyncBtn.onclick = () => {
-          closeModal();
-          if (typeof openCloudSyncModal === "function") openCloudSyncModal();
+      if (authBtn) {
+        authBtn.onclick = async () => {
+          if (typeof cloudUser !== "undefined" && cloudUser) {
+            closeModal();
+            if (typeof cloudSignOut === "function") await cloudSignOut();
+          } else {
+            closeModal();
+            if (typeof openCloudSyncModal === "function") openCloudSyncModal();
+          }
         };
       }
 

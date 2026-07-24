@@ -215,12 +215,30 @@ async function openDataBackupModal() {
       <span class="backup-status backup-status-${status.tone}">${status.label}</span>
     </span>
   </div>
+
+  ${(typeof cloudUser !== "undefined" && cloudUser) ? `
+  <div class="backup-row">
+    <span class="backup-label">☁️ Cloud Sync</span>
+    <span class="backup-dots"></span>
+    <span class="backup-value"><span class="cloud-sync-status"></span></span>
+  </div>
+  ` : ""}
 </div>
 
 <div class="backup-actions">
   <button type="button" class="secondary-btn backup-action-btn backup-action-main" id="backupNowBtn">💾 Backup</button>
   <button type="button" class="secondary-btn backup-action-btn backup-action-main" id="restoreNowBtn">♻️ Restore</button>
 </div>
+
+${(typeof cloudUser !== "undefined" && cloudUser) ? `
+<div class="backup-actions" style="margin-top:10px;">
+  <button type="button" class="secondary-btn backup-action-btn backup-action-main" id="saveCloudBtn">☁️ Save Cloud</button>
+  <button type="button" class="secondary-btn backup-action-btn backup-action-main" id="loadCloudBtn">☁️ Load Cloud</button>
+</div>
+<div class="backup-actions" style="margin-top:10px;">
+  <button type="button" class="secondary-btn backup-action-btn backup-action-main" id="restoreCloudBtn" style="grid-column:1 / -1;">🕐 Restore from Backup</button>
+</div>
+` : ""}
 
 <div class="backup-close-row">
   <button type="button" class="secondary-btn backup-close-btn" id="backupCloseBtn">Close</button>
@@ -231,6 +249,30 @@ async function openDataBackupModal() {
       const backupBtn = document.getElementById("backupNowBtn");
       const restoreBtn = document.getElementById("restoreNowBtn");
       const closeBtn = document.getElementById("backupCloseBtn");
+      const saveCloudBtn = document.getElementById("saveCloudBtn");
+      const loadCloudBtn = document.getElementById("loadCloudBtn");
+      const restoreCloudBtn = document.getElementById("restoreCloudBtn");
+
+      if (typeof setCloudStatus === "function") setCloudStatus(cloudSyncStatus);
+
+      if (saveCloudBtn) {
+        saveCloudBtn.onclick = async () => {
+          if (typeof pushToCloud === "function") await pushToCloud(state.mode);
+        };
+      }
+
+      if (loadCloudBtn) {
+        loadCloudBtn.onclick = async () => {
+          if (typeof pullMergeAndPush === "function") await pullMergeAndPush(state.mode);
+        };
+      }
+
+      if (restoreCloudBtn) {
+        restoreCloudBtn.onclick = () => {
+          closeModal();
+          if (typeof openRestoreBackupModal === "function") openRestoreBackupModal();
+        };
+      }
 
       if (backupBtn) {
         backupBtn.onclick = async () => {
