@@ -38,9 +38,97 @@
 .salary-form-block {
   border: 1px solid var(--line);
   border-radius: 14px;
-  padding: 12px;
-  margin-bottom: 14px;
+  margin-bottom: 0;
   background: rgba(255, 255, 255, 0.04);
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  transition: max-height 0.32s ease, opacity 0.24s ease, margin-bottom 0.32s ease;
+}
+
+.salary-form-block.open {
+  max-height: 900px;
+  opacity: 1;
+  margin-bottom: 14px;
+}
+
+.salary-form-block-inner {
+  padding: 12px;
+}
+
+.salary-delay-options {
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  margin-bottom: 0 !important;
+  transition: max-height 0.28s ease, opacity 0.2s ease, margin-bottom 0.28s ease;
+}
+
+.salary-delay-options.open {
+  max-height: 200px;
+  opacity: 1;
+  margin-bottom: 14px !important;
+}
+
+.switch-toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  cursor: pointer;
+  margin-bottom: 0;
+}
+
+.switch-toggle-label {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.switch-toggle-control {
+  position: relative;
+  flex: 0 0 auto;
+}
+
+.switch-toggle-control input[type="checkbox"] {
+  position: absolute;
+  inset: 0;
+  width: 44px;
+  height: 26px;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+  z-index: 1;
+}
+
+.switch-track {
+  display: block;
+  width: 44px;
+  height: 26px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.14);
+  border: 1px solid var(--line);
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.switch-thumb {
+  display: block;
+  width: 20px;
+  height: 20px;
+  margin: 2px;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  transition: transform 0.22s ease;
+}
+
+.switch-toggle-control input[type="checkbox"]:checked + .switch-track {
+  background: linear-gradient(180deg, rgba(88, 139, 255, 0.95), rgba(52, 93, 190, 0.92));
+  border-color: rgba(89, 142, 255, 0.72);
+}
+
+.switch-toggle-control input[type="checkbox"]:checked + .switch-track .switch-thumb {
+  transform: translateX(18px);
 }
 
 .field-hint {
