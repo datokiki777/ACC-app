@@ -52,6 +52,9 @@ function bindDynamicEvents() {
   document.querySelectorAll("[data-edit-salary]").forEach(el => {
     el.onclick = e => { e.stopPropagation(); openPersonForm(el.dataset.editSalary); };
   });
+  document.querySelectorAll("[data-sync-salary]").forEach(el => {
+    el.onclick = e => { e.stopPropagation(); openSalarySyncModal(el.dataset.syncSalary); };
+  });
   document.querySelectorAll(".swipe-card").forEach(card => setupActionCard(card));
 }
 
