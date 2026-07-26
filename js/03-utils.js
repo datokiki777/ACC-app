@@ -97,9 +97,33 @@ function daysUntil(dateStr, fromDate = new Date()) {
   return Math.floor((target - from) / 86400000);
 }
 
-// Below this many days to the next pay date, the upcoming-pay forecast
-// switches from "normal accrual" (yellow) to "pay date approaching" (red).
+// Below this many days to the next pay date, the forecast is flagged as
+// "pay soon" (used for a gentle emphasis — no longer turns anything red;
+// only a pay date that's actually passed does that, see SALARY_GRACE_DAYS).
 const SALARY_PAY_SOON_DAYS = 3;
+
+// After a pay date passes, wait this many extra days before flagging the
+// amount as overdue (red). Missing a pay date by a single day is normal
+// slack, not a real problem yet.
+const SALARY_GRACE_DAYS = 1;
+
+// Shifts a period's pay date forward relative to when the period's work
+// ends, for salaries that aren't paid out immediately.
+function computeSalaryPayDate(periodEndDateStr, payDelayMode) {
+  if (payDelayMode === "2weeks") return addDays(periodEndDateStr, 14);
+  if (payDelayMode === "4weeks") return addDays(periodEndDateStr, 28);
+  if (payDelayMode === "firstOfMonth") {
+    const d = parseLocalDate(periodEndDateStr);
+    if (!d) return periodEndDateStr;
+    const next = new Date(d.getFullYear(), d.getMonth() + 1, 1);
+    return [
+      next.getFullYear(),
+      String(next.getMonth() + 1).padStart(2, "0"),
+      "01"
+    ].join("-");
+  }
+  return periodEndDateStr;
+}
 
 function balanceClass(value) {
   if (value > 0) return "green";
@@ -240,7 +264,8 @@ function getPersonSalaryConfig(person) {
     // old schedule so it isn't lost in the switch.
     anchorDate: person?.salaryPeriodAnchorDate || startDate,
     accruedBaseline: normalizeAmount(person?.salaryAccruedBaseline || 0),
-    currency: person?.salaryCurrency || personCurrency(person)
+    currency: person?.salaryCurrency || personCurrency(person),
+    payDelayMode: person?.salaryPayDelayMode || "none"
   };
 }
 
@@ -294,29 +319,42 @@ function personSalarySummary(person, date = new Date()) {
   // before (not bump up an extra period) — ceil() handles that boundary
   // correctly where floor()+1 would double-count it.
   const periodsTargeted = days <= 0 ? 1 : Math.ceil(days / periodDays);
-  // Periods whose own pay date has actually been reached (<=today) —
-  // separate from periodsTargeted so the "just reached today" period
-  // doesn't immediately count as overdue.
   const boundariesReached = completedPeriods;
-  const isPastDue = boundariesReached > 0 && days > boundariesReached * periodDays;
+
+  // The pay date for the most recently completed period, and the forecast
+  // pay date for the period after it — both shifted by the configured
+  // payment delay (if any).
+  const lastPeriodEndDate = addDays(config.anchorDate, boundariesReached * periodDays);
+  const lastPayDate = computeSalaryPayDate(lastPeriodEndDate, config.payDelayMode);
+  const nextPeriodEndDate = addDays(config.anchorDate, periodsTargeted * periodDays);
+  const nextPayDateForecast = computeSalaryPayDate(nextPeriodEndDate, config.payDelayMode);
+
+  // Only genuinely overdue (red) once we're more than the grace window
+  // past the actual (possibly delayed) pay date — being a day late, or
+  // merely approaching the pay date, still counts as upcoming (yellow).
+  const daysPastLastPay = boundariesReached > 0 ? -daysUntil(lastPayDate, date) : -Infinity;
+  const isPastDue = boundariesReached > 0 && daysPastLastPay > SALARY_GRACE_DAYS;
 
   const dueTarget = config.accruedBaseline + normalizeAmount(periodAmount * (ended ? boundariesReached : periodsTargeted));
   const remaining = Math.max(0, dueTarget - paid);
   const overdueTarget = config.accruedBaseline + normalizeAmount(periodAmount * boundariesReached);
   const overdueRemaining = Math.max(0, overdueTarget - paid);
 
-  // Red "Overdue" — only the matured (pay-date-passed) portion of the
-  // shortfall. Yellow "Upcoming" — whatever's left: the current period's
-  // target before its own pay date arrives, or a forward forecast once
-  // everything owed so far is covered.
+  // Red "Overdue" — only the matured (pay-date-passed-plus-grace) portion
+  // of the shortfall. Yellow "Upcoming" — whatever's left: the current
+  // period's target before its own pay date arrives, or a forward forecast
+  // once everything owed so far is covered. Both can be non-zero at once,
+  // so overdue pay and the next forecasted pay always show side by side.
   const due = isPastDue ? Math.min(overdueRemaining, remaining) : 0;
   let upcoming = remaining - due;
   if (remaining <= 0 && !ended) upcoming = periodAmount;
 
-  const nextPayDate = addDays(config.anchorDate, periodsTargeted * periodDays);
+  // While the last completed period's pay date hasn't matured into overdue
+  // yet, that's the date to show as "next pay". Once it's flagged overdue,
+  // the date to show shifts forward to the following period's forecast.
+  const nextPayDate = (boundariesReached > 0 && !isPastDue) ? lastPayDate : nextPayDateForecast;
   const daysUntilNextPay = ended ? null : daysUntil(nextPayDate, date);
-  // Forecast state only applies once nothing is currently overdue — if
-  // `due` is already positive that's a real unpaid balance, not a forecast.
+  // Gentle "pay soon" emphasis only — no longer recolors anything red.
   const paySoon = !ended && due <= 0 && daysUntilNextPay !== null && daysUntilNextPay <= SALARY_PAY_SOON_DAYS;
   return {
     enabled: true,
@@ -335,7 +373,8 @@ function personSalarySummary(person, date = new Date()) {
     paySoon,
     startDate: config.startDate,
     ended,
-    endDate: config.endDate
+    endDate: config.endDate,
+    payDelayMode: config.payDelayMode
   };
 }
 
