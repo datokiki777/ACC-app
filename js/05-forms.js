@@ -542,8 +542,6 @@ function openSalarySyncModal(personId) {
         const newAnchorDate = String(fd.get("newAnchorDate") || "").trim();
         if (!newAnchorDate) return;
 
-        const bankedAccrued = personSalarySummary(person).accrued;
-
         if (adjustmentAmount > 0) {
           person.entries = person.entries || [];
           person.entries.unshift({
@@ -556,7 +554,12 @@ function openSalarySyncModal(personId) {
           });
         }
 
-        person.salaryAccruedBaseline = bankedAccrued;
+        // Fresh start: the new schedule counts from zero at the new anchor
+        // date — nothing from the old schedule is recalculated. The
+        // adjustment payment (if any) is still recorded as a real entry
+        // above, so it isn't lost, it just isn't folded into any carried
+        // baseline math.
+        person.salaryAccruedBaseline = personSalaryPaid(person);
         person.salaryPeriodAnchorDate = newAnchorDate;
 
         await saveData();
