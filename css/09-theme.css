@@ -1079,6 +1079,14 @@ body.light-theme .salary-panel {
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 10px 22px rgba(60, 82, 120, 0.11);
 }
 
+body.light-theme .salary-sync-btn {
+  border-color: rgba(112, 132, 164, 0.32);
+}
+
+body.light-theme .salary-sync-btn:active {
+  background: rgba(60, 82, 120, 0.06);
+}
+
 body.light-theme .salary-panel-title,
 body.light-theme .gift-panel-title {
   color: #18243a;
