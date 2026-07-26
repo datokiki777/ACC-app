@@ -477,3 +477,92 @@ function openEntryForm(personId, entryId = null) {
     }
   );
 }
+
+// Lets a salaried person's pay cycle be re-anchored to a new date — e.g. to
+// line their pay dates up with the rest of the team — while optionally
+// paying a one-time catch-up amount so nothing earned under the old
+// schedule gets lost in the switch.
+function openSalarySyncModal(personId) {
+  const person = findPerson(personId);
+  if (!person) return;
+  const summary = personSalarySummary(person);
+  if (!summary.enabled) return;
+
+  const owed = Math.max(0, summary.accrued - summary.paid);
+  const currency = summary.currency;
+
+  openModal(
+    "🔄 Sync Pay Date",
+    `
+      <form class="form" id="salarySyncForm">
+        <div class="field">
+          <div class="field-hint">Earned so far, not yet paid: <strong>${formatMoneyPlain(owed, currency)}</strong></div>
+        </div>
+
+        <div class="field">
+          <label for="syncAdjustmentAmount">One-Time Adjustment Payment</label>
+          <input
+            id="syncAdjustmentAmount"
+            name="adjustmentAmount"
+            type="number"
+            step="1"
+            min="0"
+            value="${owed || ""}"
+          >
+          <div class="field-hint">A catch-up payment (e.g. a partial week) so switching schedules doesn't lose anything already earned. Leave at 0 to skip.</div>
+        </div>
+
+        <div class="field">
+          <label for="syncNewAnchorDate">New Cycle Start Date</label>
+          <input
+            id="syncNewAnchorDate"
+            name="newAnchorDate"
+            type="date"
+            value="${todayStr()}"
+          >
+          <div class="field-hint">Future pay dates count from here — match another team member's start date to line their schedules up.</div>
+        </div>
+
+        <div class="form-actions">
+          <button type="button" class="secondary-btn" id="cancelModalBtn">Cancel</button>
+          <button type="submit" class="primary-btn">Sync</button>
+        </div>
+      </form>
+    `,
+    () => {
+      const form = document.getElementById("salarySyncForm");
+      const cancelBtn = document.getElementById("cancelModalBtn");
+
+      cancelBtn.onclick = () => closeModal();
+
+      form.onsubmit = async e => {
+        e.preventDefault();
+        const fd = new FormData(form);
+        const adjustmentAmount = normalizeAmount(fd.get("adjustmentAmount"));
+        const newAnchorDate = String(fd.get("newAnchorDate") || "").trim();
+        if (!newAnchorDate) return;
+
+        const bankedAccrued = personSalarySummary(person).accrued;
+
+        if (adjustmentAmount > 0) {
+          person.entries = person.entries || [];
+          person.entries.unshift({
+            id: uid(),
+            amount: adjustmentAmount,
+            type: "Gave",
+            date: todayStr(),
+            comment: "[Salary] Schedule sync adjustment",
+            category: "salary"
+          });
+        }
+
+        person.salaryAccruedBaseline = bankedAccrued;
+        person.salaryPeriodAnchorDate = newAnchorDate;
+
+        await saveData();
+        render();
+        closeModal();
+      };
+    }
+  );
+}
