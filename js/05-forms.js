@@ -56,7 +56,19 @@ function openPersonForm(personId = null, reopenEditPanel = false) {
         ` : ""}
 
         ${state.mode === "work" ? `
-        <div class="salary-form-block">
+        <div class="field">
+          <label class="switch-toggle-row" for="salaryEnableToggle">
+            <span class="switch-toggle-label">💼 Salaried Employee</span>
+            <span class="switch-toggle-control">
+              <input type="checkbox" id="salaryEnableToggle" ${person?.salaryAmount && person?.salaryStartDate ? "checked" : ""}>
+              <span class="switch-track"><span class="switch-thumb"></span></span>
+            </span>
+          </label>
+          <div class="field-hint">Turn on to set up payroll for this person.</div>
+        </div>
+
+        <div class="salary-form-block ${person?.salaryAmount && person?.salaryStartDate ? "open" : ""}" id="salaryFormBlock">
+          <div class="salary-form-block-inner">
           <div class="field">
             <label for="salaryAmount">Monthly Salary</label>
             <input
@@ -96,6 +108,26 @@ function openPersonForm(personId = null, reopenEditPanel = false) {
           </div>
 
           <div class="field">
+            <label class="switch-toggle-row" for="salaryDelayToggle">
+              <span class="switch-toggle-label">⏳ Payment Delay</span>
+              <span class="switch-toggle-control">
+                <input type="checkbox" id="salaryDelayToggle" ${person?.salaryPayDelayMode && person.salaryPayDelayMode !== "none" ? "checked" : ""}>
+                <span class="switch-track"><span class="switch-thumb"></span></span>
+              </span>
+            </label>
+            <div class="field-hint">Turn on if salary is paid some time after it's earned, instead of right away.</div>
+          </div>
+
+          <div class="field salary-delay-options ${person?.salaryPayDelayMode && person.salaryPayDelayMode !== "none" ? "open" : ""}" id="salaryDelayOptions">
+            <label for="salaryPayDelayMode">Pay Date</label>
+            <select id="salaryPayDelayMode" name="salaryPayDelayMode">
+              <option value="2weeks" ${person?.salaryPayDelayMode === "2weeks" ? "selected" : ""}>2 weeks after period ends</option>
+              <option value="4weeks" ${person?.salaryPayDelayMode === "4weeks" ? "selected" : ""}>4 weeks after period ends</option>
+              <option value="firstOfMonth" ${person?.salaryPayDelayMode === "firstOfMonth" ? "selected" : ""}>1st of the next month</option>
+            </select>
+          </div>
+
+          <div class="field">
             <label for="salaryEndDate">Salary End Date</label>
             <div class="salary-end-row">
               <input
@@ -107,6 +139,7 @@ function openPersonForm(personId = null, reopenEditPanel = false) {
               <button type="button" class="secondary-btn salary-end-today-btn" id="salaryEndTodayBtn">End Today</button>
             </div>
             <div class="field-hint">Optional. Payroll stops calculating after this date.</div>
+          </div>
           </div>
         </div>
         ` : ""}
@@ -153,6 +186,22 @@ function openPersonForm(personId = null, reopenEditPanel = false) {
         };
       }
 
+      const salaryEnableToggle = document.getElementById("salaryEnableToggle");
+      const salaryFormBlock = document.getElementById("salaryFormBlock");
+      if (salaryEnableToggle && salaryFormBlock) {
+        salaryEnableToggle.onchange = () => {
+          salaryFormBlock.classList.toggle("open", salaryEnableToggle.checked);
+        };
+      }
+
+      const salaryDelayToggle = document.getElementById("salaryDelayToggle");
+      const salaryDelayOptions = document.getElementById("salaryDelayOptions");
+      if (salaryDelayToggle && salaryDelayOptions) {
+        salaryDelayToggle.onchange = () => {
+          salaryDelayOptions.classList.toggle("open", salaryDelayToggle.checked);
+        };
+      }
+
       cancelBtn.onclick = () => {
         if (reopenEditPanel) {
           openEditStagesPanel();
@@ -168,10 +217,13 @@ function openPersonForm(personId = null, reopenEditPanel = false) {
         const name = String(fd.get("name") || "").trim();
         const tagLabel = String(fd.get("tagLabel") || "").trim();
         const tagColor = String(fd.get("tagColor") || "").trim();
-        const salaryAmount = normalizeAmount(fd.get("salaryAmount"));
-        const salaryStartDate = String(fd.get("salaryStartDate") || "").trim();
-        const salaryEndDate = String(fd.get("salaryEndDate") || "").trim();
+        const salaryEnabled = state.mode === "work" && !!document.getElementById("salaryEnableToggle")?.checked;
+        const salaryDelayEnabled = salaryEnabled && !!document.getElementById("salaryDelayToggle")?.checked;
+        const salaryAmount = salaryEnabled ? normalizeAmount(fd.get("salaryAmount")) : 0;
+        const salaryStartDate = salaryEnabled ? String(fd.get("salaryStartDate") || "").trim() : "";
+        const salaryEndDate = salaryEnabled ? String(fd.get("salaryEndDate") || "").trim() : "";
         const salaryPayPeriodWeeks = Math.min(52, Math.max(1, Number(fd.get("salaryPayPeriodWeeks") || 1)));
+        const salaryPayDelayMode = salaryDelayEnabled ? String(fd.get("salaryPayDelayMode") || "2weeks") : "none";
 
         if (!name) return;
 
@@ -195,6 +247,7 @@ function openPersonForm(personId = null, reopenEditPanel = false) {
             person.salaryStartDate = salaryStartDate;
             person.salaryEndDate = salaryEndDate;
             person.salaryPayPeriodWeeks = salaryPayPeriodWeeks;
+            person.salaryPayDelayMode = salaryPayDelayMode;
             delete person.salaryPayDay;
             person.salaryCurrency = person.salaryCurrency || personCurrency(person);
           }
@@ -241,6 +294,7 @@ function openPersonForm(personId = null, reopenEditPanel = false) {
                 salaryStartDate,
                 salaryEndDate,
                 salaryPayPeriodWeeks,
+                salaryPayDelayMode,
                 salaryCurrency: newCurrency
               } : {}),
               expanded: false,
