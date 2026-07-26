@@ -82,6 +82,7 @@ function renderWorkSalaryPanel(person) {
         <div><span>Paid</span><strong>${formatMoneyPlain(salary.paid, salary.currency)}</strong></div>
         <div><span>${salary.ended ? "Ended" : "Next Pay"}</span><strong>${formatDate(salary.ended ? salary.endDate : salary.nextPayDate)}</strong></div>
       </div>
+      <button type="button" class="salary-sync-btn" data-sync-salary="${person.id}">🔄 Sync Pay Date</button>
     </div>
   `;
 }
