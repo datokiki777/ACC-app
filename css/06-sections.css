@@ -1502,9 +1502,7 @@
 }
 
 .salary-due-pill.upcoming.pay-soon {
-  color: #ff9a9a;
-  border: 1px solid rgba(255, 110, 110, 0.34);
-  background: rgba(255, 80, 80, 0.13);
+  box-shadow: 0 0 0 1px rgba(255, 194, 82, 0.4), 0 0 10px rgba(255, 194, 82, 0.25);
 }
 
 .salary-due-pill.clear {
@@ -1908,7 +1906,7 @@
 }
 
 .stats-payroll-amount.upcoming.pay-soon {
-  color: #ff9a9a;
+  text-shadow: 0 0 8px rgba(255, 194, 82, 0.5);
 }
 
 .stats-payroll-date-col {
@@ -1947,5 +1945,5 @@
 }
 
 .stats-payroll-days.pay-soon {
-  color: #ff9a9a;
+  color: var(--gold);
 }
