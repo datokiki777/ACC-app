@@ -5,7 +5,12 @@ import { createAppRepository, type AppRepository } from '../db/repository';
 import { personOpenBalance } from '../domain/balances';
 import type { ExportedBackupData } from '../types/domain';
 import type { PersistedPerson } from '../types/persistence';
-import { applyInspectedBackup, createBackupExport, inspectBackupText } from './backup';
+import {
+  applyInspectedBackup,
+  createBackupExport,
+  inspectBackupText,
+  RestoreVerificationError,
+} from './backup';
 import { verifyRestoredData } from './restore-verification';
 
 const REFERENCE_DATE = new Date(2026, 7, 6, 12);
@@ -156,6 +161,51 @@ describe('legacy-compatible backup services', () => {
     );
     expect(report.success).toBe(false);
     expect(report.failures).toContain('personal: currencyChecksum did not match');
+  });
+
+  it('rolls back replacement when post-write verification fails', async () => {
+    const existing: PersistedPerson = {
+      id: 'existing',
+      name: 'Existing data',
+      currency: 'EUR',
+      entries: [],
+    };
+    await repository.replacePeople('personal', [existing]);
+    const inspection = inspectBackupText(JSON.stringify(fixtureBackup()), 'legacy.json');
+    if (!inspection.valid) throw new Error('Expected valid inspection');
+
+    const failingRepository: AppRepository = {
+      initialize: () => repository.initialize(),
+      getPeople: (mode) => repository.getPeople(mode),
+      replacePeople: (mode, people) => repository.replacePeople(mode, people),
+      replaceAll: (personal, work) => repository.replaceAll(personal, work),
+      getMode: () => repository.getMode(),
+      setMode: (mode) => repository.setMode(mode),
+      getTheme: () => repository.getTheme(),
+      setTheme: (theme) => repository.setTheme(theme),
+      getBackupMetadata: () => repository.getBackupMetadata(),
+      setBackupMetadata: (metadata) => repository.setBackupMetadata(metadata),
+      getSchemaVersion: () => repository.getSchemaVersion(),
+      transactAll: (operation) =>
+        repository.transactAll((transactionRepository) => {
+          const corruptTransaction: AppRepository = {
+            ...failingRepository,
+            replaceAll: (personal, work) => transactionRepository.replaceAll(personal, work),
+            getPeople: async (mode) => {
+              const people = await transactionRepository.getPeople(mode);
+              if (mode !== 'personal' || !people[0]) return people;
+              return [{ ...people[0], currency: 'CAD' }, ...people.slice(1)];
+            },
+          };
+          return operation(corruptTransaction);
+        }),
+    };
+
+    await expect(
+      applyInspectedBackup(failingRepository, inspection, 'replace', REFERENCE_DATE),
+    ).rejects.toBeInstanceOf(RestoreVerificationError);
+    expect(await repository.getPeople('personal')).toEqual([existing]);
+    expect(await repository.getPeople('work')).toEqual([]);
   });
 
   it('keeps balance and legacy salary behavior after import', async () => {

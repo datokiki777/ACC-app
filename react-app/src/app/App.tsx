@@ -1,39 +1,174 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
+import { ConfirmDialog } from '../components/ConfirmDialog';
+import { InstallPrompt } from '../components/InstallPrompt';
 import { ModeSwitch } from '../components/ModeSwitch';
 import { StartupScreen } from '../components/StartupScreen';
 import { ThemeSelector } from '../components/ThemeSelector';
-import { useTheme } from '../hooks/useTheme';
-import type { AppMode } from '../types/shell';
+import { UndoToast } from '../components/UndoToast';
+import { BackupSheet } from '../features/import-export/BackupSheet';
+import { PeopleList } from '../features/people/PeopleList';
+import { PersonFormSheet } from '../features/people/PersonFormSheet';
+import { SalarySyncSheet } from '../features/salary/SalarySyncSheet';
+import { StatisticsSheet } from '../features/statistics/StatisticsSheet';
+import { EntryFormSheet } from '../features/transactions/EntryFormSheet';
+import { useThemeEffect } from '../hooks/useThemeEffect';
+import { useAppStore } from '../store/hooks';
+import type { PersistedPerson } from '../types/persistence';
+
+interface Confirmation {
+  title: string;
+  message: string;
+  action: () => Promise<void>;
+}
 
 export function App() {
-  const [mode, setMode] = useState<AppMode>('personal');
-  const { setThemeMode, themeMode } = useTheme();
+  const initialize = useAppStore((state) => state.initialize);
+  const initialized = useAppStore((state) => state.initialized);
+  const loading = useAppStore((state) => state.loading);
+  const error = useAppStore((state) => state.error);
+  const clearError = useAppStore((state) => state.clearError);
+  const mode = useAppStore((state) => state.mode);
+  const setMode = useAppStore((state) => state.setMode);
+  const theme = useAppStore((state) => state.theme);
+  const setTheme = useAppStore((state) => state.setTheme);
+  const people = useAppStore((state) => state.peopleByMode[state.mode]);
+  const search = useAppStore((state) => state.search);
+  const setSearch = useAppStore((state) => state.setSearch);
+  const filter = useAppStore((state) => state.filter);
+  const setFilter = useAppStore((state) => state.setFilter);
+  const openSheet = useAppStore((state) => state.openSheet);
+  const sheet = useAppStore((state) => state.ui.sheet);
+  const deletePerson = useAppStore((state) => state.deletePerson);
+  const deleteEntry = useAppStore((state) => state.deleteEntry);
+  const [confirmation, setConfirmation] = useState<Confirmation | null>(null);
+  useThemeEffect(theme);
+
+  useEffect(() => {
+    void initialize();
+  }, [initialize]);
+
+  const activeCount = people.filter((person) => !person.archived).length;
+  const archivedCount = people.filter((person) => person.archived).length;
+
+  function confirmPersonDelete(person: PersistedPerson) {
+    setConfirmation({
+      title: 'Delete person?',
+      message: `${person.name} and all entries will be deleted from the React database.`,
+      action: () => deletePerson(person.id),
+    });
+  }
+
+  function confirmEntryDelete(person: PersistedPerson, entryId: string) {
+    setConfirmation({
+      title: 'Delete entry?',
+      message: `Delete this entry from ${person.name}?`,
+      action: () => deleteEntry(person.id, entryId),
+    });
+  }
 
   return (
     <>
       <StartupScreen />
       <div className="app-shell">
-        <header className="app-header">
-          <a aria-label="ACC home" className="brand" href={import.meta.env.BASE_URL}>
-            <img alt="" src={`${import.meta.env.BASE_URL}icons/icon-192x192.png`} />
-            <span>ACC</span>
-          </a>
-          <ThemeSelector onChange={setThemeMode} value={themeMode} />
-          <ModeSwitch mode={mode} onChange={setMode} />
+        <header className="app-header real-header">
+          <button
+            aria-label="Data and backup"
+            className="icon-button header-action"
+            onClick={() => openSheet('backup')}
+            type="button"
+          >
+            ⇄
+          </button>
+          <ModeSwitch mode={mode} onChange={(next) => void setMode(next)} />
+          <ThemeSelector onChange={(next) => void setTheme(next)} value={theme} />
+          <div className="filter-row">
+            <div className="filter-switch">
+              <button
+                className={filter === 'active' ? 'is-selected' : ''}
+                onClick={() => setFilter('active')}
+                type="button"
+              >
+                Active <span>{activeCount}</span>
+              </button>
+              <button
+                className={filter === 'archived' ? 'is-selected' : ''}
+                onClick={() => setFilter('archived')}
+                type="button"
+              >
+                Archived <span>{archivedCount}</span>
+              </button>
+            </div>
+            <button
+              aria-label="Statistics"
+              className="icon-button"
+              onClick={() => openSheet('statistics')}
+              type="button"
+            >
+              ▥
+            </button>
+          </div>
+          <label className="search-field">
+            <span>⌕</span>
+            <input
+              aria-label="Search by name"
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="Search by name…"
+              value={search}
+            />
+          </label>
         </header>
 
-        <main className="app-content">
-          <section aria-labelledby="foundation-title" className="placeholder-card">
-            <span className="eyebrow">React foundation</span>
-            <h1 id="foundation-title">{mode === 'personal' ? 'Personal' : 'Work'} mode</h1>
-            <p>
-              The application shell is ready. Financial features and existing data remain untouched
-              until the next approved migration phase.
-            </p>
-          </section>
+        <main className="app-content real-content">
+          {(loading || !initialized) && (
+            <section className="empty-card">
+              <div className="loading-spinner" />
+              <h1>Loading ACC</h1>
+            </section>
+          )}
+          {initialized && (
+            <PeopleList onDeleteEntry={confirmEntryDelete} onDeletePerson={confirmPersonDelete} />
+          )}
         </main>
       </div>
+
+      {initialized && (
+        <button
+          aria-label={`Add ${mode === 'work' ? 'team' : 'person'}`}
+          className="fab"
+          onClick={() => openSheet('person-form')}
+          type="button"
+        >
+          +
+        </button>
+      )}
+      {error && (
+        <div className="error-banner" role="alert">
+          <span>{error}</span>
+          <button onClick={clearError} type="button">
+            ×
+          </button>
+        </div>
+      )}
+      <UndoToast />
+      <InstallPrompt />
+
+      {sheet === 'person-form' && <PersonFormSheet />}
+      {sheet === 'entry-form' && <EntryFormSheet />}
+      {sheet === 'salary-sync' && <SalarySyncSheet />}
+      {sheet === 'statistics' && <StatisticsSheet />}
+      {sheet === 'backup' && <BackupSheet />}
+      {confirmation && (
+        <ConfirmDialog
+          message={confirmation.message}
+          onCancel={() => setConfirmation(null)}
+          onConfirm={async () => {
+            await confirmation.action();
+            setConfirmation(null);
+          }}
+          title={confirmation.title}
+        />
+      )}
     </>
   );
 }

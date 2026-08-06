@@ -4,6 +4,7 @@ import { createRoot } from 'react-dom/client';
 import { App } from './app/App';
 import { AppErrorBoundary } from './app/AppErrorBoundary';
 import { PwaUpdatePrompt } from './components/PwaUpdatePrompt';
+import { AppStoreProvider } from './store/provider';
 import './styles/index.css';
 
 const root = document.getElementById('root');
@@ -15,8 +16,10 @@ if (!root) {
 createRoot(root).render(
   <StrictMode>
     <AppErrorBoundary>
-      <App />
-      <PwaUpdatePrompt />
+      <AppStoreProvider>
+        <App />
+        <PwaUpdatePrompt />
+      </AppStoreProvider>
     </AppErrorBoundary>
   </StrictMode>,
 );
