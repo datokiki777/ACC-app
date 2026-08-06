@@ -1,0 +1,171 @@
+import type {
+  Currency,
+  PayDelayMode,
+  Person,
+  SalaryCalculationResult,
+  SalarySettings,
+} from '../types/domain';
+import { isSalaryEntry, normalizeAmount } from './entries';
+import {
+  addDays,
+  capReferenceDate,
+  compareDateStrings,
+  computeSalaryPayDate,
+  daysSince,
+  daysUntil,
+} from './pay-dates';
+
+export const SALARY_PAY_SOON_DAYS = 3;
+export const SALARY_GRACE_DAYS = 1;
+
+export function getSalarySettings(person: Person): SalarySettings | null {
+  const monthly = normalizeAmount(person.salaryAmount ?? 0);
+  const startDate = person.salaryStartDate ?? '';
+  const endDate = person.salaryEndDate ?? '';
+  const periodWeeks = Math.min(
+    52,
+    Math.max(1, Number(person.salaryPayPeriodWeeks ?? person.salaryPayDay ?? 1)),
+  );
+  if (!monthly || !startDate) return null;
+
+  return {
+    monthly,
+    startDate,
+    endDate,
+    periodWeeks,
+    anchorDate: person.salaryPeriodAnchorDate ?? startDate,
+    accruedBaseline: normalizeAmount(person.salaryAccruedBaseline ?? 0),
+    currency: person.salaryCurrency ?? person.currency,
+    payDelayMode: person.salaryPayDelayMode ?? 'none',
+  };
+}
+
+export function salaryPaid(person: Pick<Person, 'entries'>): number {
+  return person.entries.reduce((sum, entry) => {
+    if (!isSalaryEntry(entry) || entry.type !== 'Gave') return sum;
+    return sum + normalizeAmount(entry.amount);
+  }, 0);
+}
+
+function disabledSalaryResult(): SalaryCalculationResult {
+  return {
+    enabled: false,
+    accrued: 0,
+    paid: 0,
+    due: 0,
+    upcoming: 0,
+    currency: 'EUR',
+    days: 0,
+    monthly: 0,
+    periodWeeks: 1,
+    periodAmount: 0,
+    completedPeriods: 0,
+    nextPayDate: '',
+    daysUntilNextPay: null,
+    paySoon: false,
+    ended: false,
+    endDate: '',
+  };
+}
+
+export function calculateSalary(person: Person, referenceDate: Date): SalaryCalculationResult {
+  const config = getSalarySettings(person);
+  if (!config) return disabledSalaryResult();
+
+  const referenceDateString = [
+    referenceDate.getFullYear(),
+    String(referenceDate.getMonth() + 1).padStart(2, '0'),
+    String(referenceDate.getDate()).padStart(2, '0'),
+  ].join('-');
+  const ended =
+    Boolean(config.endDate) && compareDateStrings(config.endDate, referenceDateString) <= 0;
+  const calculationDate = config.endDate
+    ? capReferenceDate(config.endDate, referenceDate)
+    : referenceDate;
+  const days = daysSince(config.anchorDate, calculationDate);
+  const periodDays = config.periodWeeks * 7;
+  const completedPeriods = Math.floor(days / periodDays);
+  const periodAmount = normalizeAmount(config.monthly * (config.periodWeeks / 4));
+  const accrued = config.accruedBaseline + normalizeAmount(periodAmount * completedPeriods);
+  const paid = salaryPaid(person);
+  const periodsTargeted = days <= 0 ? 1 : Math.ceil(days / periodDays);
+  const boundariesReached = completedPeriods;
+  const dueTarget =
+    config.accruedBaseline +
+    normalizeAmount(periodAmount * (ended ? boundariesReached : periodsTargeted));
+  const remaining = Math.max(0, dueTarget - paid);
+  const overdueTarget = config.accruedBaseline + normalizeAmount(periodAmount * boundariesReached);
+  const overdueRemaining = Math.max(0, overdueTarget - paid);
+  const nextPeriodEndDate = addDays(config.anchorDate, periodsTargeted * periodDays);
+  const nextPayDateForecast = computeSalaryPayDate(nextPeriodEndDate, config.payDelayMode);
+  const periodAmountSafe = periodAmount > 0 ? periodAmount : 1;
+  const paidPeriodsCount = Math.floor(paid / periodAmountSafe);
+  const earliestUnpaidIndex = Math.min(boundariesReached, paidPeriodsCount + 1);
+  const earliestUnpaidPeriodEndDate = addDays(config.anchorDate, earliestUnpaidIndex * periodDays);
+  const earliestUnpaidPayDate = computeSalaryPayDate(
+    earliestUnpaidPeriodEndDate,
+    config.payDelayMode,
+  );
+  const isPastDue =
+    boundariesReached > 0 &&
+    overdueRemaining > 0.0001 &&
+    daysUntil(earliestUnpaidPayDate, referenceDate) < -SALARY_GRACE_DAYS;
+  const due = isPastDue ? Math.min(overdueRemaining, remaining) : 0;
+  let upcoming = remaining - due;
+  if (remaining <= 0 && !ended) upcoming = periodAmount;
+  const nextPayDate =
+    overdueRemaining > 0.0001 && !isPastDue ? earliestUnpaidPayDate : nextPayDateForecast;
+  const daysUntilNextPay = ended ? null : daysUntil(nextPayDate, referenceDate);
+  const paySoon =
+    !ended && due <= 0 && daysUntilNextPay !== null && daysUntilNextPay <= SALARY_PAY_SOON_DAYS;
+
+  return {
+    enabled: true,
+    accrued,
+    paid,
+    due,
+    upcoming,
+    currency: config.currency,
+    days,
+    monthly: config.monthly,
+    periodWeeks: config.periodWeeks,
+    periodAmount,
+    completedPeriods,
+    nextPayDate,
+    daysUntilNextPay,
+    paySoon,
+    startDate: config.startDate,
+    ended,
+    endDate: config.endDate,
+    payDelayMode: config.payDelayMode,
+  };
+}
+
+export interface GiftSummary {
+  gave: number;
+  received: number;
+  total: number;
+  net: number;
+  currency: Currency;
+}
+
+export function giftSummary(person: Person): GiftSummary {
+  const totals = person.entries.reduce(
+    (sum, entry) => {
+      if (entry.category !== 'gift') return sum;
+      const amount = normalizeAmount(entry.amount);
+      if (entry.type === 'Gave') sum.gave += amount;
+      if (entry.type === 'Received') sum.received += amount;
+      return sum;
+    },
+    { gave: 0, received: 0 },
+  );
+  return {
+    ...totals,
+    total: totals.gave + totals.received,
+    net: totals.gave - totals.received,
+    currency: person.salaryCurrency ?? person.currency,
+  };
+}
+
+export type { PayDelayMode };
