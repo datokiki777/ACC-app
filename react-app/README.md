@@ -1,38 +1,107 @@
-# ACC React foundation
+# ACC React application
 
-This directory is the isolated Phase 2 React foundation. The Vanilla application at the
-repository root remains unchanged and continues to be the production application.
+This directory contains the isolated React + TypeScript rebuild. The legacy Vanilla application
+at the repository root is unchanged and remains the live application until a separate deployment
+is reviewed and approved.
 
-## Local commands
+## Data safety
+
+- The React application uses only IndexedDB database `acc-react-db`.
+- It never opens, upgrades, clears, or writes to the legacy `acc-db` database.
+- A new installation starts empty. Legacy data is restored manually from an ACC JSON backup.
+- Replace and Merge operate only on `acc-react-db`.
+- An import is validated and normalized before writing. A failed validation does not write data.
+- A restore is verified inside the same Dexie transaction. A failed post-write verification rolls
+  the transaction back.
+
+The React database schema is version 1:
+
+| Table      | Key    | Contents                                       |
+| ---------- | ------ | ---------------------------------------------- |
+| `modeData` | `mode` | Separate Personal and Work people arrays       |
+| `settings` | `key`  | Active mode and theme                          |
+| `metadata` | `key`  | Backup metadata and application schema version |
+
+React components use the typed Zustand store. Only repository and service modules access Dexie.
+
+## Development
+
+Install dependencies and run the development server:
 
 ```sh
+cd react-app
 npm install
 npm run dev
+```
+
+Run all verification:
+
+```sh
+npm run format:check
 npm run lint
 npm run typecheck
 npm test
 npm run build
-npm run preview
+npm run build:github
 ```
 
-The default production target is the custom-domain root. Build and preview it with:
+## Preview without replacing the live app
+
+The normal build targets the custom-domain root (`/`):
 
 ```sh
+cd react-app
 npm run build
 npm run preview
 ```
 
-Open `http://localhost:4173/`. Output is written to `dist/`.
+Open `http://localhost:4173/`. Output is written to `react-app/dist/`.
 
-Build and preview the optional GitHub repository-path target with:
+The optional GitHub repository-path build targets `/acc/` and has separate output:
 
 ```sh
+cd react-app
 npm run build:github
 npm run preview:github
 ```
 
-Open `http://localhost:4173/acc/`. Output is written separately to `dist-github/`.
+Open `http://localhost:4173/acc/`. Output is written to `react-app/dist-github/`.
 
-Do not copy either output into the repository root or change GitHub Pages deployment from
-`main`. A future preview deployment should upload the appropriate output as an isolated artifact
-or publish it to a separate preview environment, never to the existing live site without approval.
+These commands only run local preview servers. Do not copy either output into the repository root,
+change the CNAME, or change GitHub Pages deployment from `main` during review.
+
+## Import a saved legacy backup
+
+1. Preview the React application locally.
+2. Open **Data & Backup** using the top-left data button.
+3. Select **Choose backup** and choose the saved legacy ACC `.json` file.
+4. Review the filename, export date, validation status, Personal count, Work count, and total entry
+   count before continuing.
+5. Choose **Merge with current data** to apply the verified legacy merge rules, or select the
+   explicit acknowledgement and choose **Replace all React data** to replace only `acc-react-db`.
+6. Do not close the sheet until **Restore verified successfully** is shown.
+7. Check Personal and Work lists, archived records, currencies, balances, payroll panels, and
+   statistics against the legacy application.
+8. Use **Export JSON** to create a fresh post-import safety backup.
+
+Accepted backups use the existing unversioned format:
+
+```ts
+{
+  personal: LegacyPerson[];
+  work: LegacyPerson[];
+  exportDate?: string;
+}
+```
+
+IDs, archived state, currencies, salary anchors/baselines, legacy stages, `[Salary]` detection, and
+unknown person/stage/entry fields are preserved. Export remains consumable by the same import path.
+
+## Deployment targets
+
+- Default/custom domain: Vite base `/`, manifest `start_url` `/`, manifest scope `/`.
+- GitHub preview: Vite base `/acc/`, manifest `start_url` `/acc/`, manifest scope `/acc/`.
+- PWA updates use a prompt. Existing clients are not force-reloaded while work may be unsaved.
+- Regular and maskable ACC icons are copied from the legacy application without redesign.
+
+No deployment workflow is run by these instructions.

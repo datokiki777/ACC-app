@@ -166,4 +166,18 @@ describe('Zustand application actions', () => {
     await second.getState().initialize();
     expect(second.getState().peopleByMode.personal[0]?.name).toBe('Persist me');
   });
+
+  it('records successful JSON exports in backup metadata', async () => {
+    const repository = createAppRepository(database);
+    const store = createAppStore({ repository, now: () => new Date(NOW) });
+    await store.getState().initialize();
+
+    const exported = await store.getState().exportBackup();
+
+    expect(exported.exportDate).toBe(NOW.toISOString());
+    expect(await repository.getBackupMetadata()).toEqual({
+      lastBackup: NOW.toISOString(),
+      count: 1,
+    });
+  });
 });
