@@ -16,9 +16,13 @@
     "format:check": "prettier --check ."
   },
   "dependencies": {
+    "@hookform/resolvers": "^5.7.1",
+    "dexie": "^4.4.4",
     "react": "latest",
     "react-dom": "latest",
-    "zod": "^4.4.3"
+    "react-hook-form": "^7.84.0",
+    "zod": "^4.4.3",
+    "zustand": "^5.0.14"
   },
   "devDependencies": {
     "@eslint/js": "latest",
@@ -32,6 +36,7 @@
     "eslint": "latest",
     "eslint-plugin-react-hooks": "latest",
     "eslint-plugin-react-refresh": "latest",
+    "fake-indexeddb": "^6.2.5",
     "globals": "latest",
     "jsdom": "latest",
     "prettier": "latest",

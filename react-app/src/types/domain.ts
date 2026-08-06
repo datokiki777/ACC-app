@@ -1,4 +1,5 @@
 export type AppMode = 'personal' | 'work';
+export type ThemeMode = 'system' | 'dark' | 'light';
 export type Currency = 'EUR' | 'USD' | 'GEL' | 'CAD';
 export type EntryType = 'Gave' | 'Received';
 export type EntryCategory = 'salary' | 'gift';

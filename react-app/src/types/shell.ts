@@ -1,2 +1,1 @@
-export type { AppMode } from './domain';
-export type ThemeMode = 'system' | 'dark' | 'light';
+export type { AppMode, ThemeMode } from './domain';
