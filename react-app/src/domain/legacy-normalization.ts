@@ -21,8 +21,21 @@ export function flattenLegacyStages(person: LegacyPerson): LegacyPerson {
   const currency = openStage?.currency ?? lastStage?.currency ?? 'EUR';
   const entries = stages.flatMap((stage) => (stage.entries ?? []).map((entry) => ({ ...entry })));
   entries.sort((first, second) => legacyEntryTimestamp(second) - legacyEntryTimestamp(first));
+  const legacyStageFields = stages.map((stage) =>
+    Object.fromEntries(
+      Object.entries(stage).filter(
+        ([key]) => key !== 'currency' && key !== 'closed' && key !== 'entries',
+      ),
+    ),
+  );
+  const hasUnknownStageFields = legacyStageFields.some((fields) => Object.keys(fields).length > 0);
 
-  const migrated: LegacyPerson = { ...person, currency, entries };
+  const migrated: LegacyPerson = {
+    ...person,
+    currency,
+    entries,
+    ...(hasUnknownStageFields ? { legacyStageFields } : {}),
+  };
   delete migrated.stages;
   return migrated;
 }

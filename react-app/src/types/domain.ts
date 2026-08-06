@@ -121,6 +121,7 @@ export interface LegacyPerson {
   currency?: Currency;
   entries?: LegacyEntry[];
   stages?: LegacyStage[];
+  legacyStageFields?: Record<string, unknown>[];
   tagLabel?: string;
   tagColor?: string;
   archived?: boolean;

@@ -47,6 +47,19 @@ export function salaryPaid(person: Pick<Person, 'entries'>): number {
   }, 0);
 }
 
+export function earliestUnpaidPayDate(
+  config: SalarySettings,
+  completedPeriods: number,
+  paid: number,
+  periodAmount: number,
+): string {
+  const periodAmountSafe = periodAmount > 0 ? periodAmount : 1;
+  const paidPeriodsCount = Math.floor(paid / periodAmountSafe);
+  const earliestUnpaidIndex = Math.min(completedPeriods, paidPeriodsCount + 1);
+  const periodEndDate = addDays(config.anchorDate, earliestUnpaidIndex * config.periodWeeks * 7);
+  return computeSalaryPayDate(periodEndDate, config.payDelayMode);
+}
+
 function disabledSalaryResult(): SalaryCalculationResult {
   return {
     enabled: false,
@@ -98,23 +111,16 @@ export function calculateSalary(person: Person, referenceDate: Date): SalaryCalc
   const overdueRemaining = Math.max(0, overdueTarget - paid);
   const nextPeriodEndDate = addDays(config.anchorDate, periodsTargeted * periodDays);
   const nextPayDateForecast = computeSalaryPayDate(nextPeriodEndDate, config.payDelayMode);
-  const periodAmountSafe = periodAmount > 0 ? periodAmount : 1;
-  const paidPeriodsCount = Math.floor(paid / periodAmountSafe);
-  const earliestUnpaidIndex = Math.min(boundariesReached, paidPeriodsCount + 1);
-  const earliestUnpaidPeriodEndDate = addDays(config.anchorDate, earliestUnpaidIndex * periodDays);
-  const earliestUnpaidPayDate = computeSalaryPayDate(
-    earliestUnpaidPeriodEndDate,
-    config.payDelayMode,
-  );
+  const earliestUnpaidDate = earliestUnpaidPayDate(config, boundariesReached, paid, periodAmount);
   const isPastDue =
     boundariesReached > 0 &&
     overdueRemaining > 0.0001 &&
-    daysUntil(earliestUnpaidPayDate, referenceDate) < -SALARY_GRACE_DAYS;
+    daysUntil(earliestUnpaidDate, referenceDate) < -SALARY_GRACE_DAYS;
   const due = isPastDue ? Math.min(overdueRemaining, remaining) : 0;
   let upcoming = remaining - due;
   if (remaining <= 0 && !ended) upcoming = periodAmount;
   const nextPayDate =
-    overdueRemaining > 0.0001 && !isPastDue ? earliestUnpaidPayDate : nextPayDateForecast;
+    overdueRemaining > 0.0001 && !isPastDue ? earliestUnpaidDate : nextPayDateForecast;
   const daysUntilNextPay = ended ? null : daysUntil(nextPayDate, referenceDate);
   const paySoon =
     !ended && due <= 0 && daysUntilNextPay !== null && daysUntilNextPay <= SALARY_PAY_SOON_DAYS;
