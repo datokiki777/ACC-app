@@ -9,9 +9,11 @@ Thumbs.db
 .env
 .env.*
 !.env.example
+!react-app/.env.github
 
 # Build output
 dist/
+dist-github/
 build/
 .cache/
 .parcel-cache/

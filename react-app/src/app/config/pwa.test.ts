@@ -1,13 +1,18 @@
-import { ACC_PWA_MANIFEST, VITE_BASE_PATH } from './pwa';
+import {
+  createAccPwaManifest,
+  DEFAULT_BASE_PATH,
+  GITHUB_BASE_PATH,
+  normalizeBasePath,
+} from './pwa';
 
 describe('PWA configuration', () => {
-  it('uses the GitHub Pages repository base and installable ACC identity', () => {
-    expect(VITE_BASE_PATH).toBe('/acc/');
-    expect(ACC_PWA_MANIFEST).toMatchObject({
+  it('uses the custom-domain root by default', () => {
+    expect(DEFAULT_BASE_PATH).toBe('/');
+    expect(createAccPwaManifest(DEFAULT_BASE_PATH)).toMatchObject({
       name: 'ACC',
       short_name: 'ACC',
-      start_url: '/acc/',
-      scope: '/acc/',
+      start_url: '/',
+      scope: '/',
       display: 'standalone',
       orientation: 'portrait',
       background_color: '#071633',
@@ -15,8 +20,17 @@ describe('PWA configuration', () => {
     });
   });
 
+  it('supports the optional GitHub repository path', () => {
+    expect(GITHUB_BASE_PATH).toBe('/acc/');
+    expect(createAccPwaManifest(GITHUB_BASE_PATH)).toMatchObject({
+      start_url: '/acc/',
+      scope: '/acc/',
+    });
+    expect(normalizeBasePath('acc')).toBe('/acc/');
+  });
+
   it('retains regular and maskable icons', () => {
-    expect(ACC_PWA_MANIFEST.icons).toEqual(
+    expect(createAccPwaManifest(DEFAULT_BASE_PATH).icons).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ sizes: '192x192', purpose: 'any' }),
         expect.objectContaining({ sizes: '192x192', purpose: 'maskable' }),

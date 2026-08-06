@@ -15,10 +15,24 @@ npm run build
 npm run preview
 ```
 
-Vite serves development at `/acc/` because the production base is the GitHub repository path.
-Use the URL printed by Vite, normally `http://localhost:5173/acc/`. The preview command serves
-the production output locally, normally at `http://localhost:4173/acc/`.
+The default production target is the custom-domain root. Build and preview it with:
 
-Do not copy `dist/` into the repository root or change GitHub Pages deployment from `main`.
-A future preview deployment should upload `react-app/dist` as an isolated artifact or publish
-it to a separate preview environment, never to the existing live site without approval.
+```sh
+npm run build
+npm run preview
+```
+
+Open `http://localhost:4173/`. Output is written to `dist/`.
+
+Build and preview the optional GitHub repository-path target with:
+
+```sh
+npm run build:github
+npm run preview:github
+```
+
+Open `http://localhost:4173/acc/`. Output is written separately to `dist-github/`.
+
+Do not copy either output into the repository root or change GitHub Pages deployment from
+`main`. A future preview deployment should upload the appropriate output as an isolated artifact
+or publish it to a separate preview environment, never to the existing live site without approval.

@@ -6,7 +6,9 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "build:github": "tsc -b && vite build --mode github",
     "preview": "vite preview",
+    "preview:github": "vite preview --mode github --outDir dist-github",
     "lint": "eslint . --max-warnings 0",
     "typecheck": "tsc -b --pretty false",
     "test": "vitest run",
