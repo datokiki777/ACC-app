@@ -22,6 +22,10 @@ capacitor.config.json
 package-lock.json
 package.json
 
+# The React rebuild has its own intentionally versioned package metadata.
+!react-app/package.json
+!react-app/package-lock.json
+
 # Native app signing keys and secrets
 *.apk
 *.aab

@@ -1,0 +1,37 @@
+import type { ManifestOptions } from 'vite-plugin-pwa';
+
+export const VITE_BASE_PATH = '/acc/';
+
+export const ACC_PWA_MANIFEST = {
+  name: 'ACC',
+  short_name: 'ACC',
+  description: 'ACC - personal and work money tracking app',
+  start_url: VITE_BASE_PATH,
+  scope: VITE_BASE_PATH,
+  display: 'standalone',
+  orientation: 'portrait',
+  background_color: '#071633',
+  theme_color: '#071633',
+  lang: 'en',
+  dir: 'ltr',
+  categories: ['finance', 'business', 'productivity'],
+  icons: [
+    { src: 'icons/icon-167x167.png', sizes: '167x167', type: 'image/png', purpose: 'any' },
+    { src: 'icons/icon-180x180.png', sizes: '180x180', type: 'image/png', purpose: 'any' },
+    { src: 'icons/icon-192x192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
+    {
+      src: 'icons/icon-192x192-maskable.png',
+      sizes: '192x192',
+      type: 'image/png',
+      purpose: 'maskable',
+    },
+    { src: 'icons/icon-512x512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
+    {
+      src: 'icons/icon-512x512-maskable.png',
+      sizes: '512x512',
+      type: 'image/png',
+      purpose: 'maskable',
+    },
+    { src: 'icons/icon-1024x1024.png', sizes: '1024x1024', type: 'image/png', purpose: 'any' },
+  ],
+} satisfies Partial<ManifestOptions>;
