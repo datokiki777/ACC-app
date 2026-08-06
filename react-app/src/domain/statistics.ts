@@ -2,12 +2,15 @@ import type {
   AppMode,
   Currency,
   MonthlyStatistics,
+  PayrollOverview,
+  PayrollPayDateGroup,
   Person,
   StatisticsResult,
   TopBalanceResult,
 } from '../types/domain';
 import { personOpenBalance } from './balances';
 import { normalizeAmount } from './entries';
+import { calculateSalary, getSalarySettings } from './salary';
 
 export type StatisticsScope = 'active' | 'archived' | 'all';
 
@@ -114,5 +117,66 @@ export function calculateStatistics(
     mostActiveName,
     mostActiveCount,
     topBalances: topBalances(people, mode),
+  };
+}
+
+export function calculatePayrollOverview(
+  people: readonly Person[],
+  referenceDate: Date,
+): PayrollOverview | null {
+  const rows = people.flatMap((person) => {
+    if (!getSalarySettings(person)) return [];
+    const summary = calculateSalary(person, referenceDate);
+    return [
+      {
+        name: person.name,
+        due: summary.due,
+        upcoming: summary.upcoming,
+        nextPayDate: summary.nextPayDate,
+        daysUntilNextPay: summary.daysUntilNextPay,
+        paySoon: summary.paySoon,
+        ended: summary.ended,
+        currency: summary.currency,
+      },
+    ];
+  });
+  if (!rows.length) return null;
+
+  const totalsByCurrency: PayrollOverview['totalsByCurrency'] = {};
+  rows.forEach((row) => {
+    const totals = totalsByCurrency[row.currency] ?? { due: 0, upcoming: 0 };
+    totals.due += row.due;
+    totals.upcoming += row.upcoming;
+    totalsByCurrency[row.currency] = totals;
+  });
+
+  const groups = new Map<string, PayrollPayDateGroup['rows']>();
+  rows.forEach((row) => {
+    if (row.ended || !row.nextPayDate || row.upcoming <= 0) return;
+    const group = groups.get(row.nextPayDate) ?? [];
+    group.push(row);
+    groups.set(row.nextPayDate, group);
+  });
+
+  const payDates = [...groups.entries()]
+    .sort(([first], [second]) => first.localeCompare(second))
+    .map(([date, groupedRows]) => ({
+      date,
+      rows: groupedRows.sort((first, second) => second.upcoming - first.upcoming),
+    }));
+  const overdueRows = rows
+    .filter((row) => row.due > 0)
+    .sort((first, second) => second.due - first.due);
+
+  return { totalsByCurrency, payDates, overdueRows };
+}
+
+export function payDateGroupDisplay(group: PayrollPayDateGroup): {
+  total: number;
+  currency: Currency | null;
+} {
+  return {
+    total: group.rows.reduce((sum, row) => sum + row.upcoming, 0),
+    currency: group.rows[0]?.currency ?? null,
   };
 }

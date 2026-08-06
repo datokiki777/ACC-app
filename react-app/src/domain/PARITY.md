@@ -40,5 +40,6 @@ The source of truth for this extraction is the Vanilla implementation in `js/03-
   the first row's currency. No conversion or cross-currency aggregation has been introduced.
 - Legacy import fingerprints depend on `note`, although the current person form does not expose a
   note field. The field remains supported for older backups.
-- Legacy local-midnight subtraction is DST-sensitive. `DATES.md` documents the deterministic
-  calendar-day interpretation used here to satisfy the explicit Phase 3A date-safety requirement.
+- Legacy local-midnight subtraction is DST-sensitive. Differential tests confirmed the spring
+  transition can delay a completed-period boundary by one elapsed day. `DATES.md` documents why
+  the initial migration retains this behavior pending explicit approval for a future correction.

@@ -54,16 +54,28 @@ export function compareDateStrings(first: string, second: string): number {
 export function daysSince(startDate: string, referenceDate: Date): number {
   const start = parseCalendarDate(startDate);
   if (!start) return 0;
+  const localStart = new Date(start.year, start.month - 1, start.day);
+  const localReference = new Date(
+    referenceDate.getFullYear(),
+    referenceDate.getMonth(),
+    referenceDate.getDate(),
+  );
   return Math.max(
     0,
-    calendarOrdinal(referenceCalendarDate(referenceDate)) - calendarOrdinal(start),
+    Math.floor((localReference.getTime() - localStart.getTime()) / MILLISECONDS_PER_DAY),
   );
 }
 
 export function daysUntil(targetDate: string, referenceDate: Date): number {
   const target = parseCalendarDate(targetDate);
   if (!target) return 0;
-  return calendarOrdinal(target) - calendarOrdinal(referenceCalendarDate(referenceDate));
+  const localTarget = new Date(target.year, target.month - 1, target.day);
+  const localReference = new Date(
+    referenceDate.getFullYear(),
+    referenceDate.getMonth(),
+    referenceDate.getDate(),
+  );
+  return Math.floor((localTarget.getTime() - localReference.getTime()) / MILLISECONDS_PER_DAY);
 }
 
 export function addDays(dateString: string, days: number): string {

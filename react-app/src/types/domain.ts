@@ -97,6 +97,28 @@ export interface StatisticsResult {
   topBalances: TopBalanceResult[];
 }
 
+export interface PayrollStatisticsRow {
+  name: string;
+  due: number;
+  upcoming: number;
+  nextPayDate: string;
+  daysUntilNextPay: number | null;
+  paySoon: boolean;
+  ended: boolean;
+  currency: Currency;
+}
+
+export interface PayrollPayDateGroup {
+  date: string;
+  rows: PayrollStatisticsRow[];
+}
+
+export interface PayrollOverview {
+  totalsByCurrency: Partial<Record<Currency, { due: number; upcoming: number }>>;
+  payDates: PayrollPayDateGroup[];
+  overdueRows: PayrollStatisticsRow[];
+}
+
 export interface LegacyEntry {
   id?: string;
   amount?: number | string;

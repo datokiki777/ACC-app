@@ -18,7 +18,7 @@
     "isolatedModules": true,
     "noEmit": true,
     "jsx": "react-jsx",
-    "types": ["vite/client", "vitest/globals", "vite-plugin-pwa/react"]
+    "types": ["node", "vite/client", "vitest/globals", "vite-plugin-pwa/react"]
   },
   "include": ["src"]
 }

@@ -12,8 +12,8 @@ describe('calendar-safe pay dates', () => {
     expect(daysUntil('2026-03-07', date(2026, 3, 8))).toBe(-1);
   });
 
-  it('does not lose a day across the spring DST transition', () => {
-    expect(daysSince('2026-03-28', date(2026, 3, 30))).toBe(2);
+  it('preserves the legacy elapsed-hour result across the spring DST transition', () => {
+    expect(daysSince('2026-03-28', date(2026, 3, 30))).toBe(1);
     expect(addDays('2026-03-28', 2)).toBe('2026-03-30');
   });
 
