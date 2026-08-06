@@ -1,8 +1,8 @@
 # ACC React application
 
-This directory contains the isolated React + TypeScript rebuild. The legacy Vanilla application
-at the repository root is unchanged and remains the live application until a separate deployment
-is reviewed and approved.
+This repository contains the production React + TypeScript ACC PWA deployed at
+<https://acc.dbuilder.eu/>. The former Vanilla runtime has been removed from production; its three
+calculation files retained under `src/test/legacy/source/` are test fixtures only.
 
 ## Data safety
 
@@ -29,7 +29,6 @@ React components use the typed Zustand store. Only repository and service module
 Install dependencies and run the development server:
 
 ```sh
-cd react-app
 npm install
 npm run dev
 ```
@@ -42,33 +41,30 @@ npm run lint
 npm run typecheck
 npm test
 npm run build
+npm run verify:dist
 npm run build:github
 ```
 
-## Preview without replacing the live app
+## Production build and preview
 
 The normal build targets the custom-domain root (`/`):
 
 ```sh
-cd react-app
 npm run build
+npm run verify:dist
 npm run preview
 ```
 
-Open `http://localhost:4173/`. Output is written to `react-app/dist/`.
+Open `http://localhost:4173/`. Output is written to `dist/`.
 
 The optional GitHub repository-path build targets `/acc/` and has separate output:
 
 ```sh
-cd react-app
 npm run build:github
 npm run preview:github
 ```
 
-Open `http://localhost:4173/acc/`. Output is written to `react-app/dist-github/`.
-
-These commands only run local preview servers. Do not copy either output into the repository root,
-change the CNAME, or change GitHub Pages deployment from `main` during review.
+Open `http://localhost:4173/acc/`. Output is written to `dist-github/`.
 
 ## Import a saved legacy backup
 
@@ -104,4 +100,6 @@ unknown person/stage/entry fields are preserved. Export remains consumable by th
 - PWA updates use a prompt. Existing clients are not force-reloaded while work may be unsaved.
 - Regular and maskable ACC icons are copied from the legacy application without redesign.
 
-No deployment workflow is run by these instructions.
+Pushes to `main` run `.github/workflows/deploy-pages.yml`. Formatting, lint, strict TypeScript,
+all tests, the root production build, and production-output verification must pass before `dist/`
+is deployed to GitHub Pages. `public/CNAME` publishes the custom domain with the artifact.

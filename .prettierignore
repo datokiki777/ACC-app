@@ -3,3 +3,7 @@ dist-github
 coverage
 node_modules
 package-lock.json
+CHANGELOG.md
+.well-known
+docs
+src/test/legacy/source

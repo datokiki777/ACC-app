@@ -46,11 +46,10 @@ interface LegacyExports {
   validateFullBackupData(data: unknown): boolean;
 }
 
-const legacySourceDirectory = [
-  resolve(process.cwd(), '..', 'js'),
-  resolve(process.cwd(), 'js'),
-].find((candidate) => existsSync(resolve(candidate, '03-utils.js')));
-if (!legacySourceDirectory) throw new Error('Could not locate the legacy JavaScript source');
+const legacySourceDirectory = resolve(process.cwd(), 'src', 'test', 'legacy', 'source');
+if (!existsSync(resolve(legacySourceDirectory, '03-utils.js'))) {
+  throw new Error('Could not locate the test-only legacy JavaScript source');
+}
 const legacyUtilsSource = readFileSync(resolve(legacySourceDirectory, '03-utils.js'), 'utf8');
 const legacyBackupSource = readFileSync(resolve(legacySourceDirectory, '09-export.js'), 'utf8');
 const legacyStatisticsSource = readFileSync(resolve(legacySourceDirectory, '11-stats.js'), 'utf8');
