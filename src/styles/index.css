@@ -505,14 +505,17 @@ a:focus-visible {
 
 .person-details {
   display: grid;
-  gap: 0;
-  padding: 0 12px 12px;
-  border-top: 1px solid var(--border);
+  gap: 8px;
+  padding: 10px;
+  border-top: 1px solid color-mix(in srgb, var(--border) 72%, transparent);
+  background: color-mix(in srgb, var(--bg) 38%, var(--surface));
 }
 
 .payroll-panel {
-  padding: 10px 2px 8px;
-  border-bottom: 1px solid var(--border);
+  padding: 11px 12px 10px;
+  border: 1px solid color-mix(in srgb, var(--accent) 14%, var(--border));
+  border-radius: 15px;
+  background: color-mix(in srgb, var(--surface-raised) 82%, var(--accent) 3%);
 }
 
 .panel-heading,
@@ -548,10 +551,10 @@ a:focus-visible {
 
 .payroll-panel .panel-grid {
   gap: 12px;
-  padding: 7px 0;
-  border-top: 1px solid var(--border);
-  border-bottom: 1px solid var(--border);
-  margin-top: 7px;
+  padding: 8px 0;
+  border-top: 1px solid color-mix(in srgb, var(--border) 72%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 72%, transparent);
+  margin-top: 8px;
 }
 
 .panel-grid span,
@@ -592,15 +595,40 @@ a:focus-visible {
 }
 
 .payroll-panel .text-button {
-  margin-bottom: -6px;
+  min-height: 32px;
   font-size: 0.82rem;
   font-weight: 700;
 }
 
+.payroll-totals-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  align-items: center;
+  padding-top: 8px;
+  border-top: 1px solid color-mix(in srgb, var(--border) 72%, transparent);
+  color: var(--muted);
+  font-size: 0.76rem;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.payroll-totals-row span:nth-child(2) {
+  text-align: center;
+}
+
+.payroll-totals-row strong {
+  color: var(--text);
+  font-size: 0.8rem;
+  text-align: right;
+}
+
 .other-panel {
   align-items: center;
-  padding: 9px 2px;
-  border-bottom: 1px solid var(--border);
+  padding: 9px 11px;
+  border: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
+  border-radius: 13px;
+  background: color-mix(in srgb, var(--surface-raised) 70%, var(--bg));
 }
 
 .totals-row {
@@ -609,7 +637,7 @@ a:focus-visible {
   padding: 0 10px;
   border: 1px solid var(--border);
   border-radius: 12px;
-  margin: 8px 0;
+  margin: 0;
   color: var(--muted);
   background: color-mix(in srgb, var(--surface-raised) 48%, transparent);
   font-size: 0.78rem;
@@ -623,29 +651,86 @@ a:focus-visible {
 
 .entries-list {
   display: grid;
-  margin-inline: -12px;
-  border-top: 1px solid var(--border);
+  gap: 7px;
 }
 
-.entry-row {
+.entry-swipe-shell {
+  position: relative;
+  min-height: 62px;
+  overflow: hidden;
+  border-radius: 13px;
+  background: color-mix(in srgb, var(--danger) 88%, #9e1730);
+  touch-action: pan-y;
+}
+
+.entry-swipe-action {
+  position: absolute;
+  z-index: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 84px;
+}
+
+.entry-swipe-action button {
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 2px;
+  width: 84px;
+  height: 100%;
+  min-height: 62px;
+  padding: 4px;
+  border: 0;
+  border-radius: 0;
+  color: white;
+  background: transparent;
+  font-size: 0.68rem;
+  font-weight: 800;
+}
+
+.entry-swipe-action svg {
+  width: 19px;
+  height: 19px;
+  fill: none;
+  stroke: currentcolor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.8;
+}
+
+.entry-card-surface {
+  position: relative;
+  z-index: 1;
   display: grid;
   grid-template-areas:
     'kind amount'
-    'date actions';
+    'date date';
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
-  column-gap: 10px;
-  min-height: 64px;
-  padding: 5px 12px;
-  border-bottom: 1px solid var(--border);
+  column-gap: 8px;
+  min-height: 62px;
+  padding: 8px 52px 8px 12px;
+  border: 1px solid color-mix(in srgb, var(--border) 78%, transparent);
+  border-radius: 13px;
+  background: color-mix(in srgb, var(--surface-raised) 76%, var(--bg));
+  box-shadow: 0 1px 2px rgb(0 0 0 / 5%);
+  touch-action: pan-y;
+  transition: transform 165ms cubic-bezier(0.22, 0.8, 0.3, 1);
+  will-change: transform;
 }
 
-.entry-row.has-comment {
+.entry-card-surface.is-dragging {
+  transition: none;
+}
+
+.entry-card-surface.has-comment {
   grid-template-areas:
     'kind amount'
-    'comment actions'
-    'date actions';
-  min-height: 76px;
+    'comment comment'
+    'date date';
+  min-height: 78px;
+  row-gap: 2px;
 }
 
 .entry-kind {
@@ -668,8 +753,8 @@ a:focus-visible {
   overflow: hidden;
   margin: 0;
   color: var(--muted);
-  font-size: 0.8rem;
-  line-height: 1.25;
+  font-size: 0.78rem;
+  line-height: 1.22;
   overflow-wrap: anywhere;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
@@ -677,24 +762,22 @@ a:focus-visible {
 
 .entry-date {
   grid-area: date;
+  color: var(--muted);
   font-size: 0.76rem;
 }
 
-.mini-actions {
-  grid-area: actions;
-  align-self: end;
-  display: flex;
-  gap: 4px;
-}
-
-.mini-actions button {
-  width: 38px;
-  min-height: 38px;
+.entry-edit-button {
+  position: absolute;
+  right: 10px;
+  bottom: 8px;
+  width: 36px;
+  min-height: 36px;
   padding: 0;
   border-color: color-mix(in srgb, var(--border) 78%, transparent);
-  border-radius: 11px;
-  background: color-mix(in srgb, var(--surface-raised) 64%, transparent);
-  font-size: 1rem;
+  border-radius: 10px;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--surface-raised) 72%, transparent);
+  font-size: 0.98rem;
 }
 
 .mini-empty {
@@ -711,8 +794,10 @@ a:focus-visible {
 }
 
 .person-details > .card-actions {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   gap: 6px;
-  padding-top: 10px;
+  padding-top: 2px;
 }
 
 .person-details > .card-actions button {

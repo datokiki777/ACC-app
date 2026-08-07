@@ -1,4 +1,4 @@
-import { type PointerEvent as ReactPointerEvent, useRef, useState } from 'react';
+import { type PointerEvent as ReactPointerEvent, useEffect, useRef, useState } from 'react';
 
 import { personOpenBalance, personTotals } from '../../domain/balances';
 import { entryEffect } from '../../domain/entries';
@@ -6,6 +6,7 @@ import { calculateSalary, giftSummary } from '../../domain/salary';
 import { useAppStore } from '../../store/hooks';
 import type { PersistedPerson } from '../../types/persistence';
 import { formatDate, formatMoney } from '../../utils/format';
+import { EntryCard } from './EntryCard';
 
 export type PersonSwipeAction = 'archive' | 'delete';
 
@@ -43,6 +44,7 @@ export function PersonCard({
   const suppressClickRef = useRef(false);
   const [dragOffset, setDragOffset] = useState<number | null>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [openEntrySwipeId, setOpenEntrySwipeId] = useState<string | null>(null);
   const mode = useAppStore((state) => state.mode);
   const expanded = useAppStore((state) => state.expandedPersonId === person.id);
   const setExpanded = useAppStore((state) => state.setExpandedPerson);
@@ -55,6 +57,18 @@ export function PersonCard({
   const restingOffset =
     swipeOpen === 'archive' ? SWIPE_ACTION_WIDTH : swipeOpen === 'delete' ? -SWIPE_ACTION_WIDTH : 0;
   const visibleOffset = dragOffset ?? restingOffset;
+
+  useEffect(() => {
+    if (!openEntrySwipeId) return;
+    const closeOpenEntrySwipe = (event: PointerEvent) => {
+      const target = event.target;
+      const entry = target instanceof Element ? target.closest('[data-entry-swipe-id]') : null;
+      if (entry?.getAttribute('data-entry-swipe-id') === openEntrySwipeId) return;
+      setOpenEntrySwipeId(null);
+    };
+    document.addEventListener('pointerdown', closeOpenEntrySwipe, true);
+    return () => document.removeEventListener('pointerdown', closeOpenEntrySwipe, true);
+  }, [openEntrySwipeId]);
 
   function handlePointerDown(event: ReactPointerEvent<HTMLButtonElement>) {
     if (!event.isPrimary || event.button !== 0) return;
@@ -180,6 +194,7 @@ export function PersonCard({
               onSwipeOpen(null);
               return;
             }
+            if (expanded) setOpenEntrySwipeId(null);
             setExpanded(expanded ? null : person.id);
           }}
           onPointerCancel={cancelPointerGesture}
@@ -266,6 +281,13 @@ export function PersonCard({
               >
                 ↻ Sync Pay Date
               </button>
+              {!!person.entries.length && (
+                <div className="payroll-totals-row">
+                  <span>↑ {formatMoney(totals.gave, person.currency, false)}</span>
+                  <span>↓ {formatMoney(totals.received, person.currency, false)}</span>
+                  <strong>Net {formatMoney(totals.balance, person.currency)}</strong>
+                </div>
+              )}
             </section>
           )}
 
@@ -281,7 +303,7 @@ export function PersonCard({
             </section>
           ) : null}
 
-          {!!person.entries.length && (
+          {!!person.entries.length && !salary?.enabled && (
             <div className="totals-row">
               <span>↑ {formatMoney(totals.gave, person.currency, false)}</span>
               <span>↓ {formatMoney(totals.received, person.currency, false)}</span>
@@ -292,40 +314,28 @@ export function PersonCard({
             {person.entries.map((entry) => {
               const effect = entryEffect(entry.type, entry.amount);
               return (
-                <div className={`entry-row ${entry.comment ? 'has-comment' : ''}`} key={entry.id}>
-                  <strong
-                    className={`entry-kind ${entry.type === 'Gave' ? 'positive' : 'negative'}`}
-                  >
-                    {mode === 'work'
+                <EntryCard
+                  currency={person.currency}
+                  effect={effect}
+                  entry={entry}
+                  key={entry.id}
+                  onDelete={() => onDeleteEntry(entry.id)}
+                  onEdit={() => {
+                    setOpenEntrySwipeId(null);
+                    openSheet('entry-form', person.id, entry.id);
+                  }}
+                  onSwipeOpen={(open) => setOpenEntrySwipeId(open ? entry.id : null)}
+                  swipeOpen={openEntrySwipeId === entry.id}
+                  title={
+                    mode === 'work'
                       ? entry.category === 'salary'
                         ? 'Salary'
                         : entry.category === 'gift'
                           ? 'Other'
                           : entry.type
-                      : entry.type}
-                  </strong>
-                  <strong className={`entry-amount ${effect < 0 ? 'negative' : 'positive'}`}>
-                    {formatMoney(effect, person.currency)}
-                  </strong>
-                  {entry.comment && <p className="entry-comment">{entry.comment}</p>}
-                  <small className="entry-date">{formatDate(entry.date)}</small>
-                  <div className="mini-actions">
-                    <button
-                      aria-label="Edit entry"
-                      onClick={() => openSheet('entry-form', person.id, entry.id)}
-                      type="button"
-                    >
-                      ✎
-                    </button>
-                    <button
-                      aria-label="Delete entry"
-                      onClick={() => onDeleteEntry(entry.id)}
-                      type="button"
-                    >
-                      ×
-                    </button>
-                  </div>
-                </div>
+                      : entry.type
+                  }
+                />
               );
             })}
             {!person.entries.length && <p className="mini-empty">No entries yet</p>}
@@ -345,16 +355,6 @@ export function PersonCard({
               type="button"
             >
               Edit
-            </button>
-            <button
-              className="secondary-button"
-              onClick={() => void toggleArchive(person.id)}
-              type="button"
-            >
-              {person.archived ? 'Unarchive' : 'Archive'}
-            </button>
-            <button className="danger-icon-button" onClick={onDeletePerson} type="button">
-              Delete
             </button>
           </div>
         </div>

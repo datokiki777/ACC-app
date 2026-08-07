@@ -61,7 +61,7 @@ export function App() {
 
   function confirmEntryDelete(person: PersistedPerson, entryId: string) {
     setConfirmation({
-      title: 'Delete?',
+      title: 'Delete entry?',
       message: 'Are you sure you want to delete this entry?',
       action: () => deleteEntry(person.id, entryId),
     });

@@ -255,27 +255,134 @@ describe('ACC application', () => {
     const amount = screen.getByRole('spinbutton', { name: 'Amount' });
     await user.clear(amount);
     await user.type(amount, '75');
-    await user.type(screen.getByRole('textbox', { name: /Comment/ }), 'Lunch');
+    const georgianComment =
+      'გრძელი ქართული კომენტარი, რომელიც ბარათში მაქსიმუმ ორ ხაზად უნდა გამოჩნდეს';
+    await user.type(screen.getByRole('textbox', { name: /Comment/ }), georgianComment);
     await user.click(screen.getByRole('button', { name: 'Save' }));
 
-    expect(await screen.findByText('Lunch')).toBeInTheDocument();
+    const comment = await screen.findByText(georgianComment);
+    expect(comment).toHaveClass('entry-comment');
+    const entrySurface = comment.closest('.entry-card-surface');
+    expect(entrySurface).toBeInstanceOf(HTMLDivElement);
     expect(screen.getByRole('button', { name: 'Edit entry' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Delete entry' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Delete entry/ })).not.toBeInTheDocument();
     expect(store.getState().peopleByMode.personal[0]?.entries[0]).toMatchObject({
       amount: 75,
       type: 'Gave',
-      comment: 'Lunch',
+      comment: georgianComment,
     });
 
-    await user.click(screen.getByRole('button', { name: 'Delete entry' }));
-    let dialog = screen.getByRole('dialog', { name: 'Delete?' });
+    await user.click(screen.getByRole('button', { name: 'Edit entry' }));
+    expect(screen.getByRole('dialog', { name: 'Edit Entry' })).toBeVisible();
+    await user.click(screen.getByRole('button', { name: 'Close' }));
+
+    swipe(entrySurface as HTMLDivElement, 240, 120);
+    const entryDelete = screen.getByRole('button', { name: /Delete entry dated/ });
+    expect(entryDelete).toHaveAttribute('tabindex', '0');
+    await user.click(entryDelete);
+    let dialog = screen.getByRole('dialog', { name: 'Delete entry?' });
     expect(within(dialog).getByText('Are you sure you want to delete this entry?')).toBeVisible();
     await user.click(within(dialog).getByRole('button', { name: 'Cancel' }));
     expect(store.getState().peopleByMode.personal[0]?.entries).toHaveLength(1);
 
-    await user.click(screen.getByRole('button', { name: 'Delete entry' }));
-    dialog = screen.getByRole('dialog', { name: 'Delete?' });
+    swipe(entrySurface as HTMLDivElement, 240, 120);
+    await user.click(screen.getByRole('button', { name: /Delete entry dated/ }));
+    dialog = screen.getByRole('dialog', { name: 'Delete entry?' });
     await user.click(within(dialog).getByRole('button', { name: 'Delete' }));
     await waitFor(() => expect(store.getState().peopleByMode.personal[0]?.entries).toHaveLength(0));
+
+    expect(screen.queryByRole('button', { name: /Archive Taylor/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Delete Taylor/ })).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Edit' }));
+    expect(screen.getByRole('dialog', { name: 'Edit Person' })).toBeVisible();
   }, 10_000);
+
+  it('keeps entry swipes isolated, closes the previous entry, and preserves vertical intent', async () => {
+    const user = userEvent.setup();
+    const store = renderApp();
+    await waitFor(() => expect(store.getState().initialized).toBe(true));
+    let personId = '';
+    await act(async () => {
+      const person = await store.getState().addPerson(draft('Entry swipe target'));
+      personId = person.id;
+      await store.getState().addEntry(person.id, {
+        amount: 10,
+        type: 'Gave',
+        date: '2026-07-01',
+        comment: 'First entry',
+      });
+      await store.getState().addEntry(person.id, {
+        amount: 20,
+        type: 'Received',
+        date: '2026-07-02',
+        comment: 'Second entry',
+      });
+    });
+
+    const summary = await findPersonSummary('Entry swipe target');
+    await user.click(summary);
+    const firstSurface = screen.getByText('First entry').closest('.entry-card-surface');
+    const secondSurface = screen.getByText('Second entry').closest('.entry-card-surface');
+    expect(firstSurface).toBeInstanceOf(HTMLDivElement);
+    expect(secondSurface).toBeInstanceOf(HTMLDivElement);
+    const firstShell = firstSurface?.closest('.entry-swipe-shell');
+    const secondShell = secondSurface?.closest('.entry-swipe-shell');
+    const firstDelete = within(firstShell as HTMLElement).getByLabelText(/Delete entry dated/);
+    const secondDelete = within(secondShell as HTMLElement).getByLabelText(/Delete entry dated/);
+
+    swipe(firstSurface as HTMLElement, 240, 120);
+    await waitFor(() => expect(firstDelete).toHaveAttribute('tabindex', '0'));
+    expect(summary).toHaveStyle({ transform: 'translate3d(0px, 0, 0)' });
+
+    swipe(secondSurface as HTMLElement, 240, 120);
+    await waitFor(() => {
+      expect(firstDelete).toHaveAttribute('tabindex', '-1');
+      expect(secondDelete).toHaveAttribute('tabindex', '0');
+    });
+
+    fireEvent.pointerDown(screen.getByRole('searchbox', { name: 'Search by name' }));
+    await waitFor(() => expect(secondDelete).toHaveAttribute('tabindex', '-1'));
+    swipe(secondSurface as HTMLElement, 180, 186, 110);
+    expect(secondDelete).toHaveAttribute('tabindex', '-1');
+    expect(secondSurface).toHaveStyle({ transform: 'translate3d(0px, 0, 0)' });
+    expect(store.getState().peopleByMode.personal[0]?.id).toBe(personId);
+    expect(store.getState().peopleByMode.personal[0]?.entries).toHaveLength(2);
+  });
+
+  it('keeps payroll totals inside one summary card with only compact bottom actions', async () => {
+    const user = userEvent.setup();
+    const store = renderApp();
+    await waitFor(() => expect(store.getState().initialized).toBe(true));
+    await act(async () => {
+      await store.getState().setMode('work');
+      const person = await store.getState().addPerson({
+        ...draft('Payroll target'),
+        salaryEnabled: true,
+        salaryAmount: 3000,
+        salaryStartDate: '2026-01-01',
+      });
+      await store.getState().addEntry(person.id, {
+        amount: 1500,
+        type: 'Gave',
+        date: '2026-07-31',
+        comment: 'Salary payment',
+        category: 'salary',
+      });
+    });
+
+    const summary = await findPersonSummary('Payroll target');
+    await user.click(summary);
+    const payroll = screen.getByText('Payroll', { selector: 'strong' }).closest('.payroll-panel');
+    expect(payroll).toBeInstanceOf(HTMLElement);
+    expect(within(payroll as HTMLElement).getByText(/^Net /)).toBeInTheDocument();
+    expect((payroll as HTMLElement).querySelector('.payroll-totals-row')).toBeInTheDocument();
+    expect(
+      screen.queryByText('Archive', { selector: '.card-actions button' }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByText('Delete', { selector: '.card-actions button' }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '+ Add Entry' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Edit' })).toBeInTheDocument();
+  });
 });
