@@ -305,6 +305,8 @@ a:focus-visible {
 
 .person-card {
   overflow: hidden;
+  border-radius: 18px;
+  box-shadow: 0 4px 14px rgb(0 0 0 / 12%);
 }
 
 .person-card.is-highlighted {
@@ -317,8 +319,8 @@ a:focus-visible {
   gap: 8px;
   align-items: center;
   width: 100%;
-  min-height: 68px;
-  padding: 12px 13px;
+  min-height: 64px;
+  padding: 10px 14px;
   border: 0;
   border-radius: 0;
   text-align: left;
@@ -359,7 +361,7 @@ a:focus-visible {
 
 .person-name-row > strong {
   overflow: hidden;
-  font-size: 1rem;
+  font-size: 1.0625rem;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -376,7 +378,7 @@ a:focus-visible {
 }
 
 .balance-value {
-  font-size: 0.98rem;
+  font-size: 1rem;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
@@ -439,19 +441,14 @@ a:focus-visible {
 
 .person-details {
   display: grid;
-  gap: 12px;
-  padding: 0 14px 14px;
+  gap: 0;
+  padding: 0 12px 12px;
   border-top: 1px solid var(--border);
 }
 
-.payroll-panel,
-.other-panel,
-.totals-row {
-  padding: 13px;
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  margin-top: 12px;
-  background: color-mix(in srgb, var(--surface-raised) 76%, transparent);
+.payroll-panel {
+  padding: 10px 2px 8px;
+  border-bottom: 1px solid var(--border);
 }
 
 .panel-heading,
@@ -465,14 +462,14 @@ a:focus-visible {
 .panel-heading > div:first-child,
 .other-panel > span {
   display: grid;
-  gap: 3px;
+  gap: 2px;
 }
 
 .payroll-pills,
 .payroll-totals {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 4px;
   justify-content: flex-end;
 }
 
@@ -483,6 +480,14 @@ a:focus-visible {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
   margin-top: 10px;
+}
+
+.payroll-panel .panel-grid {
+  gap: 12px;
+  padding: 7px 0;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  margin-top: 7px;
 }
 
 .panel-grid span,
@@ -496,6 +501,18 @@ a:focus-visible {
   background: color-mix(in srgb, var(--bg) 35%, transparent);
 }
 
+.payroll-panel .panel-grid span {
+  gap: 1px;
+  padding: 0;
+  background: transparent;
+  font-size: 0.78rem;
+}
+
+.payroll-panel .panel-grid strong {
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
 .panel-grid strong,
 .stats-overview strong,
 .insight-grid strong {
@@ -503,63 +520,117 @@ a:focus-visible {
 }
 
 .text-button {
-  min-height: 36px;
+  min-height: 34px;
   padding: 0;
   border: 0;
   color: var(--accent);
   background: transparent;
 }
 
+.payroll-panel .text-button {
+  margin-bottom: -6px;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.other-panel {
+  align-items: center;
+  padding: 9px 2px;
+  border-bottom: 1px solid var(--border);
+}
+
 .totals-row {
-  flex-wrap: wrap;
-  margin-top: 0;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 10px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  margin: 8px 0;
   color: var(--muted);
+  background: color-mix(in srgb, var(--surface-raised) 48%, transparent);
+  font-size: 0.78rem;
+  white-space: nowrap;
+}
+
+.totals-row strong {
+  color: var(--text);
   font-size: 0.82rem;
 }
 
 .entries-list {
   display: grid;
-  overflow: hidden;
-  border: 1px solid var(--border);
-  border-radius: 14px;
+  margin-inline: -12px;
+  border-top: 1px solid var(--border);
 }
 
 .entry-row {
+  display: grid;
+  grid-template-areas:
+    'kind amount'
+    'date actions';
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
-  gap: 10px;
-  padding: 12px;
+  column-gap: 10px;
+  min-height: 64px;
+  padding: 5px 12px;
   border-bottom: 1px solid var(--border);
 }
 
-.entry-row:last-child {
-  border-bottom: 0;
+.entry-row.has-comment {
+  grid-template-areas:
+    'kind amount'
+    'comment actions'
+    'date actions';
+  min-height: 76px;
 }
 
-.entry-row > div:first-child {
-  display: grid;
-  flex: 1;
-  gap: 2px;
+.entry-kind {
+  grid-area: kind;
   min-width: 0;
+  font-size: 0.94rem;
+  font-weight: 700;
 }
 
-.entry-row p {
-  overflow: hidden;
-  margin: 0;
-  color: var(--muted);
-  font-size: 0.82rem;
-  text-overflow: ellipsis;
+.entry-amount {
+  grid-area: amount;
+  font-size: 0.92rem;
+  font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
 
+.entry-comment {
+  display: -webkit-box;
+  grid-area: comment;
+  overflow: hidden;
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.8rem;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.entry-date {
+  grid-area: date;
+  font-size: 0.76rem;
+}
+
 .mini-actions {
+  grid-area: actions;
+  align-self: end;
   display: flex;
   gap: 4px;
 }
 
 .mini-actions button {
-  width: 36px;
-  min-height: 36px;
+  width: 38px;
+  min-height: 38px;
   padding: 0;
+  border-color: color-mix(in srgb, var(--border) 78%, transparent);
+  border-radius: 11px;
+  background: color-mix(in srgb, var(--surface-raised) 64%, transparent);
+  font-size: 1rem;
 }
 
 .mini-empty {
@@ -573,6 +644,18 @@ a:focus-visible {
 .backup-actions {
   flex-wrap: wrap;
   gap: 8px;
+}
+
+.person-details > .card-actions {
+  gap: 6px;
+  padding-top: 10px;
+}
+
+.person-details > .card-actions button {
+  min-height: 40px;
+  padding-inline: 12px;
+  border-radius: 11px;
+  font-size: 0.82rem;
 }
 
 .primary-button,

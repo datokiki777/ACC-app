@@ -112,6 +112,8 @@ describe('ACC application', () => {
     await user.click(screen.getByRole('button', { name: 'Save' }));
 
     expect(await screen.findByText('Lunch')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Edit entry' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Delete entry' })).toBeInTheDocument();
     expect(store.getState().peopleByMode.personal[0]?.entries[0]).toMatchObject({
       amount: 75,
       type: 'Gave',

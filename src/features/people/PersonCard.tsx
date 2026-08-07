@@ -140,23 +140,23 @@ export function PersonCard({
             {person.entries.map((entry) => {
               const effect = entryEffect(entry.type, entry.amount);
               return (
-                <div className="entry-row" key={entry.id}>
-                  <div>
-                    <strong className={entry.type === 'Gave' ? 'positive' : 'negative'}>
-                      {mode === 'work'
-                        ? entry.category === 'salary'
-                          ? 'Salary'
-                          : entry.category === 'gift'
-                            ? 'Other'
-                            : entry.type
-                        : entry.type}
-                    </strong>
-                    {entry.comment && <p>{entry.comment}</p>}
-                    <small>{formatDate(entry.date)}</small>
-                  </div>
-                  <strong className={effect < 0 ? 'negative' : 'positive'}>
+                <div className={`entry-row ${entry.comment ? 'has-comment' : ''}`} key={entry.id}>
+                  <strong
+                    className={`entry-kind ${entry.type === 'Gave' ? 'positive' : 'negative'}`}
+                  >
+                    {mode === 'work'
+                      ? entry.category === 'salary'
+                        ? 'Salary'
+                        : entry.category === 'gift'
+                          ? 'Other'
+                          : entry.type
+                      : entry.type}
+                  </strong>
+                  <strong className={`entry-amount ${effect < 0 ? 'negative' : 'positive'}`}>
                     {formatMoney(effect, person.currency)}
                   </strong>
+                  {entry.comment && <p className="entry-comment">{entry.comment}</p>}
+                  <small className="entry-date">{formatDate(entry.date)}</small>
                   <div className="mini-actions">
                     <button
                       aria-label="Edit entry"
