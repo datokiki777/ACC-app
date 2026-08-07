@@ -150,7 +150,7 @@ describe('ACC application', () => {
   it('keeps system theme preference while reacting to phone theme changes', async () => {
     let systemDark = false;
     const listeners = new Set<() => void>();
-    const originalMatchMedia = window.matchMedia;
+    const originalMatchMedia = window.matchMedia.bind(window);
     window.matchMedia = () =>
       ({
         get matches() {
