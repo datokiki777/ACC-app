@@ -120,8 +120,8 @@ a:focus-visible {
   top: 0;
   display: grid;
   grid-template-columns: 1fr auto;
-  gap: 7px;
-  padding: max(8px, env(safe-area-inset-top)) 12px 8px;
+  gap: 6px;
+  padding: max(7px, env(safe-area-inset-top)) 10px 7px;
   border-bottom: 1px solid var(--border);
   background: color-mix(in srgb, var(--bg) 88%, transparent);
   backdrop-filter: blur(18px);
@@ -136,12 +136,12 @@ a:focus-visible {
   grid-column: 2;
 }
 
-.header-action {
+.app-menu {
   grid-column: 1;
   grid-row: 1;
 }
 
-.real-header .theme-toggle {
+.theme-selector {
   grid-column: 3;
   grid-row: 1;
 }
@@ -149,12 +149,15 @@ a:focus-visible {
 .icon-button {
   display: inline-grid;
   place-items: center;
-  width: 44px;
+  width: 42px;
+  min-height: 42px;
   padding: 0;
   font-size: 1.25rem;
 }
 
-.theme-toggle svg {
+.icon-button svg,
+.header-popover svg,
+.search-field svg {
   width: 20px;
   height: 20px;
   fill: none;
@@ -165,14 +168,13 @@ a:focus-visible {
 }
 
 .filter-row,
-.search-field {
+.search-row {
   grid-column: 1 / -1;
 }
 
 .filter-row {
   display: flex;
-  gap: 8px;
-  min-height: 44px;
+  min-height: 38px;
 }
 
 .filter-switch,
@@ -181,16 +183,17 @@ a:focus-visible {
   flex: 1;
   grid-template-columns: repeat(2, 1fr);
   gap: 3px;
-  height: 44px;
-  padding: 3px;
+  height: 38px;
+  padding: 2px;
   border: 1px solid var(--border);
-  border-radius: 14px;
-  background: var(--surface);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--surface) 78%, var(--bg));
 }
 
 .filter-switch button,
 .scope-switch button {
-  min-height: 36px;
+  min-height: 32px;
+  border-radius: 9px;
   border: 0;
   background: transparent;
   color: var(--muted);
@@ -208,21 +211,28 @@ a:focus-visible {
 .filter-switch span {
   display: inline-grid;
   place-items: center;
-  min-width: 22px;
-  min-height: 22px;
-  padding: 0 6px;
+  min-width: 20px;
+  min-height: 20px;
+  padding: 0 5px;
   border-radius: 99px;
   margin-left: 4px;
   color: var(--muted);
   background: color-mix(in srgb, var(--muted) 14%, transparent);
 }
 
+.search-row {
+  display: flex;
+  gap: 6px;
+}
+
 .search-field {
   display: flex;
+  flex: 1;
   align-items: center;
-  gap: 8px;
-  min-height: 43px;
-  padding: 0 12px;
+  gap: 7px;
+  min-width: 0;
+  min-height: 41px;
+  padding: 0 11px;
   border: 1px solid var(--border);
   border-radius: 14px;
   color: var(--muted);
@@ -231,12 +241,121 @@ a:focus-visible {
 
 .search-field input {
   width: 100%;
-  min-height: 41px;
+  min-height: 39px;
   padding: 0;
   border: 0;
   outline: 0;
   color: var(--text);
   background: transparent;
+}
+
+.search-field svg {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+}
+
+.statistics-button {
+  width: 41px;
+  min-height: 41px;
+  border-radius: 13px;
+  background: var(--surface);
+}
+
+.statistics-button svg {
+  width: 19px;
+  height: 19px;
+}
+
+.header-popover {
+  position: relative;
+  z-index: 12;
+}
+
+.popover-panel {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 7px);
+  padding: 6px;
+  border: 1px solid color-mix(in srgb, var(--border) 88%, transparent);
+  border-radius: 15px;
+  background: color-mix(in srgb, var(--surface-raised) 96%, var(--bg));
+  box-shadow: 0 16px 38px rgb(0 0 0 / 28%);
+  backdrop-filter: blur(20px);
+}
+
+.app-menu-panel {
+  left: 0;
+  display: grid;
+  gap: 2px;
+  width: min(310px, calc(100vw - 20px));
+}
+
+.app-menu-item,
+.theme-menu button {
+  display: grid;
+  align-items: center;
+  width: 100%;
+  min-height: 46px;
+  padding: 7px 9px;
+  border: 0;
+  border-radius: 10px;
+  color: var(--text);
+  background: transparent;
+  text-align: left;
+}
+
+.app-menu-item {
+  grid-template-columns: 24px minmax(0, 1fr) auto;
+  gap: 9px;
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+
+.app-menu-item:hover,
+.theme-menu button:hover,
+.theme-menu button.is-selected {
+  background: color-mix(in srgb, var(--accent) 10%, var(--surface-raised));
+}
+
+.app-menu-item[aria-disabled='true'] {
+  color: color-mix(in srgb, var(--text) 76%, var(--muted));
+  cursor: default;
+}
+
+.app-menu-item small {
+  padding: 3px 6px;
+  border-radius: 999px;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.theme-menu {
+  right: 0;
+  display: grid;
+  gap: 2px;
+  width: 156px;
+}
+
+.theme-menu button {
+  grid-template-columns: 22px 1fr 18px;
+  gap: 8px;
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
+.theme-menu svg {
+  width: 18px;
+  height: 18px;
+}
+
+.theme-check {
+  color: var(--accent);
+  text-align: center;
 }
 
 .brand {
@@ -465,15 +584,31 @@ a:focus-visible {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 27px;
-  padding: 3px 8px;
+  width: 88px;
+  min-width: 88px;
+  max-width: 88px;
+  height: 28px;
+  min-height: 28px;
+  padding: 3px 6px;
+  overflow: hidden;
   border: 1px solid color-mix(in srgb, var(--border) 84%, transparent);
   border-radius: 999px;
   color: var(--muted);
   background: color-mix(in srgb, var(--surface-raised) 76%, transparent);
   font-variant-numeric: tabular-nums;
+  font-size: 0.9rem;
+  font-weight: 800;
   line-height: 1;
+  text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.money-value-pill.money-amount-lg {
+  font-size: 0.78rem;
+}
+
+.money-value-pill.money-amount-xl {
+  font-size: 0.7rem;
 }
 
 .money-value-pill.money-positive {
@@ -495,6 +630,13 @@ a:focus-visible {
 
 .money-net-pill {
   font-weight: 800;
+}
+
+.money-summary-pair {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 5px;
 }
 
 .positive {
@@ -795,7 +937,6 @@ a:focus-visible {
 
 .entry-amount {
   grid-area: amount;
-  font-size: 0.86rem;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
@@ -1572,7 +1713,7 @@ a:focus-visible {
     width: 280px;
   }
 
-  .theme-toggle {
+  .theme-selector {
     grid-column: 3;
   }
 

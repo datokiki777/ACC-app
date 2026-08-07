@@ -107,7 +107,7 @@ describe('ACC application', () => {
 
     await waitFor(() => expect(store.getState().initialized).toBe(true), { timeout: 3000 });
     expect(screen.getByRole('heading', { name: 'No records yet' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Data and backup' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Open app menu' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Statistics' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Add person' })).toBeInTheDocument();
   });
@@ -132,13 +132,61 @@ describe('ACC application', () => {
     const store = renderApp();
     await waitFor(() => expect(store.getState().initialized).toBe(true));
 
-    await user.click(screen.getByRole('button', { name: 'Switch to dark theme' }));
+    await user.click(screen.getByRole('button', { name: 'Theme: Auto' }));
+    await user.click(screen.getByRole('menuitemradio', { name: 'Dark' }));
     expect(document.documentElement).toHaveAttribute('data-theme', 'dark');
     expect(store.getState().theme).toBe('dark');
 
-    await user.click(screen.getByRole('button', { name: 'Switch to light theme' }));
+    await user.click(screen.getByRole('button', { name: 'Theme: Dark' }));
+    await user.click(screen.getByRole('menuitemradio', { name: 'Light' }));
     expect(document.documentElement).toHaveAttribute('data-theme', 'light');
     expect(store.getState().theme).toBe('light');
+
+    await user.click(screen.getByRole('button', { name: 'Theme: Light' }));
+    await user.click(screen.getByRole('menuitemradio', { name: 'Auto' }));
+    expect(store.getState().theme).toBe('system');
+  });
+
+  it('keeps system theme preference while reacting to phone theme changes', async () => {
+    let systemDark = false;
+    const listeners = new Set<() => void>();
+    const originalMatchMedia = window.matchMedia;
+    window.matchMedia = () =>
+      ({
+        get matches() {
+          return systemDark;
+        },
+        addEventListener: (_type: string, listener: () => void) => listeners.add(listener),
+        removeEventListener: (_type: string, listener: () => void) => listeners.delete(listener),
+      }) as unknown as MediaQueryList;
+    const store = renderApp();
+    await waitFor(() => expect(store.getState().initialized).toBe(true));
+    expect(store.getState().theme).toBe('system');
+    expect(document.documentElement).toHaveAttribute('data-theme', 'light');
+
+    systemDark = true;
+    act(() => listeners.forEach((listener) => listener()));
+    expect(document.documentElement).toHaveAttribute('data-theme', 'dark');
+    expect(store.getState().theme).toBe('system');
+    window.matchMedia = originalMatchMedia;
+  });
+
+  it('opens the custom app menu and reuses the existing backup sheet', async () => {
+    const user = userEvent.setup();
+    const store = renderApp();
+    await waitFor(() => expect(store.getState().initialized).toBe(true));
+
+    await user.click(screen.getByRole('button', { name: 'Open app menu' }));
+    const menu = screen.getByRole('menu', { name: 'App menu' });
+    expect(
+      within(menu).getByRole('menuitem', { name: /Export PDF — Person \/ Team/ }),
+    ).toHaveAttribute('aria-disabled', 'true');
+    expect(within(menu).getByRole('menuitem', { name: /Export PDF — All/ })).toHaveAttribute(
+      'aria-disabled',
+      'true',
+    );
+    await user.click(within(menu).getByRole('menuitem', { name: 'Backup & Restore' }));
+    expect(screen.getByRole('dialog', { name: 'Data & Backup' })).toBeVisible();
   });
 
   it('configures mobile text inputs without personal autofill', async () => {
@@ -430,7 +478,7 @@ describe('ACC application', () => {
     await user.click(summary);
     const payroll = screen.getByText('Payroll', { selector: 'strong' }).closest('.payroll-panel');
     expect(payroll).toBeInstanceOf(HTMLElement);
-    expect(within(payroll as HTMLElement).getByText(/^Net /)).toBeInTheDocument();
+    expect(within(payroll as HTMLElement).getByText('Net')).toBeInTheDocument();
     expect((payroll as HTMLElement).querySelector('.payroll-totals-row')).toBeInTheDocument();
     expect(
       screen.queryByText('Archive', { selector: '.card-actions button' }),
@@ -464,6 +512,13 @@ describe('ACC application', () => {
         date: '2026-08-07',
         comment: '',
       });
+      const large = await store.getState().addPerson(draft('Large balance'));
+      await store.getState().addEntry(large.id, {
+        amount: 125000,
+        type: 'Gave',
+        date: '2026-08-07',
+        comment: '',
+      });
     });
 
     const zeroSummary = await findPersonSummary('Zero balance');
@@ -477,12 +532,17 @@ describe('ACC application', () => {
     expect(positiveSummary.querySelector('.balance-value')).toHaveClass('money-positive');
     const negativeSummary = await findPersonSummary('Negative balance');
     expect(negativeSummary.querySelector('.balance-value')).toHaveClass('money-negative');
+    expect(negativeSummary.querySelector('.balance-value')).toHaveTextContent('100€');
+    expect(negativeSummary.querySelector('.balance-value')).not.toHaveTextContent('-');
+    const largeSummary = await findPersonSummary('Large balance');
+    expect(largeSummary.querySelector('.balance-value')).toHaveClass('money-amount-lg');
+    expect(largeSummary.querySelector('.balance-value')).toHaveTextContent('125000€');
 
     await user.click(positiveSummary);
-    expect(screen.getByText('+150€', { selector: '.entry-amount' })).toHaveClass('money-positive');
-    expect(screen.getByText('Net +150€')).toHaveClass('money-net-pill', 'money-positive');
+    expect(screen.getByText('150€', { selector: '.entry-amount' })).toHaveClass('money-positive');
+    expect(screen.getByText('150€', { selector: '.money-net-pill' })).toHaveClass('money-positive');
     await user.click(positiveSummary);
     await user.click(negativeSummary);
-    expect(screen.getByText('-100€', { selector: '.entry-amount' })).toHaveClass('money-negative');
+    expect(screen.getByText('100€', { selector: '.entry-amount' })).toHaveClass('money-negative');
   });
 });

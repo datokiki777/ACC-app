@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 
 import { ConfirmDialog } from '../components/ConfirmDialog';
+import { AppMenu } from '../components/AppMenu';
 import { InstallPrompt } from '../components/InstallPrompt';
 import { ModeSwitch } from '../components/ModeSwitch';
 import { StartupScreen } from '../components/StartupScreen';
@@ -72,17 +73,10 @@ export function App() {
       <StartupScreen />
       <div className="app-shell">
         <header className="app-header real-header">
-          <button
-            aria-label="Data and backup"
-            className="icon-button header-action"
-            onClick={() => openSheet('backup')}
-            type="button"
-          >
-            ⇄
-          </button>
+          <AppMenu onOpenBackup={() => openSheet('backup')} />
           <ModeSwitch mode={mode} onChange={(next) => void setMode(next)} />
           <ThemeSelector onChange={(next) => void setTheme(next)} value={theme} />
-          <div className="filter-row">
+          <div className="filter-row header-filter-row">
             <div className="filter-switch">
               <button
                 className={filter === 'active' ? 'is-selected' : ''}
@@ -99,30 +93,37 @@ export function App() {
                 Archived <span>{archivedCount}</span>
               </button>
             </div>
+          </div>
+          <div className="search-row">
+            <label className="search-field">
+              <svg aria-hidden="true" viewBox="0 0 24 24">
+                <circle cx="11" cy="11" r="7" />
+                <path d="m16.5 16.5 4 4" />
+              </svg>
+              <input
+                aria-label="Search by name"
+                autoCapitalize="none"
+                autoComplete="off"
+                enterKeyHint="search"
+                inputMode="search"
+                onChange={(event) => setSearch(event.target.value)}
+                placeholder="Search by name…"
+                spellCheck={false}
+                type="search"
+                value={search}
+              />
+            </label>
             <button
               aria-label="Statistics"
-              className="icon-button"
+              className="icon-button statistics-button"
               onClick={() => openSheet('statistics')}
               type="button"
             >
-              ▥
+              <svg aria-hidden="true" viewBox="0 0 24 24">
+                <path d="M4 20V10h4v10M10 20V4h4v16M16 20v-7h4v7M2 20h20" />
+              </svg>
             </button>
           </div>
-          <label className="search-field">
-            <span>⌕</span>
-            <input
-              aria-label="Search by name"
-              autoCapitalize="none"
-              autoComplete="off"
-              enterKeyHint="search"
-              inputMode="search"
-              onChange={(event) => setSearch(event.target.value)}
-              placeholder="Search by name…"
-              spellCheck={false}
-              type="search"
-              value={search}
-            />
-          </label>
         </header>
 
         <main className="app-content real-content">

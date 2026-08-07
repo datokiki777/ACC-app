@@ -19,6 +19,11 @@ function moneyTone(value: number) {
   return value > 0 ? 'money-positive' : value < 0 ? 'money-negative' : 'money-neutral';
 }
 
+function moneyScale(value: number, currency: PersistedPerson['currency']) {
+  const length = formatMoney(value, currency, false).length;
+  return length >= 8 ? 'money-amount-xl' : length >= 7 ? 'money-amount-lg' : '';
+}
+
 interface SwipeDrag {
   pointerId: number;
   startX: number;
@@ -257,8 +262,10 @@ export function PersonCard({
               {person.entries.length === 1 ? 'entry' : 'entries'}
             </small>
           </span>
-          <span className={`money-value-pill balance-value ${moneyTone(balance)}`}>
-            {formatMoney(balance, person.currency)}
+          <span
+            className={`money-value-pill balance-value ${moneyTone(balance)} ${moneyScale(balance, person.currency)}`}
+          >
+            {formatMoney(balance, person.currency, false)}
           </span>
           <span className="expand-arrow">›</span>
         </button>
@@ -310,11 +317,14 @@ export function PersonCard({
                 <div className="payroll-totals-row">
                   <span>↑ {formatMoney(totals.gave, person.currency, false)}</span>
                   <span>↓ {formatMoney(totals.received, person.currency, false)}</span>
-                  <strong
-                    className={`money-value-pill money-net-pill ${moneyTone(totals.balance)}`}
-                  >
-                    Net {formatMoney(totals.balance, person.currency)}
-                  </strong>
+                  <span className="money-summary-pair">
+                    <span>Net</span>
+                    <strong
+                      className={`money-value-pill money-net-pill ${moneyTone(totals.balance)} ${moneyScale(totals.balance, person.currency)}`}
+                    >
+                      {formatMoney(totals.balance, person.currency, false)}
+                    </strong>
+                  </span>
                 </div>
               )}
             </section>
@@ -326,8 +336,10 @@ export function PersonCard({
                 <strong>Other</strong>
                 <small>Other balance</small>
               </span>
-              <strong className={`money-value-pill ${moneyTone(gifts.net)}`}>
-                {formatMoney(gifts.net, gifts.currency)}
+              <strong
+                className={`money-value-pill ${moneyTone(gifts.net)} ${moneyScale(gifts.net, gifts.currency)}`}
+              >
+                {formatMoney(gifts.net, gifts.currency, false)}
               </strong>
             </section>
           ) : null}
@@ -336,9 +348,14 @@ export function PersonCard({
             <div className="totals-row">
               <span>↑ {formatMoney(totals.gave, person.currency, false)}</span>
               <span>↓ {formatMoney(totals.received, person.currency, false)}</span>
-              <strong className={`money-value-pill money-net-pill ${moneyTone(totals.balance)}`}>
-                Net {formatMoney(totals.balance, person.currency)}
-              </strong>
+              <span className="money-summary-pair">
+                <span>Net</span>
+                <strong
+                  className={`money-value-pill money-net-pill ${moneyTone(totals.balance)} ${moneyScale(totals.balance, person.currency)}`}
+                >
+                  {formatMoney(totals.balance, person.currency, false)}
+                </strong>
+              </span>
             </div>
           )}
           <div className="entries-list">

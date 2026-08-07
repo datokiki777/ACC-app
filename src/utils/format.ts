@@ -13,7 +13,7 @@ export function currencySymbol(currency: Currency): string {
 
 export function formatMoney(value: number, currency: Currency, signed = true): string {
   const amount = Math.round(value);
-  const sign = signed && amount > 0 ? '+' : amount < 0 ? '-' : '';
+  const sign = signed ? (amount > 0 ? '+' : amount < 0 ? '-' : '') : '';
   return `${sign}${Math.abs(amount)}${currencySymbol(currency)}`;
 }
 

@@ -13,6 +13,11 @@ function moneyTone(value: number) {
   return value > 0 ? 'money-positive' : value < 0 ? 'money-negative' : 'money-neutral';
 }
 
+function moneyScale(value: number, currency: Currency) {
+  const length = formatMoney(value, currency, false).length;
+  return length >= 8 ? 'money-amount-xl' : length >= 7 ? 'money-amount-lg' : '';
+}
+
 interface EntryDrag {
   pointerId: number;
   startX: number;
@@ -159,8 +164,10 @@ export function EntryCard({
         <strong className={`entry-kind ${entry.type === 'Gave' ? 'positive' : 'negative'}`}>
           {title}
         </strong>
-        <strong className={`money-value-pill entry-amount ${moneyTone(effect)}`}>
-          {formatMoney(effect, currency)}
+        <strong
+          className={`money-value-pill entry-amount ${moneyTone(effect)} ${moneyScale(effect, currency)}`}
+        >
+          {formatMoney(effect, currency, false)}
         </strong>
         {entry.comment && <p className="entry-comment">{entry.comment}</p>}
         <small className="entry-date">{formatDate(entry.date)}</small>
