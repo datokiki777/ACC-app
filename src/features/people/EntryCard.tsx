@@ -9,6 +9,10 @@ const ENTRY_ACTION_WIDTH = 84;
 const ENTRY_OPEN_THRESHOLD = 42;
 const ENTRY_AXIS_THRESHOLD = 7;
 
+function moneyTone(value: number) {
+  return value > 0 ? 'money-positive' : value < 0 ? 'money-negative' : 'money-neutral';
+}
+
 interface EntryDrag {
   pointerId: number;
   startX: number;
@@ -155,7 +159,7 @@ export function EntryCard({
         <strong className={`entry-kind ${entry.type === 'Gave' ? 'positive' : 'negative'}`}>
           {title}
         </strong>
-        <strong className={`entry-amount ${effect < 0 ? 'negative' : 'positive'}`}>
+        <strong className={`money-value-pill entry-amount ${moneyTone(effect)}`}>
           {formatMoney(effect, currency)}
         </strong>
         {entry.comment && <p className="entry-comment">{entry.comment}</p>}

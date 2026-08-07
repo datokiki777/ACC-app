@@ -441,4 +441,48 @@ describe('ACC application', () => {
     expect(screen.getByRole('button', { name: '+ Add Entry' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Edit' })).not.toBeInTheDocument();
   });
+
+  it('uses semantic money pills for positive, negative, zero, entry, and net values', async () => {
+    const user = userEvent.setup();
+    const store = renderApp();
+    await waitFor(() => expect(store.getState().initialized).toBe(true));
+    await act(async () => {
+      await store.getState().addPerson(draft('Zero balance'));
+      const positive = await store
+        .getState()
+        .addPerson(draft('ძალიან გრძელი ქართული სახელი თანხის ბარათის შესამოწმებლად'));
+      await store.getState().addEntry(positive.id, {
+        amount: 150,
+        type: 'Gave',
+        date: '2026-08-07',
+        comment: 'ქართული კომენტარი',
+      });
+      const negative = await store.getState().addPerson(draft('Negative balance'));
+      await store.getState().addEntry(negative.id, {
+        amount: 100,
+        type: 'Received',
+        date: '2026-08-07',
+        comment: '',
+      });
+    });
+
+    const zeroSummary = await findPersonSummary('Zero balance');
+    expect(zeroSummary.querySelector('.balance-value')).toHaveClass(
+      'money-value-pill',
+      'money-neutral',
+    );
+    const positiveSummary = await findPersonSummary(
+      'ძალიან გრძელი ქართული სახელი თანხის ბარათის შესამოწმებლად',
+    );
+    expect(positiveSummary.querySelector('.balance-value')).toHaveClass('money-positive');
+    const negativeSummary = await findPersonSummary('Negative balance');
+    expect(negativeSummary.querySelector('.balance-value')).toHaveClass('money-negative');
+
+    await user.click(positiveSummary);
+    expect(screen.getByText('+150€', { selector: '.entry-amount' })).toHaveClass('money-positive');
+    expect(screen.getByText('Net +150€')).toHaveClass('money-net-pill', 'money-positive');
+    await user.click(positiveSummary);
+    await user.click(negativeSummary);
+    expect(screen.getByText('-100€', { selector: '.entry-amount' })).toHaveClass('money-negative');
+  });
 });

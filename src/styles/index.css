@@ -23,6 +23,9 @@
   --warning: #ffc857;
   --border: rgb(255 255 255 / 10%);
   --shadow: 0 10px 28px rgb(0 0 0 / 18%);
+  --toast-bg: #173362;
+  --toast-border: rgb(133 177 255 / 30%);
+  --toast-shadow: 0 14px 34px rgb(0 0 0 / 34%);
 }
 
 :root[data-theme='light'] {
@@ -38,6 +41,9 @@
   --warning: #9a6400;
   --border: rgb(18 33 62 / 12%);
   --shadow: 0 10px 28px rgb(46 68 107 / 12%);
+  --toast-bg: #ffffff;
+  --toast-border: rgb(40 110 216 / 20%);
+  --toast-shadow: 0 14px 34px rgb(46 68 107 / 22%);
 }
 
 * {
@@ -306,7 +312,10 @@ a:focus-visible {
 .person-card {
   overflow: hidden;
   border-radius: 18px;
-  box-shadow: 0 4px 14px rgb(0 0 0 / 12%);
+  border-color: color-mix(in srgb, var(--border) 82%, transparent);
+  box-shadow:
+    0 5px 16px rgb(0 0 0 / 10%),
+    inset 0 1px rgb(255 255 255 / 3%);
 }
 
 .person-card.is-highlighted {
@@ -447,9 +456,45 @@ a:focus-visible {
 }
 
 .balance-value {
-  font-size: 1rem;
+  font-size: 0.92rem;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
+}
+
+.money-value-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 27px;
+  padding: 3px 8px;
+  border: 1px solid color-mix(in srgb, var(--border) 84%, transparent);
+  border-radius: 999px;
+  color: var(--muted);
+  background: color-mix(in srgb, var(--surface-raised) 76%, transparent);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.money-value-pill.money-positive {
+  border-color: color-mix(in srgb, var(--success) 30%, transparent);
+  color: var(--success);
+  background: color-mix(in srgb, var(--success) 11%, var(--surface-raised));
+}
+
+.money-value-pill.money-negative {
+  border-color: color-mix(in srgb, var(--danger) 30%, transparent);
+  color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 11%, var(--surface-raised));
+}
+
+.money-value-pill.money-neutral {
+  color: var(--muted);
+  background: color-mix(in srgb, var(--muted) 8%, var(--surface-raised));
+}
+
+.money-net-pill {
+  font-weight: 800;
 }
 
 .positive {
@@ -623,7 +668,6 @@ a:focus-visible {
 }
 
 .payroll-totals-row strong {
-  color: var(--text);
   font-size: 0.8rem;
   text-align: right;
 }
@@ -716,10 +760,12 @@ a:focus-visible {
   column-gap: 8px;
   min-height: 62px;
   padding: 8px 12px;
-  border: 1px solid color-mix(in srgb, var(--border) 78%, transparent);
+  border: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
   border-radius: 13px;
   background: color-mix(in srgb, var(--surface-raised) 76%, var(--bg));
-  box-shadow: 0 1px 2px rgb(0 0 0 / 5%);
+  box-shadow:
+    0 2px 5px rgb(0 0 0 / 6%),
+    inset 0 1px rgb(255 255 255 / 3%);
   touch-action: pan-y;
   transition: transform 165ms cubic-bezier(0.22, 0.8, 0.3, 1);
   will-change: transform;
@@ -749,7 +795,7 @@ a:focus-visible {
 
 .entry-amount {
   grid-area: amount;
-  font-size: 0.92rem;
+  font-size: 0.86rem;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
@@ -1291,9 +1337,43 @@ a:focus-visible {
   bottom: max(88px, calc(env(safe-area-inset-bottom) + 82px));
 }
 
+.undo-toast {
+  min-height: 50px;
+  padding: 7px 8px 7px 14px;
+  border-color: var(--toast-border);
+  color: var(--text);
+  background: var(--toast-bg);
+  box-shadow: var(--toast-shadow);
+  animation: toast-in 200ms cubic-bezier(0.22, 0.8, 0.3, 1);
+}
+
+.undo-toast.is-exiting {
+  pointer-events: none;
+  animation: toast-out 200ms ease-in forwards;
+}
+
+.undo-toast button {
+  min-height: 36px;
+  padding: 0 11px;
+  border-color: color-mix(in srgb, var(--accent) 32%, transparent);
+  border-radius: 10px;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, var(--toast-bg));
+  font-size: 0.84rem;
+  font-weight: 800;
+}
+
 .undo-toast span,
 .error-banner span {
   flex: 1;
+}
+
+.undo-toast span {
+  overflow: hidden;
+  font-size: 0.88rem;
+  font-weight: 720;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .error-banner {
@@ -1347,6 +1427,20 @@ a:focus-visible {
 @keyframes dialog-in {
   from {
     transform: translateY(8px) scale(0.98);
+    opacity: 0;
+  }
+}
+
+@keyframes toast-in {
+  from {
+    transform: translateY(10px);
+    opacity: 0;
+  }
+}
+
+@keyframes toast-out {
+  to {
+    transform: translateY(8px);
     opacity: 0;
   }
 }

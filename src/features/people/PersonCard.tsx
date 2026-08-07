@@ -15,6 +15,10 @@ const SWIPE_ACTION_WIDTH = 92;
 const SWIPE_OPEN_THRESHOLD = 46;
 const SWIPE_AXIS_THRESHOLD = 7;
 
+function moneyTone(value: number) {
+  return value > 0 ? 'money-positive' : value < 0 ? 'money-negative' : 'money-neutral';
+}
+
 interface SwipeDrag {
   pointerId: number;
   startX: number;
@@ -253,9 +257,7 @@ export function PersonCard({
               {person.entries.length === 1 ? 'entry' : 'entries'}
             </small>
           </span>
-          <span
-            className={`balance-value ${balance > 0 ? 'positive' : balance < 0 ? 'negative' : ''}`}
-          >
+          <span className={`money-value-pill balance-value ${moneyTone(balance)}`}>
             {formatMoney(balance, person.currency)}
           </span>
           <span className="expand-arrow">›</span>
@@ -308,7 +310,11 @@ export function PersonCard({
                 <div className="payroll-totals-row">
                   <span>↑ {formatMoney(totals.gave, person.currency, false)}</span>
                   <span>↓ {formatMoney(totals.received, person.currency, false)}</span>
-                  <strong>Net {formatMoney(totals.balance, person.currency)}</strong>
+                  <strong
+                    className={`money-value-pill money-net-pill ${moneyTone(totals.balance)}`}
+                  >
+                    Net {formatMoney(totals.balance, person.currency)}
+                  </strong>
                 </div>
               )}
             </section>
@@ -320,7 +326,7 @@ export function PersonCard({
                 <strong>Other</strong>
                 <small>Other balance</small>
               </span>
-              <strong className={gifts.net < 0 ? 'negative' : 'positive'}>
+              <strong className={`money-value-pill ${moneyTone(gifts.net)}`}>
                 {formatMoney(gifts.net, gifts.currency)}
               </strong>
             </section>
@@ -330,7 +336,9 @@ export function PersonCard({
             <div className="totals-row">
               <span>↑ {formatMoney(totals.gave, person.currency, false)}</span>
               <span>↓ {formatMoney(totals.received, person.currency, false)}</span>
-              <strong>Net {formatMoney(totals.balance, person.currency)}</strong>
+              <strong className={`money-value-pill money-net-pill ${moneyTone(totals.balance)}`}>
+                Net {formatMoney(totals.balance, person.currency)}
+              </strong>
             </div>
           )}
           <div className="entries-list">

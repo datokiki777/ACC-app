@@ -89,6 +89,7 @@ export interface AppStoreState {
   editEntry: (personId: string, entryId: string, draft: EntryDraft) => Promise<void>;
   deleteEntry: (personId: string, entryId: string) => Promise<void>;
   undoLastDeletion: () => Promise<void>;
+  dismissUndo: () => void;
   syncSalary: (personId: string, adjustmentAmount: number, newAnchorDate: string) => Promise<void>;
   importBackup: (
     inspection: Extract<BackupInspection, { valid: true }>,
@@ -417,6 +418,10 @@ export function createAppStore(dependencies: StoreDependencies): StoreApi<AppSto
           await persistModePeople(undo.mode, people);
           set({ undoAction: null });
         });
+      },
+
+      dismissUndo() {
+        set({ undoAction: null });
       },
 
       async syncSalary(personId, adjustmentAmount, newAnchorDate) {
