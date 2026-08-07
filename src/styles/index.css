@@ -391,6 +391,11 @@ a:focus-visible {
   transition: none;
 }
 
+.person-summary.is-pressing,
+.entry-card-surface.is-pressing {
+  filter: brightness(1.08);
+}
+
 .person-identity,
 .person-name-row,
 .panel-heading,
@@ -710,7 +715,7 @@ a:focus-visible {
   align-items: center;
   column-gap: 8px;
   min-height: 62px;
-  padding: 8px 52px 8px 12px;
+  padding: 8px 12px;
   border: 1px solid color-mix(in srgb, var(--border) 78%, transparent);
   border-radius: 13px;
   background: color-mix(in srgb, var(--surface-raised) 76%, var(--bg));
@@ -718,6 +723,8 @@ a:focus-visible {
   touch-action: pan-y;
   transition: transform 165ms cubic-bezier(0.22, 0.8, 0.3, 1);
   will-change: transform;
+  user-select: none;
+  -webkit-touch-callout: none;
 }
 
 .entry-card-surface.is-dragging {
@@ -766,20 +773,6 @@ a:focus-visible {
   font-size: 0.76rem;
 }
 
-.entry-edit-button {
-  position: absolute;
-  right: 10px;
-  bottom: 8px;
-  width: 36px;
-  min-height: 36px;
-  padding: 0;
-  border-color: color-mix(in srgb, var(--border) 78%, transparent);
-  border-radius: 10px;
-  color: var(--accent);
-  background: color-mix(in srgb, var(--surface-raised) 72%, transparent);
-  font-size: 0.98rem;
-}
-
 .mini-empty {
   padding: 18px;
   margin: 0;
@@ -795,7 +788,7 @@ a:focus-visible {
 
 .person-details > .card-actions {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr);
   gap: 6px;
   padding-top: 2px;
 }
@@ -983,11 +976,17 @@ a:focus-visible {
 }
 
 .choice-gave.is-selected {
-  color: var(--success);
+  border-color: color-mix(in srgb, var(--success) 78%, var(--border));
+  color: color-mix(in srgb, var(--success) 72%, var(--text));
+  background: color-mix(in srgb, var(--success) 22%, var(--surface-raised));
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--success) 13%, transparent);
 }
 
 .choice-received.is-selected {
-  color: var(--danger);
+  border-color: color-mix(in srgb, var(--danger) 78%, var(--border));
+  color: color-mix(in srgb, var(--danger) 72%, var(--text));
+  background: color-mix(in srgb, var(--danger) 22%, var(--surface-raised));
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--danger) 13%, transparent);
 }
 
 .color-picker {

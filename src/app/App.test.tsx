@@ -55,6 +55,23 @@ function swipe(element: HTMLElement, startX: number, endX: number, endY = 20) {
   });
 }
 
+async function longPress(element: HTMLElement) {
+  fireEvent.pointerDown(element, {
+    button: 0,
+    clientX: 160,
+    clientY: 20,
+    isPrimary: true,
+    pointerId: 2,
+  });
+  await act(async () => new Promise((resolve) => window.setTimeout(resolve, 550)));
+  fireEvent.pointerUp(element, {
+    clientX: 160,
+    clientY: 20,
+    isPrimary: true,
+    pointerId: 2,
+  });
+}
+
 async function findPersonSummary(name: string) {
   const label = await screen.findByText(name, { selector: '.person-name-row strong' });
   const summary = label.closest('button');
@@ -211,8 +228,10 @@ describe('ACC application', () => {
     fireEvent.pointerDown(screen.getByRole('searchbox', { name: 'Search by name' }));
     await waitFor(() => expect(secondDelete).toHaveAttribute('tabindex', '-1'));
     swipe(secondSummary, 180, 186, 110);
+    await act(async () => new Promise((resolve) => window.setTimeout(resolve, 550)));
     expect(secondDelete).toHaveAttribute('tabindex', '-1');
     expect(secondSummary).toHaveStyle({ transform: 'translate3d(0px, 0, 0)' });
+    expect(screen.queryByRole('dialog', { name: 'Edit Person' })).not.toBeInTheDocument();
   });
 
   it('requires the custom ACC dialog before swipe deletion', async () => {
@@ -253,7 +272,18 @@ describe('ACC application', () => {
     await user.click(summary);
     await user.click(screen.getByRole('button', { name: /Add Entry/ }));
     const amount = screen.getByRole('spinbutton', { name: 'Amount' });
-    await user.clear(amount);
+    expect(amount).toHaveValue(null);
+    expect(amount).toHaveAttribute('placeholder', '0');
+    const gave = screen.getByRole('button', { name: /Gave/ });
+    const received = screen.getByRole('button', { name: /Received/ });
+    expect(gave).toHaveAttribute('aria-pressed', 'true');
+    expect(gave).toHaveClass('choice-gave', 'is-selected');
+    await user.click(received);
+    expect(received).toHaveAttribute('aria-pressed', 'true');
+    expect(received).toHaveClass('choice-received', 'is-selected');
+    await user.click(gave);
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+    expect(screen.getByRole('alert')).toHaveTextContent('Amount is required');
     await user.type(amount, '75');
     const georgianComment =
       'გრძელი ქართული კომენტარი, რომელიც ბარათში მაქსიმუმ ორ ხაზად უნდა გამოჩნდეს';
@@ -264,7 +294,7 @@ describe('ACC application', () => {
     expect(comment).toHaveClass('entry-comment');
     const entrySurface = comment.closest('.entry-card-surface');
     expect(entrySurface).toBeInstanceOf(HTMLDivElement);
-    expect(screen.getByRole('button', { name: 'Edit entry' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Edit entry' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Delete entry/ })).not.toBeInTheDocument();
     expect(store.getState().peopleByMode.personal[0]?.entries[0]).toMatchObject({
       amount: 75,
@@ -272,8 +302,11 @@ describe('ACC application', () => {
       comment: georgianComment,
     });
 
-    await user.click(screen.getByRole('button', { name: 'Edit entry' }));
+    await user.click(entrySurface as HTMLDivElement);
+    expect(screen.queryByRole('dialog', { name: 'Edit Entry' })).not.toBeInTheDocument();
+    await longPress(entrySurface as HTMLDivElement);
     expect(screen.getByRole('dialog', { name: 'Edit Entry' })).toBeVisible();
+    expect(screen.getByRole('spinbutton', { name: 'Amount' })).toHaveValue(75);
     await user.click(screen.getByRole('button', { name: 'Close' }));
 
     swipe(entrySurface as HTMLDivElement, 240, 120);
@@ -293,9 +326,11 @@ describe('ACC application', () => {
 
     expect(screen.queryByRole('button', { name: /Archive Taylor/ })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Delete Taylor/ })).not.toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: 'Edit' }));
+    expect(screen.queryByRole('button', { name: 'Edit' })).not.toBeInTheDocument();
+    await longPress(summary);
     expect(screen.getByRole('dialog', { name: 'Edit Person' })).toBeVisible();
-  }, 10_000);
+    expect(summary).toHaveAttribute('aria-expanded', 'true');
+  }, 15_000);
 
   it('keeps entry swipes isolated, closes the previous entry, and preserves vertical intent', async () => {
     const user = userEvent.setup();
@@ -333,6 +368,7 @@ describe('ACC application', () => {
     swipe(firstSurface as HTMLElement, 240, 120);
     await waitFor(() => expect(firstDelete).toHaveAttribute('tabindex', '0'));
     expect(summary).toHaveStyle({ transform: 'translate3d(0px, 0, 0)' });
+    expect(screen.queryByRole('dialog', { name: 'Edit Entry' })).not.toBeInTheDocument();
 
     swipe(secondSurface as HTMLElement, 240, 120);
     await waitFor(() => {
@@ -342,9 +378,29 @@ describe('ACC application', () => {
 
     fireEvent.pointerDown(screen.getByRole('searchbox', { name: 'Search by name' }));
     await waitFor(() => expect(secondDelete).toHaveAttribute('tabindex', '-1'));
-    swipe(secondSurface as HTMLElement, 180, 186, 110);
+    fireEvent.pointerDown(secondSurface as HTMLElement, {
+      button: 0,
+      clientX: 180,
+      clientY: 20,
+      isPrimary: true,
+      pointerId: 3,
+    });
+    fireEvent.pointerMove(secondSurface as HTMLElement, {
+      clientX: 186,
+      clientY: 110,
+      isPrimary: true,
+      pointerId: 3,
+    });
+    await act(async () => new Promise((resolve) => window.setTimeout(resolve, 550)));
+    fireEvent.pointerUp(secondSurface as HTMLElement, {
+      clientX: 186,
+      clientY: 110,
+      isPrimary: true,
+      pointerId: 3,
+    });
     expect(secondDelete).toHaveAttribute('tabindex', '-1');
     expect(secondSurface).toHaveStyle({ transform: 'translate3d(0px, 0, 0)' });
+    expect(screen.queryByRole('dialog', { name: 'Edit Entry' })).not.toBeInTheDocument();
     expect(store.getState().peopleByMode.personal[0]?.id).toBe(personId);
     expect(store.getState().peopleByMode.personal[0]?.entries).toHaveLength(2);
   });
@@ -383,6 +439,6 @@ describe('ACC application', () => {
       screen.queryByText('Delete', { selector: '.card-actions button' }),
     ).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: '+ Add Entry' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Edit' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Edit' })).not.toBeInTheDocument();
   });
 });

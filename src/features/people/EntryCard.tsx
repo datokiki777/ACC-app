@@ -3,6 +3,7 @@ import { type PointerEvent as ReactPointerEvent, useRef, useState } from 'react'
 import type { Currency } from '../../types/domain';
 import type { PersistedEntry } from '../../types/persistence';
 import { formatDate, formatMoney } from '../../utils/format';
+import { useLongPress } from '../../hooks/useLongPress';
 
 const ENTRY_ACTION_WIDTH = 84;
 const ENTRY_OPEN_THRESHOLD = 42;
@@ -13,7 +14,7 @@ interface EntryDrag {
   startX: number;
   startY: number;
   baseOffset: number;
-  axis: 'pending' | 'horizontal' | 'vertical';
+  axis: 'pending' | 'horizontal' | 'vertical' | 'longpress';
 }
 
 interface EntryCardProps {
@@ -43,6 +44,13 @@ export function EntryCard({
   const [isDragging, setIsDragging] = useState(false);
   const restingOffset = swipeOpen ? -ENTRY_ACTION_WIDTH : 0;
   const visibleOffset = dragOffset ?? restingOffset;
+  const longPress = useLongPress({
+    onLongPress: () => {
+      if (dragRef.current) dragRef.current.axis = 'longpress';
+      onSwipeOpen(false);
+      onEdit();
+    },
+  });
 
   function handlePointerDown(event: ReactPointerEvent<HTMLDivElement>) {
     if (!event.isPrimary || event.button !== 0) return;
@@ -55,6 +63,7 @@ export function EntryCard({
       axis: 'pending',
     };
     currentOffsetRef.current = restingOffset;
+    longPress.start(event.pointerId, event.clientX, event.clientY);
     event.currentTarget.setPointerCapture?.(event.pointerId);
   }
 
@@ -63,14 +72,17 @@ export function EntryCard({
     if (!drag || drag.pointerId !== event.pointerId) return;
     const deltaX = event.clientX - drag.startX;
     const deltaY = event.clientY - drag.startY;
+    longPress.move(event.pointerId, event.clientX, event.clientY);
 
     if (drag.axis === 'pending') {
       if (Math.max(Math.abs(deltaX), Math.abs(deltaY)) < ENTRY_AXIS_THRESHOLD) return;
       if (Math.abs(deltaY) > Math.abs(deltaX)) {
         drag.axis = 'vertical';
+        longPress.cancel();
         return;
       }
       drag.axis = 'horizontal';
+      longPress.cancel();
       setIsDragging(true);
     }
 
@@ -90,6 +102,7 @@ export function EntryCard({
       onSwipeOpen(false);
     }
     dragRef.current = null;
+    longPress.cancel();
     setDragOffset(null);
     setIsDragging(false);
     event.currentTarget.releasePointerCapture?.(event.pointerId);
@@ -98,6 +111,7 @@ export function EntryCard({
   function cancelPointerGesture(event: ReactPointerEvent<HTMLDivElement>) {
     if (dragRef.current?.pointerId !== event.pointerId) return;
     dragRef.current = null;
+    longPress.cancel();
     currentOffsetRef.current = restingOffset;
     setDragOffset(null);
     setIsDragging(false);
@@ -122,12 +136,21 @@ export function EntryCard({
         </button>
       </div>
       <div
-        className={`entry-card-surface ${entry.comment ? 'has-comment' : ''} ${isDragging ? 'is-dragging' : ''}`}
+        aria-label={`${title}, ${formatMoney(effect, currency)}. Long press or press F2 to edit`}
+        className={`entry-card-surface ${entry.comment ? 'has-comment' : ''} ${isDragging ? 'is-dragging' : ''} ${longPress.isPressing ? 'is-pressing' : ''}`}
+        onContextMenu={(event) => event.preventDefault()}
+        onKeyDown={(event) => {
+          if (event.key === 'F2') {
+            event.preventDefault();
+            onEdit();
+          }
+        }}
         onPointerCancel={cancelPointerGesture}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={finishPointerGesture}
         style={{ transform: `translate3d(${visibleOffset}px, 0, 0)` }}
+        tabIndex={0}
       >
         <strong className={`entry-kind ${entry.type === 'Gave' ? 'positive' : 'negative'}`}>
           {title}
@@ -137,14 +160,6 @@ export function EntryCard({
         </strong>
         {entry.comment && <p className="entry-comment">{entry.comment}</p>}
         <small className="entry-date">{formatDate(entry.date)}</small>
-        <button
-          aria-label="Edit entry"
-          className="entry-edit-button"
-          onClick={onEdit}
-          type="button"
-        >
-          ✎
-        </button>
       </div>
     </div>
   );

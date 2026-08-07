@@ -8,12 +8,20 @@ import { useAppStore } from '../../store/hooks';
 import { localDateString } from '../../utils/format';
 
 const entrySchema = z.object({
-  amount: z.number().min(1, 'Amount must be at least 1'),
+  amount: z
+    .string()
+    .trim()
+    .min(1, 'Amount is required')
+    .refine((value) => Number.isFinite(Number(value)), 'Enter a valid amount')
+    .transform(Number)
+    .pipe(z.number().min(1, 'Amount must be at least 1')),
   type: z.enum(['Gave', 'Received']),
   date: z.string().min(1, 'Date is required'),
   comment: z.string(),
   category: z.enum(['salary', 'gift']).optional(),
 });
+
+type EntryFormValues = Omit<EntryDraft, 'amount'> & { amount: string };
 
 export function EntryFormSheet() {
   const mode = useAppStore((state) => state.mode);
@@ -32,9 +40,9 @@ export function EntryFormSheet() {
     handleSubmit,
     setValue,
     formState: { isSubmitting },
-  } = useForm<EntryDraft>({
+  } = useForm<EntryFormValues>({
     defaultValues: {
-      amount: existing?.amount ?? 0,
+      amount: existing ? String(existing.amount) : '',
       type: existing?.type ?? 'Gave',
       date: existing?.date ?? localDateString(),
       comment: existing?.comment ?? '',
@@ -80,9 +88,10 @@ export function EntryFormSheet() {
             autoFocus
             inputMode="decimal"
             min={1}
+            placeholder="0"
             step={1}
             type="number"
-            {...register('amount', { valueAsNumber: true })}
+            {...register('amount')}
           />
         </label>
 
@@ -91,6 +100,7 @@ export function EntryFormSheet() {
             <span>Kind</span>
             <div className="choice-row">
               <button
+                aria-pressed={category === 'salary'}
                 className={category === 'salary' ? 'choice-button is-selected' : 'choice-button'}
                 onClick={() => {
                   setValue('category', 'salary');
@@ -101,6 +111,7 @@ export function EntryFormSheet() {
                 Salary
               </button>
               <button
+                aria-pressed={category === 'gift'}
                 className={category === 'gift' ? 'choice-button is-selected' : 'choice-button'}
                 onClick={() => setValue('category', 'gift')}
                 type="button"
@@ -116,6 +127,7 @@ export function EntryFormSheet() {
             <span>Type</span>
             <div className="choice-row">
               <button
+                aria-pressed={type === 'Gave'}
                 className={
                   type === 'Gave' ? 'choice-button is-selected choice-gave' : 'choice-button'
                 }
@@ -125,6 +137,7 @@ export function EntryFormSheet() {
                 ↗ Gave
               </button>
               <button
+                aria-pressed={type === 'Received'}
                 className={
                   type === 'Received'
                     ? 'choice-button is-selected choice-received'

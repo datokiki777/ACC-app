@@ -4,6 +4,7 @@ import { personOpenBalance, personTotals } from '../../domain/balances';
 import { entryEffect } from '../../domain/entries';
 import { calculateSalary, giftSummary } from '../../domain/salary';
 import { useAppStore } from '../../store/hooks';
+import { useLongPress } from '../../hooks/useLongPress';
 import type { PersistedPerson } from '../../types/persistence';
 import { formatDate, formatMoney } from '../../utils/format';
 import { EntryCard } from './EntryCard';
@@ -19,7 +20,7 @@ interface SwipeDrag {
   startX: number;
   startY: number;
   baseOffset: number;
-  axis: 'pending' | 'horizontal' | 'vertical';
+  axis: 'pending' | 'horizontal' | 'vertical' | 'longpress';
 }
 
 interface PersonCardProps {
@@ -57,6 +58,15 @@ export function PersonCard({
   const restingOffset =
     swipeOpen === 'archive' ? SWIPE_ACTION_WIDTH : swipeOpen === 'delete' ? -SWIPE_ACTION_WIDTH : 0;
   const visibleOffset = dragOffset ?? restingOffset;
+  const personLongPress = useLongPress({
+    onLongPress: () => {
+      if (dragRef.current) dragRef.current.axis = 'longpress';
+      suppressClickRef.current = true;
+      onSwipeOpen(null);
+      setOpenEntrySwipeId(null);
+      openSheet('person-form', person.id);
+    },
+  });
 
   useEffect(() => {
     if (!openEntrySwipeId) return;
@@ -81,6 +91,7 @@ export function PersonCard({
     };
     currentOffsetRef.current = restingOffset;
     suppressClickRef.current = false;
+    personLongPress.start(event.pointerId, event.clientX, event.clientY);
     event.currentTarget.setPointerCapture?.(event.pointerId);
   }
 
@@ -89,14 +100,17 @@ export function PersonCard({
     if (!drag || drag.pointerId !== event.pointerId) return;
     const deltaX = event.clientX - drag.startX;
     const deltaY = event.clientY - drag.startY;
+    personLongPress.move(event.pointerId, event.clientX, event.clientY);
 
     if (drag.axis === 'pending') {
       if (Math.max(Math.abs(deltaX), Math.abs(deltaY)) < SWIPE_AXIS_THRESHOLD) return;
       if (Math.abs(deltaY) > Math.abs(deltaX)) {
         drag.axis = 'vertical';
+        personLongPress.cancel();
         return;
       }
       drag.axis = 'horizontal';
+      personLongPress.cancel();
       suppressClickRef.current = true;
       setIsDragging(true);
     }
@@ -128,6 +142,7 @@ export function PersonCard({
       }, 0);
     }
     dragRef.current = null;
+    personLongPress.cancel();
     setDragOffset(null);
     setIsDragging(false);
     event.currentTarget.releasePointerCapture?.(event.pointerId);
@@ -136,6 +151,7 @@ export function PersonCard({
   function cancelPointerGesture(event: ReactPointerEvent<HTMLButtonElement>) {
     if (dragRef.current?.pointerId !== event.pointerId) return;
     dragRef.current = null;
+    personLongPress.cancel();
     currentOffsetRef.current = restingOffset;
     setDragOffset(null);
     setIsDragging(false);
@@ -183,7 +199,14 @@ export function PersonCard({
         </div>
         <button
           aria-expanded={expanded}
-          className={`person-summary ${isDragging ? 'is-dragging' : ''}`}
+          className={`person-summary ${isDragging ? 'is-dragging' : ''} ${personLongPress.isPressing ? 'is-pressing' : ''}`}
+          onContextMenu={(event) => event.preventDefault()}
+          onKeyDown={(event) => {
+            if (event.key === 'F2') {
+              event.preventDefault();
+              openSheet('person-form', person.id);
+            }
+          }}
           onClick={(event) => {
             if (suppressClickRef.current) {
               suppressClickRef.current = false;
@@ -348,13 +371,6 @@ export function PersonCard({
               type="button"
             >
               + Add Entry
-            </button>
-            <button
-              className="secondary-button"
-              onClick={() => openSheet('person-form', person.id)}
-              type="button"
-            >
-              Edit
             </button>
           </div>
         </div>
