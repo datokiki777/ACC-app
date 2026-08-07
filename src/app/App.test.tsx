@@ -83,11 +83,11 @@ describe('ACC application', () => {
     const store = renderApp();
     await waitFor(() => expect(store.getState().initialized).toBe(true));
 
-    await user.selectOptions(screen.getByRole('combobox', { name: 'Theme' }), 'dark');
+    await user.click(screen.getByRole('button', { name: 'Switch to dark theme' }));
     expect(document.documentElement).toHaveAttribute('data-theme', 'dark');
     expect(store.getState().theme).toBe('dark');
 
-    await user.selectOptions(screen.getByRole('combobox', { name: 'Theme' }), 'light');
+    await user.click(screen.getByRole('button', { name: 'Switch to light theme' }));
     expect(document.documentElement).toHaveAttribute('data-theme', 'light');
     expect(store.getState().theme).toBe('light');
   });
