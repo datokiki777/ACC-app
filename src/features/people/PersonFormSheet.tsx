@@ -99,17 +99,36 @@ export function PersonFormSheet() {
           : `Add ${mode === 'work' ? 'Team' : 'Person'}`
       }
     >
-      <form className="form-grid" onSubmit={(event) => void submit(event)}>
+      <form autoComplete="off" className="form-grid" onSubmit={(event) => void submit(event)}>
         <label className="field">
           <span>Name</span>
-          <input autoFocus maxLength={80} placeholder="Example: John" {...register('name')} />
+          <input
+            autoCapitalize="words"
+            autoComplete="off"
+            autoFocus
+            enterKeyHint="next"
+            inputMode="text"
+            maxLength={80}
+            placeholder="Example: John"
+            spellCheck={false}
+            {...register('name')}
+          />
         </label>
 
         <label className="field">
           <span>
             Tag <small>optional</small>
           </span>
-          <input maxLength={20} placeholder="Family, Work…" {...register('tagLabel')} />
+          <input
+            autoCapitalize="words"
+            autoComplete="off"
+            enterKeyHint="next"
+            inputMode="text"
+            maxLength={20}
+            placeholder="Family, Work…"
+            spellCheck={false}
+            {...register('tagLabel')}
+          />
         </label>
         <div className="color-picker" role="group" aria-label="Tag color">
           <button
@@ -155,6 +174,8 @@ export function PersonFormSheet() {
                 <label className="field">
                   <span>Monthly salary</span>
                   <input
+                    autoComplete="off"
+                    inputMode="decimal"
                     min={0}
                     step={1}
                     type="number"
@@ -163,11 +184,13 @@ export function PersonFormSheet() {
                 </label>
                 <label className="field">
                   <span>Salary start date</span>
-                  <input type="date" {...register('salaryStartDate')} />
+                  <input autoComplete="off" type="date" {...register('salaryStartDate')} />
                 </label>
                 <label className="field">
                   <span>Pay period (weeks)</span>
                   <input
+                    autoComplete="off"
+                    inputMode="numeric"
                     min={1}
                     max={52}
                     type="number"
@@ -187,7 +210,7 @@ export function PersonFormSheet() {
                   <span>
                     Salary end date <small>optional</small>
                   </span>
-                  <input type="date" {...register('salaryEndDate')} />
+                  <input autoComplete="off" type="date" {...register('salaryEndDate')} />
                 </label>
               </div>
             )}

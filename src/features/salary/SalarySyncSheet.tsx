@@ -45,13 +45,15 @@ export function SalarySyncSheet() {
 
   return (
     <BottomSheet onClose={close} title="Sync Pay Date">
-      <form className="form-grid" onSubmit={(event) => void submit(event)}>
+      <form autoComplete="off" className="form-grid" onSubmit={(event) => void submit(event)}>
         <p className="inline-note">
           Earned but not yet paid: <strong>{formatMoney(owed, salary.currency, false)}</strong>
         </p>
         <label className="field">
           <span>One-time adjustment</span>
           <input
+            autoComplete="off"
+            inputMode="decimal"
             min={0}
             step={1}
             type="number"
@@ -60,7 +62,7 @@ export function SalarySyncSheet() {
         </label>
         <label className="field">
           <span>New cycle start date</span>
-          <input type="date" {...register('newAnchorDate')} />
+          <input autoComplete="off" type="date" {...register('newAnchorDate')} />
         </label>
         {error && <p className="form-error">{error}</p>}
         <div className="form-actions">

@@ -1,7 +1,9 @@
+import { useEffect, useState } from 'react';
+
 import { personOpenBalance } from '../../domain/balances';
 import type { PersistedPerson } from '../../types/persistence';
 import { useAppStore } from '../../store/hooks';
-import { PersonCard } from './PersonCard';
+import { PersonCard, type PersonSwipeAction } from './PersonCard';
 
 const COLOR_ORDER = [
   '#5692ff',
@@ -25,6 +27,10 @@ interface PeopleListProps {
 }
 
 export function PeopleList({ onDeletePerson, onDeleteEntry }: PeopleListProps) {
+  const [openSwipe, setOpenSwipe] = useState<{
+    personId: string;
+    action: PersonSwipeAction;
+  } | null>(null);
   const mode = useAppStore((state) => state.mode);
   const people = useAppStore((state) => state.peopleByMode[state.mode]);
   const search = useAppStore((state) => state.search.trim().toLowerCase());
@@ -46,6 +52,18 @@ export function PeopleList({ onDeletePerson, onDeleteEntry }: PeopleListProps) {
     .slice(0, 3);
   const highlighted =
     filtered.length > 3 ? new Set(ranked.map((item) => item.id)) : new Set<string>();
+
+  useEffect(() => {
+    if (!openSwipe) return;
+    const closeOpenSwipe = (event: PointerEvent) => {
+      const target = event.target;
+      const card = target instanceof Element ? target.closest('[data-swipe-card-id]') : null;
+      if (card?.getAttribute('data-swipe-card-id') === openSwipe.personId) return;
+      setOpenSwipe(null);
+    };
+    document.addEventListener('pointerdown', closeOpenSwipe, true);
+    return () => document.removeEventListener('pointerdown', closeOpenSwipe, true);
+  }, [openSwipe]);
 
   if (!filtered.length) {
     return (
@@ -73,7 +91,9 @@ export function PeopleList({ onDeletePerson, onDeleteEntry }: PeopleListProps) {
           key={person.id}
           onDeleteEntry={(entryId) => onDeleteEntry(person, entryId)}
           onDeletePerson={() => onDeletePerson(person)}
+          onSwipeOpen={(action) => setOpenSwipe(action ? { personId: person.id, action } : null)}
           person={person}
+          swipeOpen={openSwipe?.personId === person.id ? openSwipe.action : null}
         />
       ))}
     </section>

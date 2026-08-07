@@ -53,16 +53,16 @@ export function App() {
 
   function confirmPersonDelete(person: PersistedPerson) {
     setConfirmation({
-      title: 'Delete person?',
-      message: `${person.name} and all entries will be deleted from the React database.`,
+      title: 'Delete?',
+      message: `Are you sure you want to delete ${person.name}?`,
       action: () => deletePerson(person.id),
     });
   }
 
   function confirmEntryDelete(person: PersistedPerson, entryId: string) {
     setConfirmation({
-      title: 'Delete entry?',
-      message: `Delete this entry from ${person.name}?`,
+      title: 'Delete?',
+      message: 'Are you sure you want to delete this entry?',
       action: () => deleteEntry(person.id, entryId),
     });
   }
@@ -112,8 +112,14 @@ export function App() {
             <span>⌕</span>
             <input
               aria-label="Search by name"
+              autoCapitalize="none"
+              autoComplete="off"
+              enterKeyHint="search"
+              inputMode="search"
               onChange={(event) => setSearch(event.target.value)}
               placeholder="Search by name…"
+              spellCheck={false}
+              type="search"
               value={search}
             />
           </label>

@@ -72,11 +72,13 @@ export function EntryFormSheet() {
 
   return (
     <BottomSheet onClose={close} title={existing ? 'Edit Entry' : `Add Entry · ${person.name}`}>
-      <form className="form-grid" onSubmit={(event) => void submit(event)}>
+      <form autoComplete="off" className="form-grid" onSubmit={(event) => void submit(event)}>
         <label className="field">
           <span>Amount</span>
           <input
+            autoComplete="off"
             autoFocus
+            inputMode="decimal"
             min={1}
             step={1}
             type="number"
@@ -139,13 +141,20 @@ export function EntryFormSheet() {
 
         <label className="field">
           <span>Date</span>
-          <input type="date" {...register('date')} />
+          <input autoComplete="off" type="date" {...register('date')} />
         </label>
         <label className="field">
           <span>
             Comment <small>optional</small>
           </span>
-          <textarea rows={3} {...register('comment')} />
+          <textarea
+            autoCapitalize="sentences"
+            autoComplete="off"
+            inputMode="text"
+            rows={3}
+            spellCheck
+            {...register('comment')}
+          />
         </label>
         {formError && (
           <p className="form-error" role="alert">
