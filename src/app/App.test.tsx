@@ -110,6 +110,36 @@ describe('ACC application', () => {
     expect(screen.getByRole('button', { name: 'Open app menu' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Statistics' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Add person' })).toBeInTheDocument();
+    const navigation = screen.getByRole('navigation', { name: 'Primary navigation' });
+    expect(within(navigation).getByRole('button', { name: 'Home' })).toHaveAttribute(
+      'aria-current',
+      'page',
+    );
+    expect(within(navigation).getByRole('button', { name: 'Stats' })).toBeInTheDocument();
+    expect(within(navigation).getByRole('button', { name: 'Backup' })).toBeInTheDocument();
+    expect(within(navigation).getByRole('button', { name: 'Settings' })).toBeInTheDocument();
+  });
+
+  it('uses bottom navigation for existing screens and theme settings', async () => {
+    const user = userEvent.setup();
+    const store = renderApp();
+    await waitFor(() => expect(store.getState().initialized).toBe(true));
+    const navigation = screen.getByRole('navigation', { name: 'Primary navigation' });
+
+    await user.click(within(navigation).getByRole('button', { name: 'Stats' }));
+    expect(screen.getByRole('dialog', { name: 'Statistics' })).toBeVisible();
+    await user.click(screen.getByRole('button', { name: 'Close' }));
+
+    await user.click(within(navigation).getByRole('button', { name: 'Backup' }));
+    expect(screen.getByRole('dialog', { name: 'Data & Backup' })).toBeVisible();
+    await user.click(screen.getByRole('button', { name: 'Close' }));
+
+    await user.click(within(navigation).getByRole('button', { name: 'Settings' }));
+    const settings = screen.getByRole('dialog', { name: 'Settings' });
+    expect(settings).toBeVisible();
+    await user.click(within(settings).getByRole('button', { name: /Dark/ }));
+    expect(store.getState().theme).toBe('dark');
+    expect(document.documentElement).toHaveAttribute('data-theme', 'dark');
   });
 
   it('keeps Personal and Work data isolated when switching modes', async () => {

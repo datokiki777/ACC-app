@@ -2,8 +2,10 @@ import { useEffect, useState } from 'react';
 
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { AppMenu } from '../components/AppMenu';
+import { BottomNavigation, type AppDestination } from '../components/BottomNavigation';
 import { InstallPrompt } from '../components/InstallPrompt';
 import { ModeSwitch } from '../components/ModeSwitch';
+import { SettingsSheet } from '../components/SettingsSheet';
 import { StartupScreen } from '../components/StartupScreen';
 import { ThemeSelector } from '../components/ThemeSelector';
 import { UndoToast } from '../components/UndoToast';
@@ -39,10 +41,12 @@ export function App() {
   const filter = useAppStore((state) => state.filter);
   const setFilter = useAppStore((state) => state.setFilter);
   const openSheet = useAppStore((state) => state.openSheet);
+  const closeSheet = useAppStore((state) => state.closeSheet);
   const sheet = useAppStore((state) => state.ui.sheet);
   const deletePerson = useAppStore((state) => state.deletePerson);
   const deleteEntry = useAppStore((state) => state.deleteEntry);
   const [confirmation, setConfirmation] = useState<Confirmation | null>(null);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   useThemeEffect(theme);
 
   useEffect(() => {
@@ -68,12 +72,32 @@ export function App() {
     });
   }
 
+  function navigate(destination: AppDestination) {
+    setSettingsOpen(destination === 'settings');
+    if (destination === 'home' || destination === 'settings') closeSheet();
+    if (destination === 'statistics') openSheet('statistics');
+    if (destination === 'backup') openSheet('backup');
+  }
+
+  const activeDestination: AppDestination = settingsOpen
+    ? 'settings'
+    : sheet === 'statistics'
+      ? 'statistics'
+      : sheet === 'backup'
+        ? 'backup'
+        : 'home';
+
   return (
     <>
       <StartupScreen />
       <div className="app-shell">
         <header className="app-header real-header">
-          <AppMenu onOpenBackup={() => openSheet('backup')} />
+          <AppMenu
+            onOpenBackup={() => {
+              setSettingsOpen(false);
+              openSheet('backup');
+            }}
+          />
           <ModeSwitch mode={mode} onChange={(next) => void setMode(next)} />
           <ThemeSelector onChange={(next) => void setTheme(next)} value={theme} />
           <div className="filter-row header-filter-row">
@@ -149,6 +173,7 @@ export function App() {
           +
         </button>
       )}
+      {initialized && <BottomNavigation active={activeDestination} onNavigate={navigate} />}
       {error && (
         <div className="error-banner" role="alert">
           <span>{error}</span>
@@ -165,6 +190,13 @@ export function App() {
       {sheet === 'salary-sync' && <SalarySyncSheet />}
       {sheet === 'statistics' && <StatisticsSheet />}
       {sheet === 'backup' && <BackupSheet />}
+      {settingsOpen && (
+        <SettingsSheet
+          onChangeTheme={(next) => void setTheme(next)}
+          onClose={() => setSettingsOpen(false)}
+          theme={theme}
+        />
+      )}
       {confirmation && (
         <ConfirmDialog
           message={confirmation.message}

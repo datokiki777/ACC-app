@@ -169,7 +169,7 @@ export function PersonCard({
 
   return (
     <article
-      className={`person-card ${expanded ? 'is-expanded' : ''} ${highlighted ? 'is-highlighted' : ''}`}
+      className={`person-card mode-${mode} ${salary?.enabled ? 'has-salary' : ''} ${salary?.due ? 'has-overdue' : ''} ${expanded ? 'is-expanded' : ''} ${highlighted ? 'is-highlighted' : ''}`}
       data-swipe-card-id={person.id}
     >
       <div className="swipe-summary-shell">
