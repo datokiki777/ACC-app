@@ -14,7 +14,7 @@ import { SalarySyncSheet } from '../features/salary/SalarySyncSheet';
 import { StatisticsSheet } from '../features/statistics/StatisticsSheet';
 import { EntryFormSheet } from '../features/transactions/EntryFormSheet';
 import { useThemeEffect } from '../hooks/useThemeEffect';
-import type { PeopleFilter, SheetName } from '../store/app-store';
+import type { SheetName } from '../store/app-store';
 import { useAppStore } from '../store/hooks';
 import type { PersistedPerson } from '../types/persistence';
 import { AppNavigationProvider } from './AppNavigationProvider';
@@ -30,7 +30,6 @@ interface Confirmation {
 interface NavigationSnapshot {
   entryId: string | null;
   expandedPersonId: string | null;
-  filter: PeopleFilter;
   personId: string | null;
   settingsOpen: boolean;
   sheet: SheetName;
@@ -51,12 +50,7 @@ function isAccHistoryState(value: unknown): value is AccHistoryState {
 }
 
 function hasMeaningfulNavigationState(snapshot: NavigationSnapshot) {
-  return (
-    snapshot.sheet !== 'none' ||
-    snapshot.settingsOpen ||
-    snapshot.expandedPersonId !== null ||
-    snapshot.filter === 'archived'
-  );
+  return snapshot.sheet !== 'none' || snapshot.settingsOpen || snapshot.expandedPersonId !== null;
 }
 
 export function App() {
@@ -116,12 +110,11 @@ export function App() {
     () => ({
       entryId: sheetEntryId,
       expandedPersonId,
-      filter,
       personId: sheetPersonId,
       settingsOpen,
       sheet,
     }),
-    [expandedPersonId, filter, settingsOpen, sheet, sheetEntryId, sheetPersonId],
+    [expandedPersonId, settingsOpen, sheet, sheetEntryId, sheetPersonId],
   );
   const navigationSnapshotRef = useRef(navigationSnapshot);
 
@@ -132,12 +125,11 @@ export function App() {
   const applyNavigationSnapshot = useCallback(
     (snapshot: NavigationSnapshot) => {
       setSettingsOpen(snapshot.settingsOpen);
-      if (snapshot.filter !== filter) setFilter(snapshot.filter);
       if (snapshot.sheet === 'none') closeSheet();
       else openSheet(snapshot.sheet, snapshot.personId, snapshot.entryId);
       setExpandedPerson(snapshot.expandedPersonId);
     },
-    [closeSheet, filter, openSheet, setExpandedPerson, setFilter],
+    [closeSheet, openSheet, setExpandedPerson],
   );
 
   const reportFormDirty = useCallback((dirty: boolean) => {

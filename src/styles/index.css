@@ -21,7 +21,8 @@
   --color-surface-panel: #132640;
   --color-surface-entry: #10213a;
   --color-surface-control: #0d2036;
-  --color-surface-selected: #142b49;
+  --color-filter-control: #102943;
+  --color-surface-selected: #173a5d;
   --color-nav: #08172a;
   --color-border: #1d3652;
   --color-border-strong: #294b70;
@@ -54,6 +55,7 @@
   --surface-panel: var(--color-surface-panel);
   --surface-entry: var(--color-surface-entry);
   --control-bg: var(--color-surface-control);
+  --filter-control-bg: var(--color-filter-control);
   --text: var(--color-text);
   --muted: var(--color-text-secondary);
   --accent: var(--color-accent);
@@ -87,7 +89,8 @@
   --color-surface-panel: #dfeaf6;
   --color-surface-entry: #f4f8fc;
   --color-surface-control: #edf3f9;
-  --color-surface-selected: #dce8f5;
+  --color-filter-control: #e3edf7;
+  --color-surface-selected: #cbdced;
   --color-nav: #e8f0f8;
   --color-border: #b8ccdf;
   --color-border-strong: #9fbad2;
@@ -1764,9 +1767,9 @@ a:focus-visible {
 
 .app-header.real-header {
   grid-template-columns: minmax(0, 1fr);
-  gap: 4px;
-  padding-top: max(5px, env(safe-area-inset-top));
-  padding-bottom: 4px;
+  gap: 3px;
+  padding-top: max(4px, env(safe-area-inset-top));
+  padding-bottom: 3px;
 }
 
 .real-header .segmented-control {
@@ -1795,23 +1798,24 @@ a:focus-visible {
   grid-template-columns: minmax(0, 1fr) clamp(154px, 44%, 190px);
   gap: 6px;
   min-width: 0;
-  min-height: 48px;
-  border-radius: 20px;
+  min-height: 44px;
+  border-radius: 18px;
   background: var(--color-toolbar);
   box-shadow: inset 0 -1px var(--color-divider);
 }
 
 .browse-controls-row .search-field {
-  min-height: 48px;
-  border-radius: 18px;
+  min-height: 44px;
+  border-radius: 16px;
 }
 
 .browse-controls-row .filter-switch {
   width: 100%;
-  height: 48px;
+  height: 44px;
   min-width: 0;
-  padding: 2px;
-  border-radius: 24px;
+  padding: 1px;
+  border-radius: 22px;
+  background: var(--color-filter-control);
 }
 
 .browse-controls-row .filter-switch button {
@@ -1819,10 +1823,10 @@ a:focus-visible {
   align-items: center;
   justify-content: center;
   min-width: 0;
-  min-height: 42px;
+  min-height: 40px;
   gap: 2px;
   padding-inline: 4px;
-  border-radius: 21px;
+  border-radius: 20px;
   font-size: 0.74rem;
   white-space: nowrap;
   transition:

@@ -249,7 +249,7 @@ describe('ACC application', () => {
     expect(store.getState().peopleByMode.personal).toHaveLength(0);
   });
 
-  it('steps from an archived expanded card to Archived and then Active without duplicates', async () => {
+  it('collapses an archived card without changing the Archived filter on Back', async () => {
     const user = userEvent.setup();
     const store = renderApp();
     await waitFor(() => expect(store.getState().initialized).toBe(true));
@@ -269,9 +269,24 @@ describe('ACC application', () => {
     expect(store.getState().filter).toBe('archived');
 
     pressBrowserBack();
-    await waitFor(() => expect(store.getState().filter).toBe('active'));
+    expect(store.getState().filter).toBe('archived');
     expect(store.getState().expandedPersonId).toBeNull();
     expect(store.getState().peopleByMode.personal[0]?.id).toBe(personId);
+  });
+
+  it('does not add navigation history when Active or Archived is selected', async () => {
+    const user = userEvent.setup();
+    const store = renderApp();
+    await waitFor(() => expect(store.getState().initialized).toBe(true));
+    const initialLength = window.history.length;
+
+    await user.click(screen.getByRole('button', { name: /Archived 0/ }));
+    expect(store.getState().filter).toBe('archived');
+    expect(window.history.length).toBe(initialLength);
+
+    await user.click(screen.getByRole('button', { name: /Active 0/ }));
+    expect(store.getState().filter).toBe('active');
+    expect(window.history.length).toBe(initialLength);
   });
 
   it('does not add history entries when the current bottom tab is tapped repeatedly', async () => {
