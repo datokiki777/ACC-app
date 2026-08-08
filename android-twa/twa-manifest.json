@@ -1,0 +1,52 @@
+{
+  "packageId": "eu.dbuilder.acc",
+  "host": "acc.dbuilder.eu",
+  "name": "ACC",
+  "launcherName": "ACC",
+  "display": "standalone",
+  "themeColor": "#081220",
+  "themeColorDark": "#081220",
+  "navigationColor": "#081220",
+  "navigationColorDark": "#081220",
+  "navigationDividerColor": "#081220",
+  "navigationDividerColorDark": "#081220",
+  "backgroundColor": "#081220",
+  "enableNotifications": false,
+  "startUrl": "/",
+  "iconUrl": "https://acc.dbuilder.eu/icons/icon-1024x1024.png",
+  "maskableIconUrl": "https://acc.dbuilder.eu/icons/icon-512x512-maskable.png",
+  "splashScreenFadeOutDuration": 300,
+  "signingKey": {
+    "path": "../../ACC-ANDROID-SIGNING/acc-release.keystore",
+    "alias": "acc-release"
+  },
+  "appVersionName": "1.0.0",
+  "appVersionCode": 1,
+  "shortcuts": [],
+  "generatorApp": "bubblewrap-cli",
+  "webManifestUrl": "https://acc.dbuilder.eu/manifest.webmanifest",
+  "fallbackType": "customtabs",
+  "features": {},
+  "alphaDependencies": {
+    "enabled": false
+  },
+  "enableSiteSettingsShortcut": true,
+  "isChromeOSOnly": false,
+  "isMetaQuest": false,
+  "fullScopeUrl": "https://acc.dbuilder.eu/",
+  "minSdkVersion": 21,
+  "orientation": "portrait",
+  "fingerprints": [
+    {
+      "name": "release",
+      "value": "2B:AA:FB:C2:F0:4A:D1:0C:D2:52:F1:30:04:CF:11:FA:14:C4:13:E5:A8:B6:2E:75:FE:B1:8E:BF:5C:0F:43:32"
+    }
+  ],
+  "additionalTrustedOrigins": [],
+  "retainedBundles": [],
+  "protocolHandlers": [],
+  "fileHandlers": [],
+  "launchHandlerClientMode": "",
+  "displayOverride": [],
+  "appVersion": "1.0.0"
+}

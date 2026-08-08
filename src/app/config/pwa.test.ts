@@ -15,8 +15,8 @@ describe('PWA configuration', () => {
       scope: '/',
       display: 'standalone',
       orientation: 'portrait',
-      background_color: '#071633',
-      theme_color: '#071633',
+      background_color: '#081220',
+      theme_color: '#081220',
     });
   });
 

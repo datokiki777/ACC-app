@@ -8,6 +8,7 @@ const requiredFiles = [
   'sw.js',
   'CNAME',
   '.nojekyll',
+  '.well-known/assetlinks.json',
   'icons/icon-192x192.png',
   'icons/icon-192x192-maskable.png',
   'icons/icon-512x512.png',
@@ -46,4 +47,24 @@ if (!assetFiles.some((file) => file.endsWith('.css'))) {
 const cname = readFileSync(resolve(outputDirectory, 'CNAME'), 'utf8').trim();
 if (cname !== 'acc.dbuilder.eu') throw new Error('Production CNAME is incorrect');
 
-console.log('Verified root production output, PWA files, icons, assets, and CNAME.');
+const assetLinks = JSON.parse(
+  readFileSync(resolve(outputDirectory, '.well-known/assetlinks.json'), 'utf8'),
+);
+const twaTarget = assetLinks.find(
+  (statement) =>
+    statement.relation?.includes('delegate_permission/common.handle_all_urls') &&
+    statement.target?.namespace === 'android_app' &&
+    statement.target?.package_name === 'eu.dbuilder.acc',
+);
+if (!twaTarget) throw new Error('Production Asset Links has no ACC TWA relationship');
+if (
+  !twaTarget.target.sha256_cert_fingerprints?.includes(
+    '2B:AA:FB:C2:F0:4A:D1:0C:D2:52:F1:30:04:CF:11:FA:14:C4:13:E5:A8:B6:2E:75:FE:B1:8E:BF:5C:0F:43:32',
+  )
+) {
+  throw new Error('Production Asset Links is missing the permanent ACC release fingerprint');
+}
+
+console.log(
+  'Verified root production output, PWA files, TWA Asset Links, icons, assets, and CNAME.',
+);

@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "eu.dbuilder.acc",
+      "sha256_cert_fingerprints": [
+        "2B:AA:FB:C2:F0:4A:D1:0C:D2:52:F1:30:04:CF:11:FA:14:C4:13:E5:A8:B6:2E:75:FE:B1:8E:BF:5C:0F:43:32"
+      ]
+    }
+  }
+]

@@ -69,7 +69,7 @@ Open `http://localhost:4173/acc/`. Output is written to `dist-github/`.
 ## Import a saved legacy backup
 
 1. Preview the React application locally.
-2. Open **Data & Backup** using the top-left data button.
+2. Open **Data & Backup** using the bottom **Backup** tab.
 3. Select **Choose backup** and choose the saved legacy ACC `.json` file.
 4. Review the filename, export date, validation status, Personal count, Work count, and total entry
    count before continuing.
@@ -103,3 +103,10 @@ unknown person/stage/entry fields are preserved. Export remains consumable by th
 Pushes to `main` run `.github/workflows/deploy-pages.yml`. Formatting, lint, strict TypeScript,
 all tests, the root production build, and production-output verification must pass before `dist/`
 is deployed to GitHub Pages. `public/CNAME` publishes the custom domain with the artifact.
+
+## Android Trusted Web Activity
+
+The independent PWA is also packaged as a Bubblewrap Trusted Web Activity. Rebuildable, non-secret
+Android configuration is committed under `android-twa/`; release keys and passwords remain outside
+Git. See `android-twa/README.md` for build and Digital Asset Links details. A web-only deployment is
+immediately visible in the TWA and normally does not require a new APK/AAB.

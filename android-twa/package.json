@@ -1,0 +1,16 @@
+{
+  "name": "acc-android-twa",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "doctor": "bubblewrap doctor",
+    "update": "bubblewrap update",
+    "validate": "bubblewrap validate --url=https://acc.dbuilder.eu/",
+    "build": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File ./scripts/build-release.ps1",
+    "build:unsigned": "bubblewrap build --skipSigning",
+    "twa:install": "bubblewrap install --apkFile=./app-release-signed.apk"
+  },
+  "devDependencies": {
+    "@bubblewrap/cli": "1.25.0"
+  }
+}

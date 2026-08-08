@@ -18,12 +18,17 @@ build/
 .cache/
 .parcel-cache/
 
-# Android/Capacitor files should not be published in this PWA-only repo
+# Generated native build state (the rebuildable TWA project is committed)
 android/
+android-twa/.gradle/
+android-twa/local.properties
+android-twa/app/build/
+android-twa/build/
 capacitor.config.json
 
 # Native app signing keys and secrets
 *.apk
+*.idsig
 *.aab
 *.aar
 *.ap_
@@ -34,3 +39,4 @@ capacitor.config.json
 *.key
 google-services.json
 GoogleService-Info.plist
+ACC-ANDROID-SIGNING/
