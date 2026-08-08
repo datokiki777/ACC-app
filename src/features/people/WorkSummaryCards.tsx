@@ -122,13 +122,20 @@ export function OtherSummaryCard({ summary }: OtherSummaryCardProps) {
           {formatMoney(summary.net, summary.currency, false)}
         </strong>
       </div>
-      <FlowTotalsRow
-        className="other-totals-row"
-        currency={summary.currency}
-        gave={summary.gave}
-        net={summary.net}
-        received={summary.received}
-      />
+      <div className="other-totals-row">
+        <span>
+          <small>Gave</small>
+          <strong className={moneyTone(summary.gave)}>
+            {formatMoney(summary.gave, summary.currency, false)}
+          </strong>
+        </span>
+        <span>
+          <small>Received</small>
+          <strong className={moneyTone(-summary.received)}>
+            {formatMoney(summary.received, summary.currency, false)}
+          </strong>
+        </span>
+      </div>
     </section>
   );
 }

@@ -1,6 +1,7 @@
 import { type PointerEvent as ReactPointerEvent, useEffect, useRef, useState } from 'react';
 
 import { personOpenBalance, personTotals } from '../../domain/balances';
+import { useAppNavigation } from '../../app/useAppNavigation';
 import { entryEffect } from '../../domain/entries';
 import { calculateSalary, giftSummary } from '../../domain/salary';
 import { useAppStore } from '../../store/hooks';
@@ -35,7 +36,6 @@ interface SwipeDrag {
 
 interface PersonCardProps {
   person: PersistedPerson;
-  highlighted: boolean;
   onDeletePerson: () => void;
   onDeleteEntry: (entryId: string) => void;
   swipeOpen: PersonSwipeAction | null;
@@ -44,12 +44,12 @@ interface PersonCardProps {
 
 export function PersonCard({
   person,
-  highlighted,
   onDeletePerson,
   onDeleteEntry,
   swipeOpen,
   onSwipeOpen,
 }: PersonCardProps) {
+  const { requestClose } = useAppNavigation();
   const dragRef = useRef<SwipeDrag | null>(null);
   const currentOffsetRef = useRef(0);
   const suppressClickRef = useRef(false);
@@ -182,7 +182,7 @@ export function PersonCard({
 
   return (
     <article
-      className={`person-card ${expanded ? 'is-expanded' : ''} ${highlighted ? 'is-highlighted' : ''} ${mode === 'work' ? `is-work-card ${salary?.enabled ? 'is-salary-card' : 'is-other-card'}` : ''} ${person.archived ? 'is-archived-card' : ''} ${salary?.due ? 'has-overdue' : ''}`}
+      className={`person-card ${expanded ? 'is-expanded' : ''} ${mode === 'work' ? `is-work-card ${salary?.enabled ? 'is-salary-card' : 'is-other-card'}` : ''} ${person.archived ? 'is-archived-card' : ''} ${salary?.due ? 'has-overdue' : ''}`}
       data-swipe-card-id={person.id}
     >
       <div className="swipe-summary-shell">
@@ -239,8 +239,10 @@ export function PersonCard({
               onSwipeOpen(null);
               return;
             }
-            if (expanded) setOpenEntrySwipeId(null);
-            setExpanded(expanded ? null : person.id);
+            if (expanded) {
+              setOpenEntrySwipeId(null);
+              requestClose();
+            } else setExpanded(person.id);
           }}
           onPointerCancel={cancelPointerGesture}
           onPointerDown={handlePointerDown}

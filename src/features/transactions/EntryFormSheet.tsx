@@ -3,6 +3,7 @@ import { useForm, useWatch } from 'react-hook-form';
 import { z } from 'zod';
 
 import { BottomSheet } from '../../components/BottomSheet';
+import { useAppNavigation, useUnsavedForm } from '../../app/useAppNavigation';
 import type { EntryDraft } from '../../store/app-store';
 import { useAppStore } from '../../store/hooks';
 import { localDateString } from '../../utils/format';
@@ -30,7 +31,7 @@ export function EntryFormSheet() {
   const people = useAppStore((state) => state.peopleByMode[state.mode]);
   const addEntry = useAppStore((state) => state.addEntry);
   const editEntry = useAppStore((state) => state.editEntry);
-  const close = useAppStore((state) => state.closeSheet);
+  const { closeAfterSave, requestClose } = useAppNavigation();
   const person = people.find((candidate) => candidate.id === personId);
   const existing = person?.entries.find((candidate) => candidate.id === entryId);
   const [formError, setFormError] = useState('');
@@ -39,7 +40,7 @@ export function EntryFormSheet() {
     register,
     handleSubmit,
     setValue,
-    formState: { isSubmitting },
+    formState: { isDirty, isSubmitting },
   } = useForm<EntryFormValues>({
     defaultValues: {
       amount: existing ? String(existing.amount) : '',
@@ -51,6 +52,7 @@ export function EntryFormSheet() {
   });
   const type = useWatch({ control, name: 'type' });
   const category = useWatch({ control, name: 'category' });
+  useUnsavedForm(isDirty);
   if (!person) return null;
 
   const submit = handleSubmit(async (raw) => {
@@ -72,14 +74,17 @@ export function EntryFormSheet() {
     try {
       if (existing) await editEntry(person.id, existing.id, draft);
       else await addEntry(person.id, draft);
-      close();
+      closeAfterSave();
     } catch (error) {
       setFormError(error instanceof Error ? error.message : 'Could not save entry');
     }
   });
 
   return (
-    <BottomSheet onClose={close} title={existing ? 'Edit Entry' : `Add Entry · ${person.name}`}>
+    <BottomSheet
+      onClose={requestClose}
+      title={existing ? 'Edit Entry' : `Add Entry · ${person.name}`}
+    >
       <form autoComplete="off" className="form-grid" onSubmit={(event) => void submit(event)}>
         <label className="field">
           <span>Amount</span>
@@ -103,8 +108,8 @@ export function EntryFormSheet() {
                 aria-pressed={category === 'salary'}
                 className={category === 'salary' ? 'choice-button is-selected' : 'choice-button'}
                 onClick={() => {
-                  setValue('category', 'salary');
-                  setValue('type', 'Gave');
+                  setValue('category', 'salary', { shouldDirty: true });
+                  setValue('type', 'Gave', { shouldDirty: true });
                 }}
                 type="button"
               >
@@ -113,7 +118,7 @@ export function EntryFormSheet() {
               <button
                 aria-pressed={category === 'gift'}
                 className={category === 'gift' ? 'choice-button is-selected' : 'choice-button'}
-                onClick={() => setValue('category', 'gift')}
+                onClick={() => setValue('category', 'gift', { shouldDirty: true })}
                 type="button"
               >
                 Other
@@ -131,7 +136,7 @@ export function EntryFormSheet() {
                 className={
                   type === 'Gave' ? 'choice-button is-selected choice-gave' : 'choice-button'
                 }
-                onClick={() => setValue('type', 'Gave')}
+                onClick={() => setValue('type', 'Gave', { shouldDirty: true })}
                 type="button"
               >
                 ↗ Gave
@@ -143,7 +148,7 @@ export function EntryFormSheet() {
                     ? 'choice-button is-selected choice-received'
                     : 'choice-button'
                 }
-                onClick={() => setValue('type', 'Received')}
+                onClick={() => setValue('type', 'Received', { shouldDirty: true })}
                 type="button"
               >
                 ↘ Received
@@ -175,7 +180,7 @@ export function EntryFormSheet() {
           </p>
         )}
         <div className="form-actions">
-          <button className="secondary-button" onClick={close} type="button">
+          <button className="secondary-button" onClick={requestClose} type="button">
             Cancel
           </button>
           <button className="primary-button" disabled={isSubmitting} type="submit">

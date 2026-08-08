@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 
 import { BottomSheet } from '../../components/BottomSheet';
+import { useAppNavigation } from '../../app/useAppNavigation';
 import {
   calculatePayrollOverview,
   calculateStatistics,
@@ -12,7 +13,7 @@ import { formatDate, formatMoney } from '../../utils/format';
 export function StatisticsSheet() {
   const mode = useAppStore((state) => state.mode);
   const people = useAppStore((state) => state.peopleByMode[state.mode]);
-  const close = useAppStore((state) => state.closeSheet);
+  const { requestClose } = useAppNavigation();
   const [scope, setScope] = useState<StatisticsScope>('active');
   const referenceDate = useMemo(() => new Date(), []);
   const scopedPeople = people.filter(
@@ -23,7 +24,7 @@ export function StatisticsSheet() {
   const maxMonthly = Math.max(1, ...stats.monthly.flatMap((month) => [month.gave, month.received]));
 
   return (
-    <BottomSheet onClose={close} title="Statistics" wide>
+    <BottomSheet onClose={requestClose} title="Statistics" wide>
       <div className="scope-switch">
         {(['active', 'archived', 'all'] as const).map((value) => (
           <button

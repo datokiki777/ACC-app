@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-import { ConfirmDialog } from '../components/ConfirmDialog';
 import { BottomNavigation, type AppDestination } from '../components/BottomNavigation';
+import { ConfirmDialog } from '../components/ConfirmDialog';
 import { InstallPrompt } from '../components/InstallPrompt';
 import { ModeSwitch } from '../components/ModeSwitch';
 import { SettingsSheet } from '../components/SettingsSheet';
@@ -14,13 +14,49 @@ import { SalarySyncSheet } from '../features/salary/SalarySyncSheet';
 import { StatisticsSheet } from '../features/statistics/StatisticsSheet';
 import { EntryFormSheet } from '../features/transactions/EntryFormSheet';
 import { useThemeEffect } from '../hooks/useThemeEffect';
+import type { PeopleFilter, SheetName } from '../store/app-store';
 import { useAppStore } from '../store/hooks';
 import type { PersistedPerson } from '../types/persistence';
+import { AppNavigationProvider } from './AppNavigationProvider';
 
 interface Confirmation {
   title: string;
   message: string;
+  cancelLabel?: string;
+  confirmLabel?: string;
   action: () => Promise<void>;
+}
+
+interface NavigationSnapshot {
+  entryId: string | null;
+  expandedPersonId: string | null;
+  filter: PeopleFilter;
+  personId: string | null;
+  settingsOpen: boolean;
+  sheet: SheetName;
+}
+
+interface AccHistoryState {
+  acc: true;
+  depth: number;
+  snapshot: NavigationSnapshot;
+}
+
+function snapshotKey(snapshot: NavigationSnapshot) {
+  return JSON.stringify(snapshot);
+}
+
+function isAccHistoryState(value: unknown): value is AccHistoryState {
+  return Boolean(value && typeof value === 'object' && (value as Partial<AccHistoryState>).acc);
+}
+
+function hasMeaningfulNavigationState(snapshot: NavigationSnapshot) {
+  return (
+    snapshot.sheet !== 'none' ||
+    snapshot.settingsOpen ||
+    snapshot.expandedPersonId !== null ||
+    snapshot.filter === 'archived'
+  );
 }
 
 export function App() {
@@ -38,21 +74,186 @@ export function App() {
   const setSearch = useAppStore((state) => state.setSearch);
   const filter = useAppStore((state) => state.filter);
   const setFilter = useAppStore((state) => state.setFilter);
+  const expandedPersonId = useAppStore((state) => state.expandedPersonId);
+  const setExpandedPerson = useAppStore((state) => state.setExpandedPerson);
   const openSheet = useAppStore((state) => state.openSheet);
   const closeSheet = useAppStore((state) => state.closeSheet);
   const sheet = useAppStore((state) => state.ui.sheet);
+  const sheetPersonId = useAppStore((state) => state.ui.personId);
+  const sheetEntryId = useAppStore((state) => state.ui.entryId);
   const deletePerson = useAppStore((state) => state.deletePerson);
   const deleteEntry = useAppStore((state) => state.deleteEntry);
   const [confirmation, setConfirmation] = useState<Confirmation | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const dirtyRef = useRef(false);
+  const confirmationRef = useRef<Confirmation | null>(null);
+  const historyReadyRef = useRef(false);
+  const historyDepthRef = useRef(0);
+  const lastSnapshotKeyRef = useRef('');
+  const ignoredSnapshotKeyRef = useRef('');
+  const returningAfterBlockedBackRef = useRef<'confirmation' | 'dirty' | null>(null);
   useThemeEffect(theme);
 
   useEffect(() => {
     void initialize();
   }, [initialize]);
 
+  useEffect(() => {
+    confirmationRef.current = confirmation;
+  }, [confirmation]);
+
   const activeCount = people.filter((person) => !person.archived).length;
   const archivedCount = people.filter((person) => person.archived).length;
+  const activeDestination: AppDestination = settingsOpen
+    ? 'settings'
+    : sheet === 'statistics'
+      ? 'statistics'
+      : sheet === 'backup'
+        ? 'backup'
+        : 'home';
+
+  const navigationSnapshot = useMemo<NavigationSnapshot>(
+    () => ({
+      entryId: sheetEntryId,
+      expandedPersonId,
+      filter,
+      personId: sheetPersonId,
+      settingsOpen,
+      sheet,
+    }),
+    [expandedPersonId, filter, settingsOpen, sheet, sheetEntryId, sheetPersonId],
+  );
+  const navigationSnapshotRef = useRef(navigationSnapshot);
+
+  useEffect(() => {
+    navigationSnapshotRef.current = navigationSnapshot;
+  }, [navigationSnapshot]);
+
+  const applyNavigationSnapshot = useCallback(
+    (snapshot: NavigationSnapshot) => {
+      setSettingsOpen(snapshot.settingsOpen);
+      if (snapshot.filter !== filter) setFilter(snapshot.filter);
+      if (snapshot.sheet === 'none') closeSheet();
+      else openSheet(snapshot.sheet, snapshot.personId, snapshot.entryId);
+      setExpandedPerson(snapshot.expandedPersonId);
+    },
+    [closeSheet, filter, openSheet, setExpandedPerson, setFilter],
+  );
+
+  const reportFormDirty = useCallback((dirty: boolean) => {
+    dirtyRef.current = dirty;
+  }, []);
+
+  const closeAfterSave = useCallback(() => {
+    dirtyRef.current = false;
+    if (historyReadyRef.current && historyDepthRef.current > 0) {
+      window.history.back();
+      return;
+    }
+    setSettingsOpen(false);
+    closeSheet();
+    setExpandedPerson(null);
+  }, [closeSheet, setExpandedPerson]);
+
+  const showDiscardConfirmation = useCallback(() => {
+    const next: Confirmation = {
+      title: 'Discard changes?',
+      message: 'Your unsaved changes will be lost.',
+      cancelLabel: 'Keep editing',
+      confirmLabel: 'Discard',
+      action: () => {
+        closeAfterSave();
+        return Promise.resolve();
+      },
+    };
+    confirmationRef.current = next;
+    setConfirmation(next);
+  }, [closeAfterSave]);
+
+  const requestClose = useCallback(() => {
+    if (dirtyRef.current) showDiscardConfirmation();
+    else closeAfterSave();
+  }, [closeAfterSave, showDiscardConfirmation]);
+
+  useEffect(() => {
+    if (!initialized) return;
+    const key = snapshotKey(navigationSnapshot);
+
+    if (!historyReadyRef.current) {
+      const baseState: AccHistoryState = { acc: true, depth: 0, snapshot: navigationSnapshot };
+      window.history.replaceState(baseState, '');
+      window.history.pushState({ ...baseState, depth: 1 }, '');
+      historyReadyRef.current = true;
+      historyDepthRef.current = 1;
+      lastSnapshotKeyRef.current = key;
+      return;
+    }
+
+    if (ignoredSnapshotKeyRef.current === key) {
+      ignoredSnapshotKeyRef.current = '';
+      lastSnapshotKeyRef.current = key;
+      return;
+    }
+    if (lastSnapshotKeyRef.current === key) return;
+
+    const depth = historyDepthRef.current + 1;
+    const nextState: AccHistoryState = { acc: true, depth, snapshot: navigationSnapshot };
+    window.history.pushState(nextState, '');
+    historyDepthRef.current = depth;
+    lastSnapshotKeyRef.current = key;
+  }, [initialized, navigationSnapshot]);
+
+  useEffect(() => {
+    if (!initialized) return;
+
+    const handlePopState = (event: PopStateEvent) => {
+      const state = event.state as unknown;
+      const returning = returningAfterBlockedBackRef.current;
+
+      if (returning) {
+        returningAfterBlockedBackRef.current = null;
+        if (isAccHistoryState(state)) historyDepthRef.current = state.depth;
+        if (returning === 'dirty') showDiscardConfirmation();
+        return;
+      }
+
+      if (confirmationRef.current) {
+        confirmationRef.current = null;
+        setConfirmation(null);
+        returningAfterBlockedBackRef.current = 'confirmation';
+        window.history.forward();
+        return;
+      }
+
+      const current = navigationSnapshotRef.current;
+      if (
+        dirtyRef.current &&
+        ['person-form', 'entry-form', 'salary-sync'].includes(current.sheet)
+      ) {
+        returningAfterBlockedBackRef.current = 'dirty';
+        window.history.forward();
+        return;
+      }
+
+      if (!isAccHistoryState(state)) return;
+      if (
+        !hasMeaningfulNavigationState(current) &&
+        snapshotKey(state.snapshot) === snapshotKey(current)
+      ) {
+        window.history.back();
+        return;
+      }
+
+      const key = snapshotKey(state.snapshot);
+      historyDepthRef.current = state.depth;
+      ignoredSnapshotKeyRef.current = key;
+      lastSnapshotKeyRef.current = key;
+      applyNavigationSnapshot(state.snapshot);
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [applyNavigationSnapshot, initialized, showDiscardConfirmation]);
 
   function confirmPersonDelete(person: PersistedPerson) {
     setConfirmation({
@@ -71,28 +272,43 @@ export function App() {
   }
 
   function navigate(destination: AppDestination) {
+    if (destination === activeDestination) return;
     setSettingsOpen(destination === 'settings');
     if (destination === 'home' || destination === 'settings') closeSheet();
     if (destination === 'statistics') openSheet('statistics');
     if (destination === 'backup') openSheet('backup');
   }
 
-  const activeDestination: AppDestination = settingsOpen
-    ? 'settings'
-    : sheet === 'statistics'
-      ? 'statistics'
-      : sheet === 'backup'
-        ? 'backup'
-        : 'home';
-
   return (
-    <>
+    <AppNavigationProvider
+      closeAfterSave={closeAfterSave}
+      reportFormDirty={reportFormDirty}
+      requestClose={requestClose}
+    >
       <StartupScreen />
       <div className="app-shell">
         <header className="app-header real-header">
           <ModeSwitch mode={mode} onChange={(next) => void setMode(next)} />
-          <div className="filter-row header-filter-row">
-            <div className="filter-switch">
+          <div className="browse-controls-row">
+            <label className="search-field">
+              <svg aria-hidden="true" viewBox="0 0 24 24">
+                <circle cx="11" cy="11" r="7" />
+                <path d="m16.5 16.5 4 4" />
+              </svg>
+              <input
+                aria-label="Search by name"
+                autoCapitalize="none"
+                autoComplete="off"
+                enterKeyHint="search"
+                inputMode="search"
+                onChange={(event) => setSearch(event.target.value)}
+                placeholder="Search"
+                spellCheck={false}
+                type="search"
+                value={search}
+              />
+            </label>
+            <div aria-label="People filter" className="filter-switch" role="group">
               <button
                 className={filter === 'active' ? 'is-selected' : ''}
                 onClick={() => setFilter('active')}
@@ -108,26 +324,6 @@ export function App() {
                 Archived <span>{archivedCount}</span>
               </button>
             </div>
-          </div>
-          <div className="search-row">
-            <label className="search-field">
-              <svg aria-hidden="true" viewBox="0 0 24 24">
-                <circle cx="11" cy="11" r="7" />
-                <path d="m16.5 16.5 4 4" />
-              </svg>
-              <input
-                aria-label="Search by name"
-                autoCapitalize="none"
-                autoComplete="off"
-                enterKeyHint="search"
-                inputMode="search"
-                onChange={(event) => setSearch(event.target.value)}
-                placeholder="Search by name…"
-                spellCheck={false}
-                type="search"
-                value={search}
-              />
-            </label>
           </div>
         </header>
 
@@ -174,21 +370,27 @@ export function App() {
       {settingsOpen && (
         <SettingsSheet
           onChangeTheme={(next) => void setTheme(next)}
-          onClose={() => setSettingsOpen(false)}
+          onClose={requestClose}
           theme={theme}
         />
       )}
       {confirmation && (
         <ConfirmDialog
+          {...(confirmation.cancelLabel ? { cancelLabel: confirmation.cancelLabel } : {})}
+          {...(confirmation.confirmLabel ? { confirmLabel: confirmation.confirmLabel } : {})}
           message={confirmation.message}
-          onCancel={() => setConfirmation(null)}
+          onCancel={() => {
+            confirmationRef.current = null;
+            setConfirmation(null);
+          }}
           onConfirm={async () => {
             await confirmation.action();
+            confirmationRef.current = null;
             setConfirmation(null);
           }}
           title={confirmation.title}
         />
       )}
-    </>
+    </AppNavigationProvider>
   );
 }

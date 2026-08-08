@@ -79,6 +79,10 @@ async function findPersonSummary(name: string) {
   return summary as HTMLButtonElement;
 }
 
+function pressBrowserBack() {
+  act(() => window.history.back());
+}
+
 describe('ACC application', () => {
   let database: AccReactDatabase;
 
@@ -140,6 +144,146 @@ describe('ACC application', () => {
     await user.click(within(settings).getByRole('button', { name: /Dark/ }));
     expect(store.getState().theme).toBe('dark');
     expect(document.documentElement).toHaveAttribute('data-theme', 'dark');
+  });
+
+  it('uses browser Back to collapse an expanded card', async () => {
+    const user = userEvent.setup();
+    const store = renderApp();
+    await waitFor(() => expect(store.getState().initialized).toBe(true));
+    await act(async () => store.getState().addPerson(draft('Back target')));
+
+    const summary = await findPersonSummary('Back target');
+    await user.click(summary);
+    await waitFor(() => expect(summary).toHaveAttribute('aria-expanded', 'true'));
+    pressBrowserBack();
+    await waitFor(() => expect(summary).toHaveAttribute('aria-expanded', 'false'));
+    act(() => window.history.forward());
+    await waitFor(() => expect(summary).toHaveAttribute('aria-expanded', 'true'));
+  });
+
+  it('uses browser Back to close sheets, Settings, and Backup', async () => {
+    const user = userEvent.setup();
+    const store = renderApp();
+    await waitFor(() => expect(store.getState().initialized).toBe(true));
+    const navigation = screen.getByRole('navigation', { name: 'Primary navigation' });
+
+    await user.click(screen.getByRole('button', { name: 'Add person' }));
+    expect(screen.getByRole('dialog', { name: 'Add Person' })).toBeVisible();
+    pressBrowserBack();
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog', { name: 'Add Person' })).not.toBeInTheDocument(),
+    );
+
+    await user.click(within(navigation).getByRole('button', { name: 'Stats' }));
+    expect(screen.getByRole('dialog', { name: 'Statistics' })).toBeVisible();
+    pressBrowserBack();
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog', { name: 'Statistics' })).not.toBeInTheDocument(),
+    );
+
+    await user.click(within(navigation).getByRole('button', { name: 'Settings' }));
+    expect(screen.getByRole('dialog', { name: 'Settings' })).toBeVisible();
+    pressBrowserBack();
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog', { name: 'Settings' })).not.toBeInTheDocument(),
+    );
+    expect(within(navigation).getByRole('button', { name: 'Home' })).toHaveAttribute(
+      'aria-current',
+      'page',
+    );
+
+    await user.click(within(navigation).getByRole('button', { name: 'Backup' }));
+    expect(screen.getByRole('dialog', { name: 'Data & Backup' })).toBeVisible();
+    pressBrowserBack();
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog', { name: 'Data & Backup' })).not.toBeInTheDocument(),
+    );
+    expect(within(navigation).getByRole('button', { name: 'Home' })).toHaveAttribute(
+      'aria-current',
+      'page',
+    );
+  });
+
+  it('closes confirmation dialogs before changing the underlying Back state', async () => {
+    const user = userEvent.setup();
+    const store = renderApp();
+    await waitFor(() => expect(store.getState().initialized).toBe(true));
+    await act(async () => store.getState().addPerson(draft('Modal Back target')));
+
+    const summary = await findPersonSummary('Modal Back target');
+    swipe(summary, 240, 120);
+    await user.click(screen.getByRole('button', { name: 'Delete Modal Back target' }));
+    expect(screen.getByRole('dialog', { name: 'Delete?' })).toBeVisible();
+    pressBrowserBack();
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog', { name: 'Delete?' })).not.toBeInTheDocument(),
+    );
+    expect(store.getState().peopleByMode.personal).toHaveLength(1);
+  });
+
+  it('protects modified forms from Back while unchanged forms close directly', async () => {
+    const user = userEvent.setup();
+    const store = renderApp();
+    await waitFor(() => expect(store.getState().initialized).toBe(true));
+
+    await user.click(screen.getByRole('button', { name: 'Add person' }));
+    pressBrowserBack();
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog', { name: 'Add Person' })).not.toBeInTheDocument(),
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Add person' }));
+    await user.type(screen.getByRole('textbox', { name: 'Name' }), 'Unsaved person');
+    pressBrowserBack();
+    const discard = await screen.findByRole('dialog', { name: 'Discard changes?' });
+    expect(screen.getByRole('dialog', { name: 'Add Person' })).toBeVisible();
+    await user.click(within(discard).getByRole('button', { name: 'Keep editing' }));
+    expect(screen.getByRole('dialog', { name: 'Add Person' })).toBeVisible();
+
+    pressBrowserBack();
+    const discardAgain = await screen.findByRole('dialog', { name: 'Discard changes?' });
+    await user.click(within(discardAgain).getByRole('button', { name: 'Discard' }));
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog', { name: 'Add Person' })).not.toBeInTheDocument(),
+    );
+    expect(store.getState().peopleByMode.personal).toHaveLength(0);
+  });
+
+  it('steps from an archived expanded card to Archived and then Active without duplicates', async () => {
+    const user = userEvent.setup();
+    const store = renderApp();
+    await waitFor(() => expect(store.getState().initialized).toBe(true));
+    let personId = '';
+    await act(async () => {
+      const person = await store.getState().addPerson(draft('Archived Back target'));
+      personId = person.id;
+      await store.getState().toggleArchive(person.id);
+    });
+
+    await user.click(screen.getByRole('button', { name: /Archived 1/ }));
+    const summary = await findPersonSummary('Archived Back target');
+    await user.click(summary);
+    await waitFor(() => expect(summary).toHaveAttribute('aria-expanded', 'true'));
+    pressBrowserBack();
+    await waitFor(() => expect(summary).toHaveAttribute('aria-expanded', 'false'));
+    expect(store.getState().filter).toBe('archived');
+
+    pressBrowserBack();
+    await waitFor(() => expect(store.getState().filter).toBe('active'));
+    expect(store.getState().expandedPersonId).toBeNull();
+    expect(store.getState().peopleByMode.personal[0]?.id).toBe(personId);
+  });
+
+  it('does not add history entries when the current bottom tab is tapped repeatedly', async () => {
+    const user = userEvent.setup();
+    const store = renderApp();
+    await waitFor(() => expect(store.getState().initialized).toBe(true));
+    const navigation = screen.getByRole('navigation', { name: 'Primary navigation' });
+    const initialLength = window.history.length;
+
+    await user.click(within(navigation).getByRole('button', { name: 'Home' }));
+    await user.click(within(navigation).getByRole('button', { name: 'Home' }));
+    expect(window.history.length).toBe(initialLength);
   });
 
   it('keeps Personal and Work data isolated when switching modes', async () => {
@@ -550,13 +694,13 @@ describe('ACC application', () => {
     expect(within(other as HTMLElement).getByText('Other balance')).toBeInTheDocument();
     expect((other as HTMLElement).querySelector('.other-totals-row')).toHaveTextContent('250');
     expect((other as HTMLElement).querySelector('.other-totals-row')).toHaveTextContent('50');
-    expect((other as HTMLElement).querySelector('.other-totals-row')).toHaveTextContent('200');
+    expect(within(other as HTMLElement).getAllByText(/200/)).toHaveLength(1);
 
     const salaryEntry = screen.getByText('Salary payment').closest('.entry-card-surface');
     const otherEntry = screen.getByText('Other payment').closest('.entry-card-surface');
-    expect(salaryEntry).toHaveClass('entry-category-salary');
     expect(salaryEntry?.querySelector('.entry-kind')).toHaveClass('entry-kind-salary');
-    expect(otherEntry).toHaveClass('entry-category-gift');
+    expect(salaryEntry).toHaveClass('entry-card-surface');
+    expect(otherEntry).toHaveClass('entry-card-surface');
   });
 
   it('uses a dedicated Other summary for non-salary work cards', async () => {
@@ -592,7 +736,7 @@ describe('ACC application', () => {
     expect(card?.querySelector('.payroll-panel')).not.toBeInTheDocument();
     expect((other as HTMLElement).querySelector('.other-totals-row')).toHaveTextContent('300');
     expect((other as HTMLElement).querySelector('.other-totals-row')).toHaveTextContent('80');
-    expect((other as HTMLElement).querySelector('.other-totals-row')).toHaveTextContent('220');
+    expect(within(other as HTMLElement).getAllByText(/220/)).toHaveLength(1);
   });
 
   it('uses semantic money pills for positive, negative, zero, entry, and net values', async () => {

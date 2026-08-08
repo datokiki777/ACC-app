@@ -3,6 +3,7 @@ import { useForm, useWatch } from 'react-hook-form';
 import { z } from 'zod';
 
 import { BottomSheet } from '../../components/BottomSheet';
+import { useAppNavigation, useUnsavedForm } from '../../app/useAppNavigation';
 import type { PersonDraft } from '../../store/app-store';
 import { useAppStore } from '../../store/hooks';
 
@@ -49,7 +50,7 @@ export function PersonFormSheet() {
   const personId = useAppStore((state) => state.ui.personId);
   const addPerson = useAppStore((state) => state.addPerson);
   const editPerson = useAppStore((state) => state.editPerson);
-  const close = useAppStore((state) => state.closeSheet);
+  const { closeAfterSave, requestClose } = useAppNavigation();
   const existing = people.find((person) => person.id === personId);
   const [formError, setFormError] = useState('');
   const {
@@ -57,7 +58,7 @@ export function PersonFormSheet() {
     register,
     handleSubmit,
     setValue,
-    formState: { isSubmitting },
+    formState: { isDirty, isSubmitting },
   } = useForm<PersonDraft>({
     defaultValues: {
       name: existing?.name ?? '',
@@ -74,6 +75,7 @@ export function PersonFormSheet() {
   });
   const salaryEnabled = useWatch({ control, name: 'salaryEnabled' });
   const tagColor = useWatch({ control, name: 'tagColor' });
+  useUnsavedForm(isDirty);
 
   const submit = handleSubmit(async (raw) => {
     const result = personSchema.safeParse(raw);
@@ -84,7 +86,7 @@ export function PersonFormSheet() {
     try {
       if (existing) await editPerson(existing.id, result.data);
       else await addPerson(result.data);
-      close();
+      closeAfterSave();
     } catch (error) {
       setFormError(error instanceof Error ? error.message : 'Could not save');
     }
@@ -92,7 +94,7 @@ export function PersonFormSheet() {
 
   return (
     <BottomSheet
-      onClose={close}
+      onClose={requestClose}
       title={
         existing
           ? `Edit ${mode === 'work' ? 'Team' : 'Person'}`
@@ -136,7 +138,7 @@ export function PersonFormSheet() {
             className={
               !tagColor ? 'color-swatch is-selected color-none' : 'color-swatch color-none'
             }
-            onClick={() => setValue('tagColor', '')}
+            onClick={() => setValue('tagColor', '', { shouldDirty: true })}
             type="button"
           >
             ×
@@ -146,7 +148,7 @@ export function PersonFormSheet() {
               aria-label={`Tag color ${color}`}
               className={tagColor === color ? 'color-swatch is-selected' : 'color-swatch'}
               key={color}
-              onClick={() => setValue('tagColor', color)}
+              onClick={() => setValue('tagColor', color, { shouldDirty: true })}
               style={{ background: color }}
               type="button"
             />
@@ -223,7 +225,7 @@ export function PersonFormSheet() {
           </p>
         )}
         <div className="form-actions">
-          <button className="secondary-button" onClick={close} type="button">
+          <button className="secondary-button" onClick={requestClose} type="button">
             Cancel
           </button>
           <button className="primary-button" disabled={isSubmitting} type="submit">

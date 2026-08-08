@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react';
 
 import { BottomSheet } from '../../components/BottomSheet';
+import { useAppNavigation } from '../../app/useAppNavigation';
 import {
   downloadBackup,
   inspectBackupText,
@@ -10,7 +11,7 @@ import {
 import { useAppStore } from '../../store/hooks';
 
 export function BackupSheet() {
-  const close = useAppStore((state) => state.closeSheet);
+  const { requestClose } = useAppNavigation();
   const importBackup = useAppStore((state) => state.importBackup);
   const exportBackup = useAppStore((state) => state.exportBackup);
   const report = useAppStore((state) => state.lastRestoreReport);
@@ -42,7 +43,7 @@ export function BackupSheet() {
   }
 
   return (
-    <BottomSheet onClose={close} title="Data & Backup" wide>
+    <BottomSheet onClose={requestClose} title="Data & Backup" wide>
       <div className="backup-actions-main">
         <button
           className="primary-button"

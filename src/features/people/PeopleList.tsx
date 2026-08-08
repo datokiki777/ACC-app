@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 
-import { personOpenBalance } from '../../domain/balances';
 import type { PersistedPerson } from '../../types/persistence';
 import { useAppStore } from '../../store/hooks';
 import { PersonCard, type PersonSwipeAction } from './PersonCard';
@@ -45,14 +44,6 @@ export function PeopleList({ onDeletePerson, onDeleteEntry }: PeopleListProps) {
         (firstColor < 0 ? 999 : firstColor) - (secondColor < 0 ? 999 : secondColor);
       return colorDifference || activityTime(second) - activityTime(first);
     });
-  const ranked = [...filtered]
-    .map((person) => ({ id: person.id, balance: Math.abs(personOpenBalance(person, mode)) }))
-    .filter((item) => item.balance > 0)
-    .sort((first, second) => second.balance - first.balance)
-    .slice(0, 3);
-  const highlighted =
-    filtered.length > 3 ? new Set(ranked.map((item) => item.id)) : new Set<string>();
-
   useEffect(() => {
     if (!openSwipe) return;
     const closeOpenSwipe = (event: PointerEvent) => {
@@ -87,7 +78,6 @@ export function PeopleList({ onDeletePerson, onDeleteEntry }: PeopleListProps) {
     <section aria-label={mode === 'work' ? 'Teams' : 'People'} className="people-list">
       {filtered.map((person) => (
         <PersonCard
-          highlighted={highlighted.has(person.id)}
           key={person.id}
           onDeleteEntry={(entryId) => onDeleteEntry(person, entryId)}
           onDeletePerson={() => onDeletePerson(person)}
