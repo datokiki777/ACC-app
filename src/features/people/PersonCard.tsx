@@ -6,8 +6,9 @@ import { calculateSalary, giftSummary } from '../../domain/salary';
 import { useAppStore } from '../../store/hooks';
 import { useLongPress } from '../../hooks/useLongPress';
 import type { PersistedPerson } from '../../types/persistence';
-import { formatDate, formatMoney } from '../../utils/format';
+import { formatMoney } from '../../utils/format';
 import { EntryCard } from './EntryCard';
+import { OtherSummaryCard, PayrollSummaryCard } from './WorkSummaryCards';
 
 export type PersonSwipeAction = 'archive' | 'delete';
 
@@ -64,6 +65,18 @@ export function PersonCard({
   const totals = personTotals(person);
   const salary = mode === 'work' ? calculateSalary(person, new Date()) : null;
   const gifts = mode === 'work' ? giftSummary(person) : null;
+  const otherSummary =
+    mode === 'work' && gifts
+      ? salary?.enabled
+        ? gifts
+        : {
+            gave: totals.gave,
+            received: totals.received,
+            total: totals.gave + totals.received,
+            net: totals.balance,
+            currency: person.salaryCurrency ?? person.currency,
+          }
+      : null;
   const restingOffset =
     swipeOpen === 'archive' ? SWIPE_ACTION_WIDTH : swipeOpen === 'delete' ? -SWIPE_ACTION_WIDTH : 0;
   const visibleOffset = dragOffset ?? restingOffset;
@@ -169,7 +182,7 @@ export function PersonCard({
 
   return (
     <article
-      className={`person-card ${expanded ? 'is-expanded' : ''} ${highlighted ? 'is-highlighted' : ''}`}
+      className={`person-card ${expanded ? 'is-expanded' : ''} ${highlighted ? 'is-highlighted' : ''} ${mode === 'work' ? `is-work-card ${salary?.enabled ? 'is-salary-card' : 'is-other-card'}` : ''} ${person.archived ? 'is-archived-card' : ''} ${salary?.due ? 'has-overdue' : ''}`}
       data-swipe-card-id={person.id}
     >
       <div className="swipe-summary-shell">
@@ -272,122 +285,72 @@ export function PersonCard({
       </div>
 
       {expanded && (
-        <div className="person-details">
-          {salary?.enabled && (
-            <section className="payroll-panel">
-              <div className="panel-heading">
-                <div>
-                  <strong>Payroll</strong>
-                  <small>
-                    {formatMoney(salary.monthly, salary.currency, false)} / month · every{' '}
-                    {salary.periodWeeks}w
-                  </small>
-                </div>
-                <div className="payroll-pills">
-                  {salary.due > 0 && (
-                    <span className="money-pill overdue">
-                      Overdue {formatMoney(salary.due, salary.currency, false)}
-                    </span>
-                  )}
-                  {salary.upcoming > 0 && (
-                    <span className={`money-pill upcoming ${salary.paySoon ? 'soon' : ''}`}>
-                      {salary.paySoon ? 'Due soon' : 'Upcoming'}{' '}
-                      {formatMoney(salary.upcoming, salary.currency, false)}
-                    </span>
-                  )}
-                </div>
-              </div>
-              <div className="panel-grid">
-                <span>
-                  Paid <strong>{formatMoney(salary.paid, salary.currency, false)}</strong>
-                </span>
-                <span>
-                  {salary.ended ? 'Ended' : 'Next pay'}{' '}
-                  <strong>{formatDate(salary.ended ? salary.endDate : salary.nextPayDate)}</strong>
+        <div className={`person-details ${mode === 'work' ? 'work-person-details' : ''}`}>
+          <div className="person-summary-stack">
+            {salary?.enabled && (
+              <PayrollSummaryCard
+                currency={person.currency}
+                onSyncPayDate={() => openSheet('salary-sync', person.id)}
+                salary={salary}
+                totals={totals}
+              />
+            )}
+
+            {otherSummary && (otherSummary.gave || otherSummary.received) ? (
+              <OtherSummaryCard summary={otherSummary} />
+            ) : null}
+
+            {!!person.entries.length && mode !== 'work' && (
+              <div className="totals-row">
+                <span>↑ {formatMoney(totals.gave, person.currency, false)}</span>
+                <span>↓ {formatMoney(totals.received, person.currency, false)}</span>
+                <span className="money-summary-pair">
+                  <span>Net</span>
+                  <strong
+                    className={`money-value-pill money-net-pill ${moneyTone(totals.balance)} ${moneyScale(totals.balance, person.currency)}`}
+                  >
+                    {formatMoney(totals.balance, person.currency, false)}
+                  </strong>
                 </span>
               </div>
-              <button
-                className="text-button"
-                onClick={() => openSheet('salary-sync', person.id)}
-                type="button"
-              >
-                ↻ Sync Pay Date
-              </button>
-              {!!person.entries.length && (
-                <div className="payroll-totals-row">
-                  <span>↑ {formatMoney(totals.gave, person.currency, false)}</span>
-                  <span>↓ {formatMoney(totals.received, person.currency, false)}</span>
-                  <span className="money-summary-pair">
-                    <span>Net</span>
-                    <strong
-                      className={`money-value-pill money-net-pill ${moneyTone(totals.balance)} ${moneyScale(totals.balance, person.currency)}`}
-                    >
-                      {formatMoney(totals.balance, person.currency, false)}
-                    </strong>
-                  </span>
-                </div>
-              )}
-            </section>
-          )}
-
-          {gifts && (gifts.gave || gifts.received) ? (
-            <section className="other-panel">
-              <span>
-                <strong>Other</strong>
-                <small>Other balance</small>
-              </span>
-              <strong
-                className={`money-value-pill ${moneyTone(gifts.net)} ${moneyScale(gifts.net, gifts.currency)}`}
-              >
-                {formatMoney(gifts.net, gifts.currency, false)}
-              </strong>
-            </section>
-          ) : null}
-
-          {!!person.entries.length && !salary?.enabled && (
-            <div className="totals-row">
-              <span>↑ {formatMoney(totals.gave, person.currency, false)}</span>
-              <span>↓ {formatMoney(totals.received, person.currency, false)}</span>
-              <span className="money-summary-pair">
-                <span>Net</span>
-                <strong
-                  className={`money-value-pill money-net-pill ${moneyTone(totals.balance)} ${moneyScale(totals.balance, person.currency)}`}
-                >
-                  {formatMoney(totals.balance, person.currency, false)}
-                </strong>
-              </span>
-            </div>
-          )}
-          <div className="entries-list">
-            {person.entries.map((entry) => {
-              const effect = entryEffect(entry.type, entry.amount);
-              return (
-                <EntryCard
-                  currency={person.currency}
-                  effect={effect}
-                  entry={entry}
-                  key={entry.id}
-                  onDelete={() => onDeleteEntry(entry.id)}
-                  onEdit={() => {
-                    setOpenEntrySwipeId(null);
-                    openSheet('entry-form', person.id, entry.id);
-                  }}
-                  onSwipeOpen={(open) => setOpenEntrySwipeId(open ? entry.id : null)}
-                  swipeOpen={openEntrySwipeId === entry.id}
-                  title={
-                    mode === 'work'
-                      ? entry.category === 'salary'
-                        ? 'Salary'
-                        : entry.category === 'gift'
-                          ? 'Other'
-                          : entry.type
-                      : entry.type
-                  }
-                />
-              );
-            })}
-            {!person.entries.length && <p className="mini-empty">No entries yet</p>}
+            )}
           </div>
+          <section aria-label={`${person.name} entries`} className="entries-section">
+            <div className="entries-section-heading">
+              <strong>Entries</strong>
+              <small>{person.entries.length}</small>
+            </div>
+            <div className="entries-list">
+              {person.entries.map((entry) => {
+                const effect = entryEffect(entry.type, entry.amount);
+                return (
+                  <EntryCard
+                    currency={person.currency}
+                    effect={effect}
+                    entry={entry}
+                    key={entry.id}
+                    onDelete={() => onDeleteEntry(entry.id)}
+                    onEdit={() => {
+                      setOpenEntrySwipeId(null);
+                      openSheet('entry-form', person.id, entry.id);
+                    }}
+                    onSwipeOpen={(open) => setOpenEntrySwipeId(open ? entry.id : null)}
+                    swipeOpen={openEntrySwipeId === entry.id}
+                    title={
+                      mode === 'work'
+                        ? entry.category === 'salary'
+                          ? 'Salary'
+                          : entry.category === 'gift'
+                            ? 'Other'
+                            : entry.type
+                        : entry.type
+                    }
+                  />
+                );
+              })}
+              {!person.entries.length && <p className="mini-empty">No entries yet</p>}
+            </div>
+          </section>
 
           <div className="card-actions">
             <button

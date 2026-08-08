@@ -53,6 +53,7 @@ export function EntryCard({
   const [isDragging, setIsDragging] = useState(false);
   const restingOffset = swipeOpen ? -ENTRY_ACTION_WIDTH : 0;
   const visibleOffset = dragOffset ?? restingOffset;
+  const categoryClass = entry.category ? `entry-category-${entry.category}` : '';
   const longPress = useLongPress({
     onLongPress: () => {
       if (dragRef.current) dragRef.current.axis = 'longpress';
@@ -146,7 +147,7 @@ export function EntryCard({
       </div>
       <div
         aria-label={`${title}, ${formatMoney(effect, currency)}. Long press or press F2 to edit`}
-        className={`entry-card-surface ${entry.comment ? 'has-comment' : ''} ${isDragging ? 'is-dragging' : ''} ${longPress.isPressing ? 'is-pressing' : ''}`}
+        className={`entry-card-surface ${categoryClass} ${entry.comment ? 'has-comment' : ''} ${isDragging ? 'is-dragging' : ''} ${longPress.isPressing ? 'is-pressing' : ''}`}
         onContextMenu={(event) => event.preventDefault()}
         onKeyDown={(event) => {
           if (event.key === 'F2') {
@@ -161,7 +162,9 @@ export function EntryCard({
         style={{ transform: `translate3d(${visibleOffset}px, 0, 0)` }}
         tabIndex={0}
       >
-        <strong className={`entry-kind ${entry.type === 'Gave' ? 'positive' : 'negative'}`}>
+        <strong
+          className={`entry-kind ${entry.category === 'salary' ? 'entry-kind-salary' : entry.type === 'Gave' ? 'positive' : 'negative'}`}
+        >
           {title}
         </strong>
         <strong

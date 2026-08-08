@@ -503,6 +503,98 @@ describe('ACC application', () => {
     expect(screen.queryByRole('button', { name: 'Edit' })).not.toBeInTheDocument();
   });
 
+  it('separates payroll, other totals, and categorized entries in expanded work cards', async () => {
+    const user = userEvent.setup();
+    const store = renderApp();
+    await waitFor(() => expect(store.getState().initialized).toBe(true));
+    await act(async () => {
+      await store.getState().setMode('work');
+      const person = await store.getState().addPerson({
+        ...draft('Mixed work target'),
+        salaryEnabled: true,
+        salaryAmount: 3200,
+        salaryStartDate: '2026-06-01',
+      });
+      await store.getState().addEntry(person.id, {
+        amount: 1600,
+        type: 'Gave',
+        date: '2026-07-15',
+        comment: 'Salary payment',
+        category: 'salary',
+      });
+      await store.getState().addEntry(person.id, {
+        amount: 250,
+        type: 'Gave',
+        date: '2026-07-20',
+        comment: 'Other payment',
+        category: 'gift',
+      });
+      await store.getState().addEntry(person.id, {
+        amount: 50,
+        type: 'Received',
+        date: '2026-07-21',
+        comment: 'Other return',
+        category: 'gift',
+      });
+    });
+
+    const summary = await findPersonSummary('Mixed work target');
+    await user.click(summary);
+
+    const details = summary.closest('.person-card')?.querySelector('.work-person-details');
+    const payroll = details?.querySelector('.payroll-panel');
+    const other = details?.querySelector('.other-summary-panel');
+    expect(details).toBeInstanceOf(HTMLElement);
+    expect(payroll).toBeInstanceOf(HTMLElement);
+    expect(other).toBeInstanceOf(HTMLElement);
+    expect(within(other as HTMLElement).getByText('Other balance')).toBeInTheDocument();
+    expect((other as HTMLElement).querySelector('.other-totals-row')).toHaveTextContent('250');
+    expect((other as HTMLElement).querySelector('.other-totals-row')).toHaveTextContent('50');
+    expect((other as HTMLElement).querySelector('.other-totals-row')).toHaveTextContent('200');
+
+    const salaryEntry = screen.getByText('Salary payment').closest('.entry-card-surface');
+    const otherEntry = screen.getByText('Other payment').closest('.entry-card-surface');
+    expect(salaryEntry).toHaveClass('entry-category-salary');
+    expect(salaryEntry?.querySelector('.entry-kind')).toHaveClass('entry-kind-salary');
+    expect(otherEntry).toHaveClass('entry-category-gift');
+  });
+
+  it('uses a dedicated Other summary for non-salary work cards', async () => {
+    const user = userEvent.setup();
+    const store = renderApp();
+    await waitFor(() => expect(store.getState().initialized).toBe(true));
+    await act(async () => {
+      await store.getState().setMode('work');
+      const person = await store.getState().addPerson(draft('Other work target'));
+      await store.getState().addEntry(person.id, {
+        amount: 300,
+        type: 'Gave',
+        date: '2026-08-01',
+        comment: '',
+        category: 'gift',
+      });
+      await store.getState().addEntry(person.id, {
+        amount: 80,
+        type: 'Received',
+        date: '2026-08-02',
+        comment: '',
+        category: 'gift',
+      });
+    });
+
+    const summary = await findPersonSummary('Other work target');
+    await user.click(summary);
+    const card = summary.closest('.person-card');
+    const other = card?.querySelector('.other-summary-panel');
+    expect(card).toHaveClass('is-other-card');
+    expect(card).not.toHaveClass('is-salary-card');
+    expect(other).toBeInstanceOf(HTMLElement);
+    expect(card?.querySelector('.payroll-panel')).not.toBeInTheDocument();
+    expect((other as HTMLElement).querySelector('.other-totals-row')).toHaveTextContent('300');
+    expect((other as HTMLElement).querySelector('.other-totals-row')).toHaveTextContent('80');
+    expect((other as HTMLElement).querySelector('.other-totals-row')).toHaveTextContent('220');
+  });
+
   it('uses semantic money pills for positive, negative, zero, entry, and net values', async () => {
     const user = userEvent.setup();
     const store = renderApp();

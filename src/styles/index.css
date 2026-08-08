@@ -28,6 +28,7 @@
   --toast-shadow: 0 10px 28px rgb(0 0 0 / 36%);
   --accent-ink: #201800;
   --work-status: #3b82f6;
+  --archived-status: #a855f7;
 }
 
 :root[data-theme='light'] {
@@ -48,6 +49,7 @@
   --toast-shadow: 0 10px 28px rgb(2 6 23 / 14%);
   --accent-ink: #201800;
   --work-status: #2563eb;
+  --archived-status: #7c3aed;
 }
 
 * {
@@ -1843,6 +1845,38 @@ a:focus-visible {
     inset 3px 0 var(--accent);
 }
 
+.person-card.is-expanded {
+  box-shadow:
+    0 8px 22px rgb(0 0 0 / 18%),
+    inset 0 1px rgb(255 255 255 / 3%);
+}
+
+.person-card.is-expanded.is-salary-card {
+  border-color: color-mix(in srgb, var(--accent) 82%, var(--border));
+}
+
+.person-card.is-expanded.is-other-card {
+  border-color: color-mix(in srgb, var(--work-status) 78%, var(--border));
+}
+
+.person-card.is-expanded.is-archived-card {
+  border-color: color-mix(in srgb, var(--archived-status) 82%, var(--border));
+}
+
+.person-card.is-archived-card .status-chip:not(.status-overdue) {
+  border-color: color-mix(in srgb, var(--archived-status) 46%, var(--border));
+  color: color-mix(in srgb, var(--archived-status) 78%, var(--text));
+  background: color-mix(in srgb, var(--archived-status) 10%, transparent);
+}
+
+.person-card.is-archived-card .work-summary-panel {
+  border-color: color-mix(in srgb, var(--archived-status) 34%, var(--border));
+}
+
+.person-card.is-expanded.has-overdue {
+  border-color: color-mix(in srgb, var(--danger) 82%, var(--border));
+}
+
 .swipe-summary-shell,
 .person-summary {
   background: var(--surface);
@@ -1888,8 +1922,121 @@ a:focus-visible {
 }
 
 .person-details {
+  gap: 9px;
+  padding: 9px;
   border-top-color: var(--border);
   background: color-mix(in srgb, var(--surface-raised) 36%, var(--surface));
+}
+
+.person-summary-stack,
+.entries-section {
+  display: grid;
+  min-width: 0;
+  gap: 8px;
+}
+
+.work-summary-panel {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface-raised);
+}
+
+.payroll-panel.work-summary-panel {
+  border-color: color-mix(in srgb, var(--accent) 25%, var(--border));
+  background: color-mix(in srgb, var(--accent) 3%, var(--surface-raised));
+}
+
+.other-summary-panel {
+  padding: 11px 12px 10px;
+  border-color: color-mix(in srgb, var(--work-status) 32%, var(--border));
+  background: color-mix(in srgb, var(--work-status) 4%, var(--surface-raised));
+}
+
+.other-panel-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.other-panel-heading > span {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+
+.other-panel-heading small,
+.work-summary-panel small,
+.entries-section-heading small {
+  color: var(--muted);
+}
+
+.other-totals-row,
+.payroll-totals-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  align-items: end;
+  padding-top: 8px;
+  border-top: 1px solid color-mix(in srgb, var(--border) 78%, transparent);
+  margin-top: 8px;
+  font-size: 0.74rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.other-totals-row > span,
+.payroll-totals-row > span {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+}
+
+.other-totals-row > span:nth-child(2),
+.payroll-totals-row > span:nth-child(2) {
+  justify-items: center;
+  text-align: center;
+}
+
+.other-totals-row .money-summary-pair,
+.payroll-totals-row .money-summary-pair {
+  display: grid;
+  justify-items: end;
+  gap: 3px;
+}
+
+.other-totals-row > span > strong:not(.money-value-pill),
+.payroll-totals-row > span > strong:not(.money-value-pill) {
+  overflow: hidden;
+  font-size: 0.8rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.entries-section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 24px;
+  padding-inline: 3px;
+}
+
+.entries-section-heading > strong {
+  font-size: 0.8rem;
+  letter-spacing: 0.01em;
+}
+
+.entries-section-heading > small {
+  display: inline-grid;
+  place-items: center;
+  min-width: 24px;
+  min-height: 22px;
+  padding-inline: 6px;
+  border-radius: 99px;
+  background: color-mix(in srgb, var(--muted) 11%, transparent);
+  font-size: 0.68rem;
+  font-weight: 750;
 }
 
 .payroll-panel,
@@ -1925,8 +2072,31 @@ a:focus-visible {
 }
 
 .entry-card-surface {
+  min-height: 58px;
+  padding: 7px 11px;
   border-radius: 13px;
   box-shadow: 0 2px 8px rgb(0 0 0 / 6%);
+}
+
+.entry-card-surface.has-comment {
+  min-height: 72px;
+}
+
+.entry-card-surface.entry-category-salary {
+  border-left-color: color-mix(in srgb, var(--success) 72%, var(--border));
+}
+
+.entry-card-surface.entry-category-gift {
+  border-left-color: color-mix(in srgb, var(--work-status) 68%, var(--border));
+}
+
+.entry-kind-salary {
+  color: var(--success);
+}
+
+.entry-kind,
+.entry-comment {
+  min-width: 0;
 }
 
 .primary-button {
@@ -2197,6 +2367,24 @@ a:focus-visible {
   .real-content {
     padding-top: 20px;
     padding-bottom: 100px;
+  }
+
+  .work-person-details {
+    grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr);
+    align-items: start;
+  }
+
+  .work-person-details > .person-summary-stack {
+    grid-column: 1;
+  }
+
+  .work-person-details > .entries-section {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .work-person-details > .card-actions {
+    grid-column: 1 / -1;
   }
 
   .bottom-sheet {
