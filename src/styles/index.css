@@ -7,49 +7,88 @@
     BlinkMacSystemFont,
     'Segoe UI',
     sans-serif;
-  color: #e6ecf5;
-  background: #081220;
+  color: var(--color-text);
+  background: var(--color-bg);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
-  --bg: #081220;
-  --surface: #111a2b;
-  --surface-raised: #162238;
-  --text: #e6ecf5;
-  --muted: #97a3b6;
-  --accent: #ffc107;
-  --accent-strong: #ffc107;
-  --success: #22c55e;
-  --danger: #ef4444;
-  --warning: #facc15;
-  --border: #223049;
-  --shadow: 0 4px 16px rgb(0 0 0 / 25%);
-  --toast-bg: #162238;
-  --toast-border: #31415f;
-  --toast-shadow: 0 10px 28px rgb(0 0 0 / 36%);
-  --accent-ink: #201800;
-  --work-status: #3b82f6;
-  --archived-status: #a855f7;
+  --color-bg: #071426;
+  --color-bg-deep: #06111f;
+  --color-surface: #0d1b2e;
+  --color-surface-elevated: #10213a;
+  --color-surface-panel: #132640;
+  --color-surface-control: #0b1a2d;
+  --color-surface-selected: #142b49;
+  --color-nav: #08172a;
+  --color-border: #1d3652;
+  --color-border-strong: #294b70;
+  --color-divider: rgb(125 170 215 / 14%);
+  --color-text: #f2f6fc;
+  --color-text-secondary: #a6b5c9;
+  --color-text-muted: #778aa3;
+  --color-accent: #ffc107;
+  --color-accent-pressed: #eaaf00;
+  --color-accent-soft: rgb(255 193 7 / 10%);
+  --color-accent-border: rgb(255 193 7 / 35%);
+  --color-accent-shadow: rgb(255 193 7 / 24%);
+  --color-accent-ink: #071426;
+  --color-positive: #25c878;
+  --color-positive-soft: rgb(37 200 120 / 10%);
+  --color-positive-border: rgb(37 200 120 / 32%);
+  --color-negative: #ff5b68;
+  --color-negative-soft: rgb(255 91 104 / 10%);
+  --color-negative-border: rgb(255 91 104 / 32%);
+  --color-neutral: #9aa9bd;
+  --color-info: #4c8dff;
+  --color-info-soft: rgb(76 141 255 / 12%);
+  --color-info-border: rgb(76 141 255 / 35%);
+  --bg: var(--color-bg);
+  --surface: var(--color-surface);
+  --surface-raised: var(--color-surface-elevated);
+  --text: var(--color-text);
+  --muted: var(--color-text-secondary);
+  --accent: var(--color-accent);
+  --accent-strong: var(--color-accent);
+  --success: var(--color-positive);
+  --danger: var(--color-negative);
+  --warning: var(--color-accent);
+  --border: var(--color-border);
+  --shadow: 0 4px 16px rgb(2 8 18 / 28%);
+  --toast-bg: var(--color-surface-elevated);
+  --toast-border: var(--color-border-strong);
+  --toast-shadow: 0 10px 28px rgb(2 8 18 / 38%);
+  --accent-ink: var(--color-accent-ink);
+  --work-status: var(--color-info);
+  --archived-status: var(--color-neutral);
 }
 
 :root[data-theme='light'] {
-  --bg: #f6f8fc;
-  --surface: #ffffff;
-  --surface-raised: #f0f4fa;
-  --text: #0f172a;
-  --muted: #64748b;
-  --accent: #ffc107;
-  --accent-strong: #ffc107;
-  --success: #22c55e;
-  --danger: #ef4444;
-  --warning: #facc15;
-  --border: #e2e8f0;
-  --shadow: 0 4px 16px rgb(2 6 23 / 6%);
-  --toast-bg: #ffffff;
-  --toast-border: #e2e8f0;
-  --toast-shadow: 0 10px 28px rgb(2 6 23 / 14%);
-  --accent-ink: #201800;
-  --work-status: #2563eb;
-  --archived-status: #7c3aed;
+  --color-bg: #eef5fc;
+  --color-bg-deep: #e7f0fa;
+  --color-surface: #f8fbff;
+  --color-surface-elevated: #ffffff;
+  --color-surface-panel: #f1f6fc;
+  --color-surface-control: #f8fbff;
+  --color-surface-selected: #e7f0fa;
+  --color-nav: #f8fbff;
+  --color-border: #cfddec;
+  --color-border-strong: #b7cce2;
+  --color-divider: rgb(76 111 148 / 14%);
+  --color-text: #10233c;
+  --color-text-secondary: #60758d;
+  --color-text-muted: #8294a8;
+  --color-positive: #168a55;
+  --color-positive-soft: rgb(22 138 85 / 9%);
+  --color-positive-border: rgb(22 138 85 / 30%);
+  --color-negative: #e54857;
+  --color-negative-soft: rgb(229 72 87 / 9%);
+  --color-negative-border: rgb(229 72 87 / 30%);
+  --color-neutral: #7d8ea3;
+  --color-info: #326fda;
+  --color-info-soft: rgb(50 111 218 / 10%);
+  --color-info-border: rgb(50 111 218 / 30%);
+  --shadow: 0 4px 16px rgb(16 35 60 / 8%);
+  --toast-shadow: 0 10px 28px rgb(16 35 60 / 16%);
+  --archived-status: var(--color-neutral);
 }
 
 * {
@@ -97,7 +136,7 @@ select:focus-visible,
 input:focus-visible,
 textarea:focus-visible,
 a:focus-visible {
-  outline: 3px solid color-mix(in srgb, var(--accent) 65%, transparent);
+  outline: 3px solid color-mix(in srgb, var(--color-info) 68%, transparent);
   outline-offset: 2px;
 }
 
@@ -128,7 +167,7 @@ a:focus-visible {
   gap: 6px;
   padding: max(7px, env(safe-area-inset-top)) 10px 7px;
   border-bottom: 1px solid var(--border);
-  background: color-mix(in srgb, var(--bg) 88%, transparent);
+  background: color-mix(in srgb, var(--color-bg) 88%, transparent);
   backdrop-filter: blur(18px);
 }
 
@@ -195,7 +234,7 @@ a:focus-visible {
   padding: 2px;
   border: 1px solid var(--border);
   border-radius: 12px;
-  background: color-mix(in srgb, var(--surface) 78%, var(--bg));
+  background: var(--color-surface-control);
 }
 
 .filter-switch button,
@@ -212,7 +251,7 @@ a:focus-visible {
 .filter-switch button.is-selected,
 .scope-switch button.is-selected {
   color: var(--text);
-  background: var(--surface-raised);
+  background: var(--color-surface-selected);
   box-shadow: 0 3px 9px rgb(0 0 0 / 10%);
 }
 
@@ -224,8 +263,8 @@ a:focus-visible {
   padding: 0 5px;
   border-radius: 99px;
   margin-left: 4px;
-  color: var(--muted);
-  background: color-mix(in srgb, var(--muted) 14%, transparent);
+  color: var(--color-text-muted);
+  background: color-mix(in srgb, var(--color-neutral) 14%, transparent);
 }
 
 .search-row {
@@ -243,8 +282,8 @@ a:focus-visible {
   padding: 0 11px;
   border: 1px solid var(--border);
   border-radius: 14px;
-  color: var(--muted);
-  background: var(--surface);
+  color: var(--color-text-muted);
+  background: var(--color-surface-control);
 }
 
 .search-field input {
@@ -267,7 +306,7 @@ a:focus-visible {
   width: 41px;
   min-height: 41px;
   border-radius: 13px;
-  background: var(--surface);
+  background: var(--color-surface-control);
 }
 
 .statistics-button svg {
@@ -392,7 +431,7 @@ a:focus-visible {
   padding: 3px;
   border: 1px solid var(--border);
   border-radius: 13px;
-  background: color-mix(in srgb, var(--surface) 86%, transparent);
+  background: var(--color-surface-control);
 }
 
 .segmented-control button {
@@ -407,9 +446,9 @@ a:focus-visible {
 }
 
 .segmented-control button.is-active {
-  color: white;
+  color: var(--color-accent-ink);
   background: var(--accent);
-  box-shadow: 0 3px 10px rgb(30 84 173 / 24%);
+  box-shadow: 0 3px 10px var(--color-accent-shadow);
 }
 
 .app-content {
@@ -465,13 +504,13 @@ a:focus-visible {
 .swipe-action-archive {
   left: 0;
   justify-content: flex-start;
-  background: color-mix(in srgb, var(--success) 78%, var(--accent-strong));
+  background: var(--color-positive);
 }
 
 .swipe-action-delete {
   right: 0;
   justify-content: flex-end;
-  background: color-mix(in srgb, var(--danger) 88%, #9e1730);
+  background: color-mix(in srgb, var(--color-negative) 88%, var(--color-bg-deep));
 }
 
 .swipe-action button {
@@ -854,7 +893,7 @@ a:focus-visible {
   min-height: 62px;
   overflow: hidden;
   border-radius: 13px;
-  background: color-mix(in srgb, var(--danger) 88%, #9e1730);
+  background: color-mix(in srgb, var(--color-negative) 88%, var(--color-bg-deep));
   touch-action: pan-y;
 }
 
@@ -1627,10 +1666,10 @@ a:focus-visible {
   align-items: center;
   justify-content: center;
   gap: 10px;
-  color: white;
+  color: var(--color-text);
   background:
-    radial-gradient(circle at 50% 32%, rgb(255 196 64 / 18%), transparent 26%),
-    linear-gradient(180deg, #0b1d3f, #071633 55%, #050f24);
+    radial-gradient(circle at 50% 32%, var(--color-accent-soft), transparent 26%),
+    linear-gradient(180deg, var(--color-surface-panel), var(--color-bg) 55%, var(--color-bg-deep));
   animation: splash-out 250ms ease 550ms forwards;
 }
 
@@ -1646,7 +1685,7 @@ a:focus-visible {
 }
 
 .startup-screen span {
-  color: rgb(255 255 255 / 72%);
+  color: var(--color-text-secondary);
   font-size: 0.75rem;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -1699,7 +1738,7 @@ a:focus-visible {
 /* ACC 2026 visual system */
 .app-header {
   border-bottom-color: color-mix(in srgb, var(--border) 82%, transparent);
-  background: color-mix(in srgb, var(--bg) 94%, transparent);
+  background: color-mix(in srgb, var(--color-bg) 94%, transparent);
   box-shadow: 0 2px 12px rgb(0 0 0 / 6%);
   backdrop-filter: blur(20px) saturate(130%);
 }
@@ -1727,7 +1766,7 @@ a:focus-visible {
 }
 
 .real-header .segmented-control button.is-active {
-  box-shadow: 0 3px 12px rgb(255 193 7 / 26%);
+  box-shadow: 0 3px 12px var(--color-accent-shadow);
 }
 
 .browse-controls-row {
@@ -1768,9 +1807,9 @@ a:focus-visible {
 
 .icon-button,
 .statistics-button {
-  border-color: var(--border);
+  border-color: var(--color-border);
   border-radius: 12px;
-  background: var(--surface);
+  background: var(--color-surface-control);
   box-shadow: 0 2px 8px rgb(0 0 0 / 8%);
   transition:
     transform 160ms ease,
@@ -1786,9 +1825,9 @@ a:focus-visible {
 }
 
 .segmented-control {
-  border-color: var(--border);
+  border-color: var(--color-border);
   border-radius: 14px;
-  background: var(--surface);
+  background: var(--color-surface-control);
   box-shadow: var(--shadow);
 }
 
@@ -1797,15 +1836,21 @@ a:focus-visible {
 }
 
 .segmented-control button.is-active {
-  color: var(--accent-ink);
-  background: var(--accent);
-  box-shadow: 0 3px 10px rgb(255 193 7 / 24%);
+  color: var(--color-accent-ink);
+  background: var(--color-accent);
+  box-shadow: 0 3px 10px var(--color-accent-shadow);
+}
+
+.segmented-control button.is-active:active,
+.primary-button:active,
+.fab:active {
+  background: var(--color-accent-pressed);
 }
 
 .filter-switch {
   position: relative;
-  border-color: var(--border);
-  background: var(--surface);
+  border-color: var(--color-border);
+  background: var(--color-surface-control);
   box-shadow: 0 2px 10px rgb(0 0 0 / 6%);
 }
 
@@ -1815,7 +1860,7 @@ a:focus-visible {
 
 .filter-switch button.is-selected {
   color: var(--text);
-  background: var(--surface-raised);
+  background: var(--color-surface-selected);
   box-shadow: none;
 }
 
@@ -1826,29 +1871,29 @@ a:focus-visible {
   left: 28%;
   height: 2px;
   border-radius: 99px;
-  background: var(--accent);
+  background: var(--color-accent);
   content: '';
 }
 
 .filter-switch button.is-selected span {
-  color: var(--accent-ink);
-  background: var(--accent);
+  color: var(--color-accent-ink);
+  background: var(--color-accent);
 }
 
 .search-field,
 .statistics-button {
-  border-color: var(--border);
-  background: var(--surface);
+  border-color: var(--color-border);
+  background: var(--color-surface-control);
 }
 
 .search-field:focus-within {
-  border-color: color-mix(in srgb, var(--accent) 72%, var(--border));
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 14%, transparent);
+  border-color: color-mix(in srgb, var(--color-info) 72%, var(--color-border));
+  box-shadow: 0 0 0 3px var(--color-info-soft);
 }
 
 .search-field svg,
 .statistics-button svg {
-  color: var(--muted);
+  color: var(--color-text-muted);
 }
 
 .popover-panel {
@@ -1885,9 +1930,9 @@ a:focus-visible {
 .empty-card,
 .stats-section,
 .safety-card {
-  border-color: var(--border);
+  border-color: var(--color-border);
   border-radius: 16px;
-  background: var(--surface);
+  background: var(--color-surface);
   box-shadow: var(--shadow);
 }
 
@@ -1897,7 +1942,7 @@ a:focus-visible {
 }
 
 .person-card.is-expanded {
-  border-color: var(--border);
+  border-color: var(--color-border-strong);
   box-shadow:
     0 6px 18px rgb(0 0 0 / 14%),
     inset 0 1px rgb(255 255 255 / 3%);
@@ -1919,7 +1964,7 @@ a:focus-visible {
 
 .swipe-summary-shell,
 .person-summary {
-  background: var(--surface);
+  background: var(--color-surface);
 }
 
 .person-summary {
@@ -1930,7 +1975,7 @@ a:focus-visible {
 }
 
 .person-summary:active {
-  background: var(--surface-raised);
+  background: var(--color-surface-elevated);
 }
 
 .person-name-row > strong {
@@ -1944,28 +1989,28 @@ a:focus-visible {
 }
 
 .money-value-pill.money-positive {
-  border-color: color-mix(in srgb, var(--success) 32%, transparent);
-  color: var(--success);
-  background: color-mix(in srgb, var(--success) 13%, var(--surface));
+  border-color: var(--color-positive-border);
+  color: var(--color-positive);
+  background: var(--color-positive-soft);
 }
 
 .money-value-pill.money-negative {
-  border-color: color-mix(in srgb, var(--danger) 32%, transparent);
-  color: var(--danger);
-  background: color-mix(in srgb, var(--danger) 13%, var(--surface));
+  border-color: var(--color-negative-border);
+  color: var(--color-negative);
+  background: var(--color-negative-soft);
 }
 
 .money-value-pill.money-neutral {
-  border-color: color-mix(in srgb, var(--muted) 20%, transparent);
-  color: var(--muted);
-  background: color-mix(in srgb, var(--muted) 10%, var(--surface));
+  border-color: color-mix(in srgb, var(--color-neutral) 24%, transparent);
+  color: var(--color-neutral);
+  background: color-mix(in srgb, var(--color-neutral) 10%, transparent);
 }
 
 .person-details {
   gap: 9px;
   padding: 9px;
-  border-top-color: var(--border);
-  background: color-mix(in srgb, var(--surface-raised) 36%, var(--surface));
+  border-top-color: var(--color-divider);
+  background: var(--color-bg-deep);
 }
 
 .person-summary-stack,
@@ -1978,20 +2023,20 @@ a:focus-visible {
 .work-summary-panel {
   min-width: 0;
   overflow: hidden;
-  border: 1px solid var(--border);
+  border: 1px solid var(--color-border);
   border-radius: 14px;
-  background: var(--surface-raised);
+  background: var(--color-surface-panel);
 }
 
 .payroll-panel.work-summary-panel {
-  border-color: color-mix(in srgb, var(--accent) 25%, var(--border));
-  background: color-mix(in srgb, var(--accent) 3%, var(--surface-raised));
+  border-color: var(--color-border-strong);
+  background: var(--color-surface-panel);
 }
 
 .other-summary-panel {
   padding: 11px 12px 10px;
-  border-color: color-mix(in srgb, var(--work-status) 32%, var(--border));
-  background: color-mix(in srgb, var(--work-status) 4%, var(--surface-raised));
+  border-color: var(--color-border);
+  background: var(--color-surface-panel);
 }
 
 .other-panel-heading {
@@ -2010,7 +2055,7 @@ a:focus-visible {
 .other-panel-heading small,
 .work-summary-panel small,
 .entries-section-heading small {
-  color: var(--muted);
+  color: var(--color-text-secondary);
 }
 
 .other-totals-row,
@@ -2020,7 +2065,7 @@ a:focus-visible {
   gap: 6px;
   align-items: end;
   padding-top: 8px;
-  border-top: 1px solid color-mix(in srgb, var(--border) 78%, transparent);
+  border-top: 1px solid var(--color-divider);
   margin-top: 8px;
   font-size: 0.74rem;
   font-variant-numeric: tabular-nums;
@@ -2083,7 +2128,7 @@ a:focus-visible {
   min-height: 22px;
   padding-inline: 6px;
   border-radius: 99px;
-  background: color-mix(in srgb, var(--muted) 11%, transparent);
+  background: color-mix(in srgb, var(--color-neutral) 11%, transparent);
   font-size: 0.68rem;
   font-weight: 750;
 }
@@ -2092,8 +2137,8 @@ a:focus-visible {
 .other-panel,
 .totals-row,
 .entry-card-surface {
-  border-color: var(--border);
-  background: var(--surface-raised);
+  border-color: var(--color-border);
+  background: var(--color-surface-elevated);
   box-shadow: none;
 }
 
@@ -2103,16 +2148,16 @@ a:focus-visible {
 }
 
 .money-pill.overdue {
-  border-color: color-mix(in srgb, var(--danger) 38%, transparent);
-  color: var(--danger);
-  background: color-mix(in srgb, var(--danger) 12%, var(--surface-raised));
+  border-color: var(--color-negative-border);
+  color: var(--color-negative);
+  background: var(--color-negative-soft);
 }
 
 .money-pill.upcoming,
 .money-pill.soon {
-  border-color: color-mix(in srgb, var(--warning) 42%, transparent);
-  color: var(--warning);
-  background: color-mix(in srgb, var(--warning) 12%, var(--surface-raised));
+  border-color: var(--color-accent-border);
+  color: var(--color-accent);
+  background: var(--color-accent-soft);
 }
 
 .text-button,
@@ -2132,7 +2177,7 @@ a:focus-visible {
 }
 
 .entry-kind-salary {
-  color: var(--success);
+  color: var(--color-positive);
 }
 
 .entry-kind,
@@ -2141,16 +2186,16 @@ a:focus-visible {
 }
 
 .primary-button {
-  border-color: var(--accent);
-  color: var(--accent-ink);
-  background: var(--accent);
-  box-shadow: 0 4px 12px rgb(255 193 7 / 18%);
+  border-color: var(--color-accent);
+  color: var(--color-accent-ink);
+  background: var(--color-accent);
+  box-shadow: 0 4px 12px var(--color-accent-shadow);
 }
 
 .secondary-button {
-  border-color: var(--border);
+  border-color: var(--color-border);
   color: var(--text);
-  background: var(--surface-raised);
+  background: var(--color-surface-elevated);
 }
 
 .backup-inspection .secondary-button {
@@ -2171,9 +2216,9 @@ a:focus-visible {
   width: 54px;
   min-height: 54px;
   border-radius: 50%;
-  color: var(--accent-ink);
-  background: var(--accent);
-  box-shadow: 0 6px 18px rgb(255 193 7 / 34%);
+  color: var(--color-accent-ink);
+  background: var(--color-accent);
+  box-shadow: 0 6px 18px var(--color-accent-shadow);
 }
 
 .bottom-navigation {
@@ -2187,9 +2232,9 @@ a:focus-visible {
   width: min(100%, 760px);
   min-height: calc(64px + env(safe-area-inset-bottom));
   padding: 5px 8px max(5px, env(safe-area-inset-bottom));
-  border-top: 1px solid var(--border);
+  border-top: 1px solid var(--color-border);
   margin: auto;
-  background: color-mix(in srgb, var(--surface) 96%, transparent);
+  background: color-mix(in srgb, var(--color-nav) 96%, transparent);
   box-shadow: 0 -5px 20px rgb(0 0 0 / 12%);
   backdrop-filter: blur(20px) saturate(130%);
 }
@@ -2204,7 +2249,7 @@ a:focus-visible {
   padding: 3px;
   border: 0;
   border-radius: 12px;
-  color: var(--muted);
+  color: var(--color-text-muted);
   background: transparent;
   font-size: 0.68rem;
   font-weight: 700;
@@ -2215,8 +2260,8 @@ a:focus-visible {
 }
 
 .bottom-navigation button.is-active {
-  color: var(--accent);
-  background: color-mix(in srgb, var(--accent) 9%, transparent);
+  color: var(--color-accent);
+  background: var(--color-accent-soft);
 }
 
 .bottom-navigation svg {
@@ -2236,14 +2281,14 @@ a:focus-visible {
 }
 
 .bottom-sheet {
-  border-color: var(--border);
+  border-color: var(--color-border);
   border-radius: 24px 24px 0 0;
-  background: var(--bg);
+  background: var(--color-bg-deep);
   box-shadow: 0 -18px 50px rgb(0 0 0 / 36%);
 }
 
 .sheet-title-row {
-  background: var(--bg);
+  background: var(--color-bg-deep);
 }
 
 .stats-overview,
@@ -2257,9 +2302,9 @@ a:focus-visible {
 .backup-inspection,
 .restore-report,
 .settings-section {
-  border: 1px solid var(--border);
+  border: 1px solid var(--color-border);
   border-radius: 16px;
-  background: var(--surface);
+  background: var(--color-surface);
   box-shadow: var(--shadow);
 }
 
@@ -2270,13 +2315,13 @@ a:focus-visible {
 }
 
 .scope-switch {
-  border-color: var(--border);
-  background: var(--surface);
+  border-color: var(--color-border);
+  background: var(--color-surface-control);
 }
 
 .scope-switch button.is-selected {
-  color: var(--accent-ink);
-  background: var(--accent);
+  color: var(--color-accent-ink);
+  background: var(--color-accent);
 }
 
 .backup-actions-main {
@@ -2324,9 +2369,9 @@ a:focus-visible {
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 3px;
   padding: 3px;
-  border: 1px solid var(--border);
+  border: 1px solid var(--color-border);
   border-radius: 14px;
-  background: var(--surface-raised);
+  background: var(--color-surface-control);
 }
 
 .settings-theme-segment button {
@@ -2343,9 +2388,9 @@ a:focus-visible {
 }
 
 .settings-theme-segment button.is-selected {
-  color: var(--accent-ink);
-  background: var(--accent);
-  box-shadow: 0 3px 10px rgb(255 193 7 / 20%);
+  color: var(--color-accent-ink);
+  background: var(--color-accent);
+  box-shadow: 0 3px 10px var(--color-accent-shadow);
 }
 
 .undo-toast,
@@ -2361,7 +2406,9 @@ a:focus-visible {
 
 .startup-screen {
   color: var(--text);
-  background: radial-gradient(circle at 50% 32%, rgb(255 193 7 / 16%), transparent 28%), #081220;
+  background:
+    radial-gradient(circle at 50% 32%, var(--color-accent-soft), transparent 28%),
+    var(--color-bg-deep);
 }
 
 .update-prompt {
@@ -2372,8 +2419,8 @@ a:focus-visible {
 
 .update-prompt button:last-child,
 .fatal-error button {
-  color: var(--accent-ink);
-  background: var(--accent);
+  color: var(--color-accent-ink);
+  background: var(--color-accent);
 }
 
 @keyframes splash-out {
