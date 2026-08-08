@@ -131,12 +131,15 @@ a:focus-visible {
 }
 
 .real-header {
-  grid-template-columns: auto 1fr auto;
+  grid-template-columns: minmax(0, 1fr);
   align-items: center;
 }
 
 .real-header .segmented-control {
-  grid-column: 2;
+  grid-column: 1 / -1;
+  justify-self: center;
+  width: 100%;
+  max-width: 420px;
 }
 
 .app-menu {
@@ -1833,35 +1836,6 @@ a:focus-visible {
   overflow: hidden;
 }
 
-.person-card::before {
-  position: absolute;
-  z-index: 4;
-  top: 27px;
-  left: 9px;
-  width: 7px;
-  height: 7px;
-  border: 2px solid var(--surface);
-  border-radius: 50%;
-  background: transparent;
-  box-shadow: 0 0 0 1px color-mix(in srgb, var(--border) 72%, transparent);
-  content: '';
-  opacity: 0;
-}
-
-.person-card.mode-work::before {
-  background: var(--work-status);
-  opacity: 1;
-}
-
-.person-card.has-salary::before {
-  background: var(--success);
-  opacity: 1;
-}
-
-.person-card.has-overdue::before {
-  background: var(--danger);
-}
-
 .person-card.is-highlighted {
   border-color: color-mix(in srgb, var(--accent) 58%, var(--border));
   box-shadow:
@@ -1875,7 +1849,7 @@ a:focus-visible {
 }
 
 .person-summary {
-  padding: 10px 12px 10px 20px;
+  padding: 10px 14px;
   transition:
     transform 170ms cubic-bezier(0.22, 0.8, 0.3, 1),
     background 160ms ease;
@@ -2130,62 +2104,37 @@ a:focus-visible {
   font-weight: 800;
 }
 
-.settings-heading small,
-.settings-theme-options small {
+.settings-heading small {
   color: var(--muted);
 }
 
-.settings-theme-options {
+.settings-theme-segment {
   display: grid;
-  gap: 7px;
-}
-
-.settings-theme-options button {
-  display: grid;
-  grid-template-columns: 34px minmax(0, 1fr) 20px;
-  gap: 10px;
-  align-items: center;
-  min-height: 58px;
-  padding: 8px 10px;
-  border-color: var(--border);
-  border-radius: 13px;
-  background: var(--surface-raised);
-  text-align: left;
-}
-
-.settings-theme-options button > span:nth-child(2) {
-  display: grid;
-  gap: 2px;
-}
-
-.settings-theme-options button.is-selected {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 13%, transparent);
-}
-
-.theme-preview {
-  width: 30px;
-  height: 30px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 3px;
+  padding: 3px;
   border: 1px solid var(--border);
-  border-radius: 50%;
+  border-radius: 14px;
+  background: var(--surface-raised);
 }
 
-.theme-preview-dark {
-  background: #081220;
-}
-
-.theme-preview-light {
-  background: #f6f8fc;
-}
-
-.theme-preview-system {
-  background: linear-gradient(135deg, #081220 0 50%, #f6f8fc 50% 100%);
-}
-
-.settings-check {
-  color: var(--accent);
-  font-weight: 900;
+.settings-theme-segment button {
+  min-width: 0;
+  min-height: 42px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 10px;
+  color: var(--muted);
+  background: transparent;
+  font-size: 0.84rem;
+  font-weight: 750;
   text-align: center;
+}
+
+.settings-theme-segment button.is-selected {
+  color: var(--accent-ink);
+  background: var(--accent);
+  box-shadow: 0 3px 10px rgb(255 193 7 / 20%);
 }
 
 .undo-toast,

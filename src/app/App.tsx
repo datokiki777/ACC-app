@@ -1,13 +1,11 @@
 import { useEffect, useState } from 'react';
 
 import { ConfirmDialog } from '../components/ConfirmDialog';
-import { AppMenu } from '../components/AppMenu';
 import { BottomNavigation, type AppDestination } from '../components/BottomNavigation';
 import { InstallPrompt } from '../components/InstallPrompt';
 import { ModeSwitch } from '../components/ModeSwitch';
 import { SettingsSheet } from '../components/SettingsSheet';
 import { StartupScreen } from '../components/StartupScreen';
-import { ThemeSelector } from '../components/ThemeSelector';
 import { UndoToast } from '../components/UndoToast';
 import { BackupSheet } from '../features/import-export/BackupSheet';
 import { PeopleList } from '../features/people/PeopleList';
@@ -92,14 +90,7 @@ export function App() {
       <StartupScreen />
       <div className="app-shell">
         <header className="app-header real-header">
-          <AppMenu
-            onOpenBackup={() => {
-              setSettingsOpen(false);
-              openSheet('backup');
-            }}
-          />
           <ModeSwitch mode={mode} onChange={(next) => void setMode(next)} />
-          <ThemeSelector onChange={(next) => void setTheme(next)} value={theme} />
           <div className="filter-row header-filter-row">
             <div className="filter-switch">
               <button
@@ -137,16 +128,6 @@ export function App() {
                 value={search}
               />
             </label>
-            <button
-              aria-label="Statistics"
-              className="icon-button statistics-button"
-              onClick={() => openSheet('statistics')}
-              type="button"
-            >
-              <svg aria-hidden="true" viewBox="0 0 24 24">
-                <path d="M4 20V10h4v10M10 20V4h4v16M16 20v-7h4v7M2 20h20" />
-              </svg>
-            </button>
           </div>
         </header>
 

@@ -107,8 +107,8 @@ describe('ACC application', () => {
 
     await waitFor(() => expect(store.getState().initialized).toBe(true), { timeout: 3000 });
     expect(screen.getByRole('heading', { name: 'No records yet' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Open app menu' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Statistics' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Open app menu' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Statistics' })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Add person' })).toBeInTheDocument();
     const navigation = screen.getByRole('navigation', { name: 'Primary navigation' });
     expect(within(navigation).getByRole('button', { name: 'Home' })).toHaveAttribute(
@@ -162,18 +162,19 @@ describe('ACC application', () => {
     const store = renderApp();
     await waitFor(() => expect(store.getState().initialized).toBe(true));
 
-    await user.click(screen.getByRole('button', { name: 'Theme: Auto' }));
-    await user.click(screen.getByRole('menuitemradio', { name: 'Dark' }));
+    const navigation = screen.getByRole('navigation', { name: 'Primary navigation' });
+    await user.click(within(navigation).getByRole('button', { name: 'Settings' }));
+    const settings = screen.getByRole('dialog', { name: 'Settings' });
+
+    await user.click(within(settings).getByRole('button', { name: 'Dark' }));
     expect(document.documentElement).toHaveAttribute('data-theme', 'dark');
     expect(store.getState().theme).toBe('dark');
 
-    await user.click(screen.getByRole('button', { name: 'Theme: Dark' }));
-    await user.click(screen.getByRole('menuitemradio', { name: 'Light' }));
+    await user.click(within(settings).getByRole('button', { name: 'Light' }));
     expect(document.documentElement).toHaveAttribute('data-theme', 'light');
     expect(store.getState().theme).toBe('light');
 
-    await user.click(screen.getByRole('button', { name: 'Theme: Light' }));
-    await user.click(screen.getByRole('menuitemradio', { name: 'Auto' }));
+    await user.click(within(settings).getByRole('button', { name: 'System' }));
     expect(store.getState().theme).toBe('system');
   });
 
@@ -199,24 +200,6 @@ describe('ACC application', () => {
     expect(document.documentElement).toHaveAttribute('data-theme', 'dark');
     expect(store.getState().theme).toBe('system');
     window.matchMedia = originalMatchMedia;
-  });
-
-  it('opens the custom app menu and reuses the existing backup sheet', async () => {
-    const user = userEvent.setup();
-    const store = renderApp();
-    await waitFor(() => expect(store.getState().initialized).toBe(true));
-
-    await user.click(screen.getByRole('button', { name: 'Open app menu' }));
-    const menu = screen.getByRole('menu', { name: 'App menu' });
-    expect(
-      within(menu).getByRole('menuitem', { name: /Export PDF — Person \/ Team/ }),
-    ).toHaveAttribute('aria-disabled', 'true');
-    expect(within(menu).getByRole('menuitem', { name: /Export PDF — All/ })).toHaveAttribute(
-      'aria-disabled',
-      'true',
-    );
-    await user.click(within(menu).getByRole('menuitem', { name: 'Backup & Restore' }));
-    expect(screen.getByRole('dialog', { name: 'Data & Backup' })).toBeVisible();
   });
 
   it('configures mobile text inputs without personal autofill', async () => {
