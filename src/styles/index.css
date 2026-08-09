@@ -11,22 +11,22 @@
   background: var(--color-bg);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
-  --color-bg: #0a1930;
-  --color-bg-secondary: #08172a;
-  --color-bg-deep: var(--color-bg-secondary);
-  --color-toolbar: #0d2038;
-  --color-surface: #11233b;
-  --color-surface-elevated: #152a47;
-  --color-surface-expanded: #10243e;
-  --color-surface-panel: #18304f;
-  --color-surface-entry: #152a46;
-  --color-surface-control: #122944;
-  --color-filter-control: #17324f;
-  --color-surface-selected: #20466d;
-  --color-nav: #0d1d33;
-  --color-border: #284563;
-  --color-border-strong: #355a7d;
-  --color-divider: rgb(125 170 215 / 14%);
+  --color-bg: #17283f;
+  --color-bg-secondary: #132237;
+  --color-bg-deep: #13223a;
+  --color-toolbar: #1a2d47;
+  --color-surface: #1e3350;
+  --color-surface-elevated: #25405f;
+  --color-surface-expanded: #2a4364;
+  --color-surface-panel: #305076;
+  --color-surface-entry: #264160;
+  --color-surface-control: #203552;
+  --color-filter-control: #2a4362;
+  --color-surface-selected: #3a5c82;
+  --color-nav: #182a42;
+  --color-border: #3d5a7c;
+  --color-border-strong: #4d6f92;
+  --color-divider: rgb(150 185 220 / 16%);
   --color-text: #f2f6fc;
   --color-text-secondary: #a6b5c9;
   --color-text-muted: #778aa3;
@@ -760,12 +760,27 @@ a:focus-visible {
   border-radius: 50%;
 }
 
+.person-details-collapse {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 340ms cubic-bezier(0.22, 0.85, 0.3, 1);
+}
+
+.person-details-collapse.is-open {
+  grid-template-rows: 1fr;
+}
+
+.person-details-collapse-inner {
+  min-height: 0;
+  overflow: hidden;
+}
+
 .person-details {
   display: grid;
-  gap: 8px;
-  padding: 10px;
+  gap: 10px;
+  padding: 12px 10px 14px;
   border-top: 1px solid color-mix(in srgb, var(--border) 72%, transparent);
-  background: color-mix(in srgb, var(--bg) 38%, var(--surface));
+  background: var(--surface-expanded);
 }
 
 .payroll-panel {
@@ -2465,10 +2480,11 @@ a:focus-visible {
 }
 
 .person-details {
-  gap: 9px;
-  padding: 9px;
-  border-top-color: var(--color-divider);
+  gap: 10px;
+  padding: 12px 10px 14px;
+  border-top: 1px solid var(--color-divider);
   background: var(--color-surface-expanded);
+  box-shadow: inset 0 1px rgb(255 255 255 / 4%);
 }
 
 .person-summary-stack,

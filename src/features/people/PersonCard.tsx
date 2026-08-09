@@ -286,85 +286,91 @@ export function PersonCard({
         </button>
       </div>
 
-      {expanded && (
-        <div className={`person-details ${mode === 'work' ? 'work-person-details' : ''}`}>
-          <div className="person-summary-stack">
-            {salary?.enabled && (
-              <PayrollSummaryCard
-                currency={person.currency}
-                onSyncPayDate={() => openSheet('salary-sync', person.id)}
-                salary={salary}
-                totals={totals}
-              />
-            )}
+      <div
+        aria-hidden={!expanded}
+        className={`person-details-collapse ${expanded ? 'is-open' : ''}`}
+        inert={!expanded}
+      >
+        <div className="person-details-collapse-inner">
+          <div className={`person-details ${mode === 'work' ? 'work-person-details' : ''}`}>
+            <div className="person-summary-stack">
+              {salary?.enabled && (
+                <PayrollSummaryCard
+                  currency={person.currency}
+                  onSyncPayDate={() => openSheet('salary-sync', person.id)}
+                  salary={salary}
+                  totals={totals}
+                />
+              )}
 
-            {otherSummary && (otherSummary.gave || otherSummary.received) ? (
-              <OtherSummaryCard summary={otherSummary} />
-            ) : null}
+              {otherSummary && (otherSummary.gave || otherSummary.received) ? (
+                <OtherSummaryCard summary={otherSummary} />
+              ) : null}
 
-            {!!person.entries.length && mode !== 'work' && (
-              <div className="totals-row">
-                <span>↑ {formatMoney(totals.gave, person.currency, false)}</span>
-                <span>↓ {formatMoney(totals.received, person.currency, false)}</span>
-                <span className="money-summary-pair">
-                  <span>Net</span>
-                  <strong
-                    className={`money-value-pill money-net-pill ${moneyTone(totals.balance)} ${moneyScale(totals.balance, person.currency)}`}
-                  >
-                    {formatMoney(totals.balance, person.currency, false)}
-                  </strong>
-                </span>
+              {!!person.entries.length && mode !== 'work' && (
+                <div className="totals-row">
+                  <span>↑ {formatMoney(totals.gave, person.currency, false)}</span>
+                  <span>↓ {formatMoney(totals.received, person.currency, false)}</span>
+                  <span className="money-summary-pair">
+                    <span>Net</span>
+                    <strong
+                      className={`money-value-pill money-net-pill ${moneyTone(totals.balance)} ${moneyScale(totals.balance, person.currency)}`}
+                    >
+                      {formatMoney(totals.balance, person.currency, false)}
+                    </strong>
+                  </span>
+                </div>
+              )}
+            </div>
+            <section aria-label={`${person.name} entries`} className="entries-section">
+              <div className="entries-section-heading">
+                <strong>Entries</strong>
+                <small>{person.entries.length}</small>
               </div>
-            )}
-          </div>
-          <section aria-label={`${person.name} entries`} className="entries-section">
-            <div className="entries-section-heading">
-              <strong>Entries</strong>
-              <small>{person.entries.length}</small>
-            </div>
-            <div className="entries-list">
-              {person.entries.map((entry) => {
-                const effect = entryEffect(entry.type, entry.amount);
-                return (
-                  <EntryCard
-                    currency={person.currency}
-                    effect={effect}
-                    entry={entry}
-                    key={entry.id}
-                    onDelete={() => onDeleteEntry(entry.id)}
-                    onEdit={() => {
-                      setOpenEntrySwipeId(null);
-                      openSheet('entry-form', person.id, entry.id);
-                    }}
-                    onSwipeOpen={(open) => setOpenEntrySwipeId(open ? entry.id : null)}
-                    swipeOpen={openEntrySwipeId === entry.id}
-                    title={
-                      mode === 'work'
-                        ? entry.category === 'salary'
-                          ? 'Salary'
-                          : entry.category === 'gift'
-                            ? 'Other'
-                            : entry.type
-                        : entry.type
-                    }
-                  />
-                );
-              })}
-              {!person.entries.length && <p className="mini-empty">No entries yet</p>}
-            </div>
-          </section>
+              <div className="entries-list">
+                {person.entries.map((entry) => {
+                  const effect = entryEffect(entry.type, entry.amount);
+                  return (
+                    <EntryCard
+                      currency={person.currency}
+                      effect={effect}
+                      entry={entry}
+                      key={entry.id}
+                      onDelete={() => onDeleteEntry(entry.id)}
+                      onEdit={() => {
+                        setOpenEntrySwipeId(null);
+                        openSheet('entry-form', person.id, entry.id);
+                      }}
+                      onSwipeOpen={(open) => setOpenEntrySwipeId(open ? entry.id : null)}
+                      swipeOpen={openEntrySwipeId === entry.id}
+                      title={
+                        mode === 'work'
+                          ? entry.category === 'salary'
+                            ? 'Salary'
+                            : entry.category === 'gift'
+                              ? 'Other'
+                              : entry.type
+                          : entry.type
+                      }
+                    />
+                  );
+                })}
+                {!person.entries.length && <p className="mini-empty">No entries yet</p>}
+              </div>
+            </section>
 
-          <div className="card-actions">
-            <button
-              className="primary-button"
-              onClick={() => openSheet('entry-form', person.id)}
-              type="button"
-            >
-              + Add Entry
-            </button>
+            <div className="card-actions">
+              <button
+                className="primary-button"
+                onClick={() => openSheet('entry-form', person.id)}
+                type="button"
+              >
+                + Add Entry
+              </button>
+            </div>
           </div>
         </div>
-      )}
+      </div>
     </article>
   );
 }
