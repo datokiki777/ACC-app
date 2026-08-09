@@ -15,7 +15,12 @@ import type {
   Person,
   ThemeMode,
 } from '../types/domain';
-import type { PersistedEntry, PersistedPerson, ReactBackupData } from '../types/persistence';
+import type {
+  BackupMetadata,
+  PersistedEntry,
+  PersistedPerson,
+  ReactBackupData,
+} from '../types/persistence';
 import {
   applyInspectedBackup,
   type BackupInspection,
@@ -23,6 +28,7 @@ import {
   type ImportMode,
   RestoreVerificationError,
 } from '../services/backup';
+import { createBackupSnapshot } from '../services/backup-health';
 import type { RestoreVerificationReport } from '../services/restore-verification';
 
 export type PeopleFilter = 'active' | 'archived';
@@ -73,6 +79,7 @@ export interface AppStoreState {
   ui: TransientUiState;
   undoAction: UndoAction | null;
   lastRestoreReport: RestoreVerificationReport | null;
+  backupMetadata: BackupMetadata;
   initialize: () => Promise<void>;
   setMode: (mode: AppMode) => Promise<void>;
   setTheme: (theme: ThemeMode) => Promise<void>;
@@ -237,17 +244,19 @@ export function createAppStore(dependencies: StoreDependencies): StoreApi<AppSto
       ui: EMPTY_UI,
       undoAction: null,
       lastRestoreReport: null,
+      backupMetadata: { lastBackup: '', count: 0 },
 
       async initialize() {
         if (get().initialized || get().loading) return;
         set({ loading: true, error: null });
         try {
           await repository.initialize();
-          const [personal, work, mode, theme] = await Promise.all([
+          const [personal, work, mode, theme, backupMetadata] = await Promise.all([
             repository.getPeople('personal'),
             repository.getPeople('work'),
             repository.getMode(),
             repository.getTheme(),
+            repository.getBackupMetadata(),
           ]);
           set({
             initialized: true,
@@ -255,6 +264,7 @@ export function createAppStore(dependencies: StoreDependencies): StoreApi<AppSto
             peopleByMode: { personal, work },
             mode,
             theme,
+            backupMetadata,
           });
         } catch (error) {
           set({ loading: false, error: messageFrom(error) });
@@ -474,10 +484,14 @@ export function createAppStore(dependencies: StoreDependencies): StoreApi<AppSto
         return withError(async () => {
           const backup = await createBackupExport(repository, now());
           const metadata = await repository.getBackupMetadata();
-          await repository.setBackupMetadata({
+          const snapshot = createBackupSnapshot(backup);
+          const nextMetadata: BackupMetadata = {
             lastBackup: backup.exportDate,
             count: metadata.count + 1,
-          });
+            ...snapshot,
+          };
+          await repository.setBackupMetadata(nextMetadata);
+          set({ backupMetadata: nextMetadata });
           return backup;
         });
       },

@@ -28,6 +28,9 @@ export interface MetadataRecord {
 export interface BackupMetadata {
   lastBackup: string;
   count: number;
+  dataSignature?: string;
+  entrySignatures?: string[];
+  entryCount?: number;
 }
 
 export interface ReactBackupData {

@@ -112,6 +112,19 @@ export class DexieAppRepository implements AppRepository {
     return {
       lastBackup: typeof candidate.lastBackup === 'string' ? candidate.lastBackup : '',
       count: Number.isFinite(candidate.count) ? Number(candidate.count) : 0,
+      ...(typeof candidate.dataSignature === 'string'
+        ? { dataSignature: candidate.dataSignature }
+        : {}),
+      ...(Array.isArray(candidate.entrySignatures)
+        ? {
+            entrySignatures: candidate.entrySignatures.filter(
+              (signature): signature is string => typeof signature === 'string',
+            ),
+          }
+        : {}),
+      ...(Number.isFinite(candidate.entryCount)
+        ? { entryCount: Number(candidate.entryCount) }
+        : {}),
     };
   }
 

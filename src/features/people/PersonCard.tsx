@@ -4,6 +4,7 @@ import { personOpenBalance, personTotals } from '../../domain/balances';
 import { useAppNavigation } from '../../app/useAppNavigation';
 import { entryEffect } from '../../domain/entries';
 import { calculateSalary, giftSummary } from '../../domain/salary';
+import { buildPersonPdfReport, openPdfPrintDialog } from '../../services/pdf-report';
 import { useAppStore } from '../../store/hooks';
 import { useLongPress } from '../../hooks/useLongPress';
 import type { PersistedPerson } from '../../types/persistence';
@@ -355,6 +356,13 @@ export function PersonCard({
           </section>
 
           <div className="card-actions">
+            <button
+              className="secondary-button"
+              onClick={() => openPdfPrintDialog(buildPersonPdfReport(person, mode))}
+              type="button"
+            >
+              {mode === 'work' ? 'Team PDF' : 'Person PDF'}
+            </button>
             <button
               className="primary-button"
               onClick={() => openSheet('entry-form', person.id)}

@@ -175,9 +175,11 @@ describe('Zustand application actions', () => {
     const exported = await store.getState().exportBackup();
 
     expect(exported.exportDate).toBe(NOW.toISOString());
-    expect(await repository.getBackupMetadata()).toEqual({
+    expect(await repository.getBackupMetadata()).toMatchObject({
       lastBackup: NOW.toISOString(),
       count: 1,
+      entryCount: 0,
     });
+    expect(store.getState().backupMetadata.dataSignature).toBeTruthy();
   });
 });
