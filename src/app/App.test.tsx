@@ -128,6 +128,7 @@ describe('ACC application', () => {
     const user = userEvent.setup();
     const store = renderApp();
     await waitFor(() => expect(store.getState().initialized).toBe(true));
+    await act(async () => store.getState().addPerson(draft('PDF person')));
     const navigation = screen.getByRole('navigation', { name: 'Primary navigation' });
 
     await user.click(within(navigation).getByRole('button', { name: 'Stats' }));
@@ -135,7 +136,11 @@ describe('ACC application', () => {
     await user.click(screen.getByRole('button', { name: 'Close' }));
 
     await user.click(within(navigation).getByRole('button', { name: 'Backup' }));
-    expect(screen.getByRole('dialog', { name: 'Data & Backup' })).toBeVisible();
+    const backup = screen.getByRole('dialog', { name: 'Data & Backup' });
+    expect(backup).toBeVisible();
+    expect(within(backup).getByRole('heading', { name: 'Person / Team PDF' })).toBeVisible();
+    expect(within(backup).getByRole('option', { name: 'PDF person' })).toBeInTheDocument();
+    expect(within(backup).getByRole('button', { name: 'Export Person PDF' })).toBeEnabled();
     await user.click(screen.getByRole('button', { name: 'Close' }));
 
     await user.click(within(navigation).getByRole('button', { name: 'Settings' }));

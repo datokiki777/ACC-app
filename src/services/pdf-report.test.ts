@@ -1,4 +1,4 @@
-import { buildAllPdfReport, buildPersonPdfReport } from './pdf-report';
+import { buildAllPdfReport, buildPersonPdfReport, openPdfPrintDialog } from './pdf-report';
 import { entry, person } from '../test/fixtures/golden';
 
 const NOW = new Date('2026-08-09T12:00:00.000Z');
@@ -33,5 +33,29 @@ describe('PDF reports', () => {
     expect(report.html).toContain('Personal record');
     expect(report.html).toContain('Work team');
     expect(report.html).toContain('Complete report');
+  });
+
+  it('prints only the generated report from the main document on Android-compatible print', () => {
+    vi.useFakeTimers();
+    const print = vi.spyOn(window, 'print').mockImplementation(() => undefined);
+    const focus = vi.spyOn(window, 'focus').mockImplementation(() => undefined);
+    openPdfPrintDialog(
+      buildPersonPdfReport(person({ id: 'p', name: 'Printable person' }), 'personal', NOW),
+    );
+
+    const printRoot = document.querySelector('.acc-print-root');
+    expect(printRoot).toHaveTextContent('Printable person');
+    expect(document.querySelector('iframe')).not.toBeInTheDocument();
+    expect(document.querySelector('style[media="print"]')).toHaveTextContent(
+      'body > *:not(.acc-print-root)',
+    );
+
+    vi.advanceTimersByTime(50);
+    expect(print).toHaveBeenCalledOnce();
+    window.dispatchEvent(new Event('afterprint'));
+    expect(document.querySelector('.acc-print-root')).not.toBeInTheDocument();
+    print.mockRestore();
+    focus.mockRestore();
+    vi.useRealTimers();
   });
 });

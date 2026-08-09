@@ -133,30 +133,40 @@ export function buildAllPdfReport(
 }
 
 export function openPdfPrintDialog(report: PrintablePdfReport): void {
-  const frame = document.createElement('iframe');
-  frame.title = `${report.title} print preview`;
-  frame.style.position = 'fixed';
-  frame.style.width = '1px';
-  frame.style.height = '1px';
-  frame.style.inset = '0 auto auto 0';
-  frame.style.opacity = '0';
-  frame.style.pointerEvents = 'none';
-  document.body.append(frame);
-  const printWindow = frame.contentWindow;
-  const printDocument = frame.contentDocument;
-  if (!printWindow || !printDocument) {
-    frame.remove();
-    throw new Error('PDF printing is not supported by this browser.');
-  }
-  printDocument.open();
-  printDocument.write(report.html);
-  printDocument.close();
-  printDocument.title = report.filename;
-  const cleanup = () => frame.remove();
-  printWindow.addEventListener('afterprint', cleanup, { once: true });
+  document.querySelectorAll('[data-acc-print-artifact]').forEach((element) => element.remove());
+  const parsed = new DOMParser().parseFromString(report.html, 'text/html');
+  const reportRoot = document.createElement('div');
+  reportRoot.className = 'acc-print-root';
+  reportRoot.dataset.accPrintArtifact = 'true';
+  reportRoot.setAttribute('aria-hidden', 'true');
+  reportRoot.innerHTML = parsed.body.innerHTML;
+
+  const screenStyle = document.createElement('style');
+  screenStyle.dataset.accPrintArtifact = 'true';
+  screenStyle.textContent = '.acc-print-root{display:none}';
+
+  const printStyle = document.createElement('style');
+  printStyle.dataset.accPrintArtifact = 'true';
+  printStyle.media = 'print';
+  printStyle.textContent = `${parsed.querySelector('style')?.textContent ?? ''}
+    body > *:not(.acc-print-root){display:none!important}
+    body > .acc-print-root{display:block!important}
+    .acc-print-root{display:block!important}`;
+
+  document.head.append(screenStyle, printStyle);
+  document.body.append(reportRoot);
+  const previousTitle = document.title;
+  document.title = report.filename;
+  const cleanup = () => {
+    reportRoot.remove();
+    screenStyle.remove();
+    printStyle.remove();
+    document.title = previousTitle;
+  };
+  window.addEventListener('afterprint', cleanup, { once: true });
   window.setTimeout(() => {
-    printWindow.focus();
-    printWindow.print();
-  }, 250);
-  window.setTimeout(cleanup, 60_000);
+    window.focus();
+    window.print();
+  }, 50);
+  window.setTimeout(cleanup, 300_000);
 }

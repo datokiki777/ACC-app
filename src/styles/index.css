@@ -1463,7 +1463,8 @@ a:focus-visible {
 }
 
 .backup-health-card,
-.backup-insights {
+.backup-insights,
+.individual-pdf-card {
   padding: 14px;
   border: 1px solid var(--border);
   border-radius: 16px;
@@ -1596,6 +1597,77 @@ a:focus-visible {
 .backup-format-note {
   color: var(--muted);
   font-size: 0.72rem;
+}
+
+.individual-pdf-card {
+  display: grid;
+  gap: 10px;
+}
+
+.pdf-mode-switch {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 3px;
+  padding: 3px;
+  border: 1px solid var(--border);
+  border-radius: 13px;
+  background: var(--control-bg);
+}
+
+.pdf-mode-switch button {
+  min-width: 0;
+  min-height: 40px;
+  padding-inline: 8px;
+  border: 0;
+  border-radius: 10px;
+  color: var(--muted);
+  background: transparent;
+  font-size: 0.78rem;
+  font-weight: 750;
+}
+
+.pdf-mode-switch button.is-selected {
+  color: var(--accent-ink);
+  background: var(--accent);
+}
+
+.individual-pdf-controls {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 8px;
+}
+
+.individual-pdf-controls label {
+  display: grid;
+  min-width: 0;
+  gap: 4px;
+  color: var(--muted);
+  font-size: 0.7rem;
+}
+
+.individual-pdf-controls select {
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  padding: 0 34px 0 11px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.individual-pdf-controls > button {
+  min-height: 44px;
+  white-space: nowrap;
+}
+
+@media (max-width: 379px) {
+  .individual-pdf-controls {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .individual-pdf-controls > button {
+    width: 100%;
+  }
 }
 
 .backup-detail-list dd {

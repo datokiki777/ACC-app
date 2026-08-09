@@ -9,7 +9,12 @@ import {
   type ImportMode,
 } from '../../services/backup';
 import { analyzeBackupHealth, collectDataInsights } from '../../services/backup-health';
-import { buildAllPdfReport, openPdfPrintDialog } from '../../services/pdf-report';
+import {
+  buildAllPdfReport,
+  buildPersonPdfReport,
+  openPdfPrintDialog,
+} from '../../services/pdf-report';
+import type { AppMode } from '../../types/domain';
 import { useAppStore } from '../../store/hooks';
 
 function formatBytes(bytes: number | undefined): string {
@@ -32,6 +37,8 @@ export function BackupSheet() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [deviceStorage, setDeviceStorage] = useState<StorageEstimate | null>(null);
+  const [pdfMode, setPdfMode] = useState<AppMode>('personal');
+  const [pdfPersonId, setPdfPersonId] = useState('');
   const fileRef = useRef<HTMLInputElement>(null);
   const currentData = useMemo(
     () => ({ personal: peopleByMode.personal, work: peopleByMode.work }),
@@ -42,6 +49,8 @@ export function BackupSheet() {
     [backupMetadata, currentData],
   );
   const insights = useMemo(() => collectDataInsights(currentData), [currentData]);
+  const pdfPeople = peopleByMode[pdfMode];
+  const pdfPerson = pdfPeople.find((person) => person.id === pdfPersonId) ?? pdfPeople[0];
 
   useEffect(() => {
     let active = true;
@@ -67,6 +76,16 @@ export function BackupSheet() {
     setError('');
     try {
       openPdfPrintDialog(buildAllPdfReport(currentData));
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : 'PDF report could not open');
+    }
+  }
+
+  function exportIndividualPdf() {
+    if (!pdfPerson) return;
+    setError('');
+    try {
+      openPdfPrintDialog(buildPersonPdfReport(pdfPerson, pdfMode));
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : 'PDF report could not open');
     }
@@ -146,6 +165,60 @@ export function BackupSheet() {
       <p className="backup-format-note">
         JSON is the restorable backup. PDF opens the phone print screen—choose “Save as PDF”.
       </p>
+
+      <section className="individual-pdf-card" aria-label="Individual PDF export">
+        <div className="backup-section-heading">
+          <div>
+            <span>Single report</span>
+            <h3>Person / Team PDF</h3>
+          </div>
+        </div>
+        <div className="pdf-mode-switch" role="group" aria-label="PDF report type">
+          {(['personal', 'work'] as const).map((mode) => (
+            <button
+              aria-pressed={pdfMode === mode}
+              className={pdfMode === mode ? 'is-selected' : ''}
+              onClick={() => {
+                setPdfMode(mode);
+                setPdfPersonId(peopleByMode[mode][0]?.id ?? '');
+              }}
+              type="button"
+              key={mode}
+            >
+              {mode === 'personal'
+                ? `Personal (${peopleByMode.personal.length})`
+                : `Work (${peopleByMode.work.length})`}
+            </button>
+          ))}
+        </div>
+        <div className="individual-pdf-controls">
+          <label>
+            <span>{pdfMode === 'personal' ? 'Choose person' : 'Choose team'}</span>
+            <select
+              aria-label={pdfMode === 'personal' ? 'Choose person for PDF' : 'Choose team for PDF'}
+              disabled={!pdfPeople.length}
+              onChange={(event) => setPdfPersonId(event.target.value)}
+              value={pdfPerson?.id ?? ''}
+            >
+              {!pdfPeople.length && <option value="">No records</option>}
+              {pdfPeople.map((person) => (
+                <option key={person.id} value={person.id}>
+                  {person.name}
+                  {person.archived ? ' · Archived' : ''}
+                </option>
+              ))}
+            </select>
+          </label>
+          <button
+            className="secondary-button"
+            disabled={!pdfPerson}
+            onClick={exportIndividualPdf}
+            type="button"
+          >
+            Export {pdfMode === 'personal' ? 'Person' : 'Team'} PDF
+          </button>
+        </div>
+      </section>
 
       <section className="backup-insights" aria-label="Data and device insights">
         <div className="backup-section-heading">
