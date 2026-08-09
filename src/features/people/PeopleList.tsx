@@ -23,9 +23,10 @@ function activityTime(person: PersistedPerson): number {
 interface PeopleListProps {
   onDeletePerson: (person: PersistedPerson) => void;
   onDeleteEntry: (person: PersistedPerson, entryId: string) => void;
+  onToggleArchive: (person: PersistedPerson) => void;
 }
 
-export function PeopleList({ onDeletePerson, onDeleteEntry }: PeopleListProps) {
+export function PeopleList({ onDeletePerson, onDeleteEntry, onToggleArchive }: PeopleListProps) {
   const [openSwipe, setOpenSwipe] = useState<{
     personId: string;
     action: PersonSwipeAction;
@@ -82,6 +83,7 @@ export function PeopleList({ onDeletePerson, onDeleteEntry }: PeopleListProps) {
           onDeleteEntry={(entryId) => onDeleteEntry(person, entryId)}
           onDeletePerson={() => onDeletePerson(person)}
           onSwipeOpen={(action) => setOpenSwipe(action ? { personId: person.id, action } : null)}
+          onToggleArchive={() => onToggleArchive(person)}
           person={person}
           swipeOpen={openSwipe?.personId === person.id ? openSwipe.action : null}
         />

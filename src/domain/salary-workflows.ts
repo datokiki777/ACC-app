@@ -58,7 +58,13 @@ export function resetSalaryWhenUnarchiving(person: Person, referenceDate: Date):
     entries: person.entries.map((entry) => ({ ...entry })),
     salaryAccruedBaseline: paid,
     salaryPeriodAnchorDate: formatReferenceDate(referenceDate),
+    salaryEndDate: '',
     archived: false,
     expanded: false,
   };
+}
+
+export function endSalaryWhenArchiving(person: Person, referenceDate: Date): Person {
+  if (person.salaryEndDate) return person;
+  return { ...person, salaryEndDate: formatReferenceDate(referenceDate) };
 }

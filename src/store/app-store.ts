@@ -3,6 +3,7 @@ import { createStore, type StoreApi } from 'zustand/vanilla';
 import type { AppRepository } from '../db/repository';
 import {
   applyPayPeriodChange,
+  endSalaryWhenArchiving,
   resetSalaryWhenUnarchiving,
   syncPayDate,
 } from '../domain/salary-workflows';
@@ -341,13 +342,16 @@ export function createAppStore(dependencies: StoreDependencies): StoreApi<AppSto
           const state = get();
           const people = state.peopleByMode[state.mode].map((person) => {
             if (person.id !== personId) return person;
-            if (
-              person.archived &&
-              state.mode === 'work' &&
-              person.salaryAmount &&
-              person.salaryStartDate
-            ) {
+            const isSalaried =
+              state.mode === 'work' && person.salaryAmount && person.salaryStartDate;
+            if (person.archived && isSalaried) {
               return retainPersistedFields(person, resetSalaryWhenUnarchiving(person, now()));
+            }
+            if (!person.archived && isSalaried) {
+              return retainPersistedFields(
+                person,
+                endSalaryWhenArchiving({ ...person, archived: true, expanded: false }, now()),
+              );
             }
             return { ...person, archived: !person.archived, expanded: false };
           });

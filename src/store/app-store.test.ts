@@ -149,12 +149,45 @@ describe('Zustand application actions', () => {
     expect(synced.entries[0]?.category).toBe('salary');
 
     await store.getState().toggleArchive(employee.id);
-    expect(store.getState().peopleByMode.work[0]?.archived).toBe(true);
+    const archived = store.getState().peopleByMode.work[0]!;
+    expect(archived.archived).toBe(true);
+    expect(archived.salaryEndDate).toBe('2026-08-06');
+
     await store.getState().toggleArchive(employee.id);
     const unarchived = store.getState().peopleByMode.work[0]!;
     expect(unarchived.archived).toBe(false);
+    expect(unarchived.salaryEndDate).toBe('');
     expect(unarchived.salaryPeriodAnchorDate).toBe('2026-08-06');
     expect(calculateSalary(unarchived, NOW).due).toBe(0);
+  });
+
+  it('does not overwrite an already-set salary end date when archiving', async () => {
+    const store = makeStore();
+    await store.getState().initialize();
+    await store.getState().setMode('work');
+    await store.getState().addPerson(salaryDraft());
+    const employee = store.getState().peopleByMode.work[0]!;
+
+    await store.getState().editPerson(employee.id, {
+      ...salaryDraft(),
+      salaryEndDate: '2026-09-01',
+    });
+    await store.getState().toggleArchive(employee.id);
+    const archived = store.getState().peopleByMode.work[0]!;
+    expect(archived.archived).toBe(true);
+    expect(archived.salaryEndDate).toBe('2026-09-01');
+  });
+
+  it('leaves non-salaried people unaffected by the salary end date logic when archived', async () => {
+    const store = makeStore();
+    await store.getState().initialize();
+    await store.getState().addPerson(personalDraft('Casual'));
+    const person = store.getState().peopleByMode.personal[0]!;
+
+    await store.getState().toggleArchive(person.id);
+    const archived = store.getState().peopleByMode.personal[0]!;
+    expect(archived.archived).toBe(true);
+    expect(archived.salaryEndDate).toBeFalsy();
   });
 
   it('reloads persisted application data in a new store', async () => {

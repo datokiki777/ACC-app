@@ -323,9 +323,13 @@ describe('legacy differential parity', () => {
         referenceDate,
       }),
     ).toEqual(legacyHarness.syncPayDate(fixture, 60.7, '2026-03-10', 'sync', referenceDate));
-    expect(resetSalaryWhenUnarchiving(fixture, referenceDate)).toEqual(
-      legacyHarness.resetSalaryWhenUnarchiving(fixture, referenceDate),
-    );
+    // Intentional deviation from legacy: unarchiving now also clears salaryEndDate, since
+    // archiving now auto-sets it (see endSalaryWhenArchiving) and it must not linger and
+    // permanently cap accrual after the person resumes.
+    expect(resetSalaryWhenUnarchiving(fixture, referenceDate)).toEqual({
+      ...legacyHarness.resetSalaryWhenUnarchiving(fixture, referenceDate),
+      salaryEndDate: '',
+    });
   });
 
   it('matches statistics and preserves uncategorized Work activity', () => {

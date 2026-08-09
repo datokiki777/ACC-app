@@ -38,6 +38,7 @@ interface PersonCardProps {
   person: PersistedPerson;
   onDeletePerson: () => void;
   onDeleteEntry: (entryId: string) => void;
+  onToggleArchive: () => void;
   swipeOpen: PersonSwipeAction | null;
   onSwipeOpen: (action: PersonSwipeAction | null) => void;
 }
@@ -46,6 +47,7 @@ export function PersonCard({
   person,
   onDeletePerson,
   onDeleteEntry,
+  onToggleArchive,
   swipeOpen,
   onSwipeOpen,
 }: PersonCardProps) {
@@ -60,7 +62,6 @@ export function PersonCard({
   const expanded = useAppStore((state) => state.expandedPersonId === person.id);
   const setExpanded = useAppStore((state) => state.setExpandedPerson);
   const openSheet = useAppStore((state) => state.openSheet);
-  const toggleArchive = useAppStore((state) => state.toggleArchive);
   const balance = personOpenBalance(person, mode);
   const totals = personTotals(person);
   const salary = mode === 'work' ? calculateSalary(person, new Date()) : null;
@@ -191,7 +192,7 @@ export function PersonCard({
             aria-label={`${person.archived ? 'Unarchive' : 'Archive'} ${person.name}`}
             onClick={() => {
               onSwipeOpen(null);
-              void toggleArchive(person.id);
+              onToggleArchive();
             }}
             tabIndex={swipeOpen === 'archive' ? 0 : -1}
             type="button"

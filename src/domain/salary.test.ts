@@ -5,7 +5,12 @@ import {
   giftSummary,
   salaryPaid,
 } from './salary';
-import { applyPayPeriodChange, resetSalaryWhenUnarchiving, syncPayDate } from './salary-workflows';
+import {
+  applyPayPeriodChange,
+  endSalaryWhenArchiving,
+  resetSalaryWhenUnarchiving,
+  syncPayDate,
+} from './salary-workflows';
 import { date, entry, weeklySalaryPerson, workPerson } from '../test/fixtures/golden';
 
 describe('salary calculation parity', () => {
@@ -95,6 +100,26 @@ describe('salary calculation parity', () => {
     expect(archived).toEqual(active);
   });
 
+  it('does not resurface a paid period as due soon when settled exactly on its boundary', () => {
+    const person = weeklySalaryPerson({
+      salaryAmount: 3000,
+      salaryStartDate: '2026-07-01',
+      salaryPayPeriodWeeks: 2,
+      entries: [
+        entry({ id: 'e1', amount: 1500, category: 'salary', date: '2026-07-15' }),
+        entry({ id: 'e2', amount: 1500, category: 'salary', date: '2026-07-29' }),
+        entry({ id: 'e3', amount: 1500, category: 'salary', date: '2026-08-09' }),
+      ],
+    });
+    // referenceDate lands exactly on the 3rd period boundary (14-day cycle from 2026-07-01),
+    // which was just paid in advance on 2026-08-09.
+    const result = calculateSalary(person, date(2026, 8, 12));
+    expect(result.due).toBe(0);
+    expect(result.upcoming).toBe(0);
+    expect(result.paySoon).toBe(false);
+    expect(result.nextPayDate).toBe('2026-08-26');
+  });
+
   it('calculates the Work gift summary independently', () => {
     expect(giftSummary(workPerson)).toMatchObject({ gave: 50, received: 20, total: 70, net: 30 });
   });
@@ -148,6 +173,18 @@ describe('salary workflow parity', () => {
       expanded: false,
       salaryAccruedBaseline: 100,
       salaryPeriodAnchorDate: '2026-04-05',
+      salaryEndDate: '',
     });
+  });
+
+  it('sets the salary end date to today when archiving, unless one is already set', () => {
+    const ended = endSalaryWhenArchiving(weeklySalaryPerson(), date(2026, 4, 5));
+    expect(ended.salaryEndDate).toBe('2026-04-05');
+
+    const unchanged = endSalaryWhenArchiving(
+      weeklySalaryPerson({ salaryEndDate: '2026-06-01' }),
+      date(2026, 4, 5),
+    );
+    expect(unchanged.salaryEndDate).toBe('2026-06-01');
   });
 });

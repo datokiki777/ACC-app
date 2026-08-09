@@ -3,9 +3,25 @@ import { useForm, useWatch } from 'react-hook-form';
 import { z } from 'zod';
 
 import { BottomSheet } from '../../components/BottomSheet';
+import { PickerField } from '../../components/PickerField';
 import { useAppNavigation, useUnsavedForm } from '../../app/useAppNavigation';
 import type { PersonDraft } from '../../store/app-store';
 import { useAppStore } from '../../store/hooks';
+import type { Currency, PayDelayMode } from '../../types/domain';
+
+const CURRENCY_OPTIONS: { value: Currency; label: string }[] = [
+  { value: 'EUR', label: 'EUR €' },
+  { value: 'USD', label: 'USD $' },
+  { value: 'GEL', label: 'GEL ₾' },
+  { value: 'CAD', label: 'CAD C$' },
+];
+
+const PAY_DELAY_OPTIONS: { value: PayDelayMode; label: string }[] = [
+  { value: 'none', label: 'At period end' },
+  { value: '2weeks', label: '2 weeks after period' },
+  { value: '4weeks', label: '4 weeks after period' },
+  { value: 'firstOfMonth', label: '1st of next month' },
+];
 
 const COLORS = [
   '#5692ff',
@@ -75,6 +91,8 @@ export function PersonFormSheet() {
   });
   const salaryEnabled = useWatch({ control, name: 'salaryEnabled' });
   const tagColor = useWatch({ control, name: 'tagColor' });
+  const currency = useWatch({ control, name: 'currency' });
+  const salaryPayDelayMode = useWatch({ control, name: 'salaryPayDelayMode' });
   useUnsavedForm(isDirty);
 
   const submit = handleSubmit(async (raw) => {
@@ -155,15 +173,13 @@ export function PersonFormSheet() {
           ))}
         </div>
 
-        <label className="field">
-          <span>Currency</span>
-          <select disabled={Boolean(existing)} {...register('currency')}>
-            <option value="EUR">EUR €</option>
-            <option value="USD">USD $</option>
-            <option value="GEL">GEL ₾</option>
-            <option value="CAD">CAD C$</option>
-          </select>
-        </label>
+        <PickerField
+          disabled={Boolean(existing)}
+          label="Currency"
+          onChange={(next) => setValue('currency', next as Currency, { shouldDirty: true })}
+          options={CURRENCY_OPTIONS}
+          value={currency}
+        />
 
         {mode === 'work' && (
           <>
@@ -199,15 +215,14 @@ export function PersonFormSheet() {
                     {...register('salaryPayPeriodWeeks', { valueAsNumber: true })}
                   />
                 </label>
-                <label className="field">
-                  <span>Payment timing</span>
-                  <select {...register('salaryPayDelayMode')}>
-                    <option value="none">At period end</option>
-                    <option value="2weeks">2 weeks after period</option>
-                    <option value="4weeks">4 weeks after period</option>
-                    <option value="firstOfMonth">1st of next month</option>
-                  </select>
-                </label>
+                <PickerField
+                  label="Payment timing"
+                  onChange={(next) =>
+                    setValue('salaryPayDelayMode', next as PayDelayMode, { shouldDirty: true })
+                  }
+                  options={PAY_DELAY_OPTIONS}
+                  value={salaryPayDelayMode}
+                />
                 <label className="field">
                   <span>
                     Salary end date <small>optional</small>

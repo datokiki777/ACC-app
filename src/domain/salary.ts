@@ -109,7 +109,12 @@ export function calculateSalary(person: Person, referenceDate: Date): SalaryCalc
   const remaining = Math.max(0, dueTarget - paid);
   const overdueTarget = config.accruedBaseline + normalizeAmount(periodAmount * boundariesReached);
   const overdueRemaining = Math.max(0, overdueTarget - paid);
-  const nextPeriodEndDate = addDays(config.anchorDate, periodsTargeted * periodDays);
+  // If the reference date lands exactly on a period boundary and that period's due amount has
+  // already been fully paid (e.g. paid in advance), the forecast should point to the *next*
+  // period rather than reusing the boundary that was just settled.
+  const landedOnPaidBoundary = days > 0 && days % periodDays === 0 && remaining <= 0;
+  const forecastPeriodIndex = landedOnPaidBoundary ? periodsTargeted + 1 : periodsTargeted;
+  const nextPeriodEndDate = addDays(config.anchorDate, forecastPeriodIndex * periodDays);
   const nextPayDateForecast = computeSalaryPayDate(nextPeriodEndDate, config.payDelayMode);
   const earliestUnpaidDate = earliestUnpaidPayDate(config, boundariesReached, paid, periodAmount);
   const isPastDue =
@@ -117,11 +122,16 @@ export function calculateSalary(person: Person, referenceDate: Date): SalaryCalc
     overdueRemaining > 0.0001 &&
     daysUntil(earliestUnpaidDate, referenceDate) < -SALARY_GRACE_DAYS;
   const due = isPastDue ? Math.min(overdueRemaining, remaining) : 0;
-  let upcoming = remaining - due;
-  if (remaining <= 0 && !ended) upcoming = periodAmount;
   const nextPayDate =
     overdueRemaining > 0.0001 && !isPastDue ? earliestUnpaidDate : nextPayDateForecast;
   const daysUntilNextPay = ended ? null : daysUntil(nextPayDate, referenceDate);
+  let upcoming = remaining - due;
+  if (remaining <= 0 && !ended) {
+    // Right on the boundary of a period that's already fully paid (e.g. paid in advance): don't
+    // resurface a full period's amount today — it'll reappear via the normal due/paySoon flow as
+    // the next period's date actually approaches.
+    upcoming = landedOnPaidBoundary ? 0 : periodAmount;
+  }
   const paySoon =
     !ended && due <= 0 && daysUntilNextPay !== null && daysUntilNextPay <= SALARY_PAY_SOON_DAYS;
 

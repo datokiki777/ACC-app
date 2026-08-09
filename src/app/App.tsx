@@ -24,7 +24,10 @@ interface Confirmation {
   message: string;
   cancelLabel?: string;
   confirmLabel?: string;
+  confirmVariant?: 'danger' | 'primary';
+  tertiaryLabel?: string;
   action: () => Promise<void>;
+  tertiaryAction?: () => Promise<void>;
 }
 
 interface NavigationSnapshot {
@@ -77,6 +80,7 @@ export function App() {
   const sheetEntryId = useAppStore((state) => state.ui.entryId);
   const deletePerson = useAppStore((state) => state.deletePerson);
   const deleteEntry = useAppStore((state) => state.deleteEntry);
+  const toggleArchive = useAppStore((state) => state.toggleArchive);
   const [confirmation, setConfirmation] = useState<Confirmation | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const dirtyRef = useRef(false);
@@ -255,6 +259,48 @@ export function App() {
     });
   }
 
+  function confirmToggleArchive(person: PersistedPerson) {
+    const isSalaried = mode === 'work' && Boolean(person.salaryAmount && person.salaryStartDate);
+
+    if (!person.archived) {
+      setConfirmation({
+        title: 'Archive?',
+        message:
+          isSalaried && !person.salaryEndDate
+            ? `Archive ${person.name}? Salary will stop accruing as of today.`
+            : `Are you sure you want to archive ${person.name}?`,
+        confirmLabel: 'Archive',
+        confirmVariant: 'primary',
+        action: () => toggleArchive(person.id),
+      });
+      return;
+    }
+
+    if (!isSalaried) {
+      setConfirmation({
+        title: 'Unarchive?',
+        message: `Are you sure you want to unarchive ${person.name}?`,
+        confirmLabel: 'Unarchive',
+        confirmVariant: 'primary',
+        action: () => toggleArchive(person.id),
+      });
+      return;
+    }
+
+    setConfirmation({
+      title: 'Unarchive?',
+      message: `Unarchive ${person.name}? Salary tracking will resume from today — you can adjust the dates first if needed.`,
+      confirmLabel: 'Resume from today',
+      confirmVariant: 'primary',
+      tertiaryLabel: 'Edit dates first',
+      action: () => toggleArchive(person.id),
+      tertiaryAction: async () => {
+        await toggleArchive(person.id);
+        openSheet('person-form', person.id);
+      },
+    });
+  }
+
   function confirmEntryDelete(person: PersistedPerson, entryId: string) {
     setConfirmation({
       title: 'Delete entry?',
@@ -327,7 +373,11 @@ export function App() {
             </section>
           )}
           {initialized && (
-            <PeopleList onDeleteEntry={confirmEntryDelete} onDeletePerson={confirmPersonDelete} />
+            <PeopleList
+              onDeleteEntry={confirmEntryDelete}
+              onDeletePerson={confirmPersonDelete}
+              onToggleArchive={confirmToggleArchive}
+            />
           )}
         </main>
       </div>
@@ -370,6 +420,8 @@ export function App() {
         <ConfirmDialog
           {...(confirmation.cancelLabel ? { cancelLabel: confirmation.cancelLabel } : {})}
           {...(confirmation.confirmLabel ? { confirmLabel: confirmation.confirmLabel } : {})}
+          {...(confirmation.confirmVariant ? { confirmVariant: confirmation.confirmVariant } : {})}
+          {...(confirmation.tertiaryLabel ? { tertiaryLabel: confirmation.tertiaryLabel } : {})}
           message={confirmation.message}
           onCancel={() => {
             confirmationRef.current = null;
@@ -380,6 +432,15 @@ export function App() {
             confirmationRef.current = null;
             setConfirmation(null);
           }}
+          {...(confirmation.tertiaryAction
+            ? {
+                onTertiary: async () => {
+                  await confirmation.tertiaryAction?.();
+                  confirmationRef.current = null;
+                  setConfirmation(null);
+                },
+              }
+            : {})}
           title={confirmation.title}
         />
       )}

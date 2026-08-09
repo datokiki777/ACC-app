@@ -422,6 +422,7 @@ describe('ACC application', () => {
     const archiveAction = screen.getByRole('button', { name: 'Archive Archive target' });
     await waitFor(() => expect(archiveAction).toHaveAttribute('tabindex', '0'));
     await user.click(archiveAction);
+    await user.click(await screen.findByRole('button', { name: 'Archive' }));
     await waitFor(() => expect(store.getState().peopleByMode.personal[0]?.archived).toBe(true));
 
     await user.click(screen.getByRole('button', { name: /Archived 1/ }));
@@ -430,6 +431,7 @@ describe('ACC application', () => {
     const unarchiveAction = screen.getByRole('button', { name: 'Unarchive Archive target' });
     await waitFor(() => expect(unarchiveAction).toHaveAttribute('tabindex', '0'));
     await user.click(unarchiveAction);
+    await user.click(await screen.findByRole('button', { name: 'Unarchive' }));
     await waitFor(() => expect(store.getState().peopleByMode.personal[0]?.archived).toBe(false));
   });
 

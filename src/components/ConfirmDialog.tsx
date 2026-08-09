@@ -5,8 +5,11 @@ interface ConfirmDialogProps {
   message: string;
   cancelLabel?: string;
   confirmLabel?: string;
+  confirmVariant?: 'danger' | 'primary';
+  tertiaryLabel?: string;
   onCancel: () => void;
   onConfirm: () => void | Promise<void>;
+  onTertiary?: () => void | Promise<void>;
 }
 
 export function ConfirmDialog({
@@ -14,8 +17,11 @@ export function ConfirmDialog({
   message,
   cancelLabel = 'Cancel',
   confirmLabel = 'Delete',
+  confirmVariant = 'danger',
+  tertiaryLabel,
   onCancel,
   onConfirm,
+  onTertiary,
 }: ConfirmDialogProps) {
   const titleId = useId();
   const cancelRef = useRef<HTMLButtonElement>(null);
@@ -44,6 +50,19 @@ export function ConfirmDialog({
       <section aria-labelledby={titleId} aria-modal="true" className="confirm-dialog" role="dialog">
         <h2 id={titleId}>{title}</h2>
         <p>{message}</p>
+        {tertiaryLabel && onTertiary && (
+          <button
+            className="text-button confirm-tertiary"
+            disabled={busy}
+            onClick={() => {
+              setBusy(true);
+              void Promise.resolve(onTertiary()).finally(() => setBusy(false));
+            }}
+            type="button"
+          >
+            {tertiaryLabel}
+          </button>
+        )}
         <div className="confirm-actions">
           <button
             className="secondary-button"
@@ -55,7 +74,7 @@ export function ConfirmDialog({
             {cancelLabel}
           </button>
           <button
-            className="danger-button"
+            className={confirmVariant === 'primary' ? 'primary-button' : 'danger-button'}
             disabled={busy}
             onClick={() => {
               setBusy(true);
