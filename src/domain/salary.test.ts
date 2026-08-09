@@ -120,6 +120,25 @@ describe('salary calculation parity', () => {
     expect(result.nextPayDate).toBe('2026-08-26');
   });
 
+  it('does not resurface a paid period as due soon when paid a few days before its boundary', () => {
+    const person = weeklySalaryPerson({
+      salaryAmount: 3000,
+      salaryStartDate: '2026-07-01',
+      salaryPayPeriodWeeks: 2,
+      entries: [
+        entry({ id: 'e1', amount: 1500, category: 'salary', date: '2026-07-15' }),
+        entry({ id: 'e2', amount: 1500, category: 'salary', date: '2026-07-29' }),
+        entry({ id: 'e3', amount: 1500, category: 'salary', date: '2026-08-09' }),
+      ],
+    });
+    // referenceDate is 3 days before the 3rd period boundary (2026-08-12), which was already
+    // paid in full on 2026-08-09 — nothing should be flagged as due or upcoming yet.
+    const result = calculateSalary(person, date(2026, 8, 9));
+    expect(result.due).toBe(0);
+    expect(result.upcoming).toBe(0);
+    expect(result.nextPayDate).toBe('2026-08-12');
+  });
+
   it('calculates the Work gift summary independently', () => {
     expect(giftSummary(workPerson)).toMatchObject({ gave: 50, received: 20, total: 70, net: 30 });
   });

@@ -127,10 +127,9 @@ export function calculateSalary(person: Person, referenceDate: Date): SalaryCalc
   const daysUntilNextPay = ended ? null : daysUntil(nextPayDate, referenceDate);
   let upcoming = remaining - due;
   if (remaining <= 0 && !ended) {
-    // Right on the boundary of a period that's already fully paid (e.g. paid in advance): don't
-    // resurface a full period's amount today — it'll reappear via the normal due/paySoon flow as
-    // the next period's date actually approaches.
-    upcoming = landedOnPaidBoundary ? 0 : periodAmount;
+    // The currently-targeted period is already fully paid (including advance payment, whether or
+    // not its boundary date has technically arrived yet) — nothing is actually due or upcoming.
+    upcoming = 0;
   }
   const paySoon =
     !ended && due <= 0 && daysUntilNextPay !== null && daysUntilNextPay <= SALARY_PAY_SOON_DAYS;

@@ -301,7 +301,15 @@ describe('legacy differential parity', () => {
       const referenceDate = fromDateString(referenceDateString);
       const modern = calculateSalary(fixture, referenceDate);
       const legacy = plain(legacyHarness.personSalarySummary(fixture, referenceDate));
-      expect(modern, `seeded case ${caseIndex}`).toEqual(legacy);
+      // Intentional deviation from legacy: once the currently-targeted pay period is fully paid
+      // (including advance payment before its boundary date), 'upcoming' is now 0 instead of
+      // legacy's default of always re-showing a full period amount. Only adjust the comparison
+      // when this exact known pattern is present.
+      const legacyExpected =
+        modern.upcoming === 0 && legacy.due === 0 && legacy.upcoming === legacy.periodAmount
+          ? { ...legacy, upcoming: 0 }
+          : legacy;
+      expect(modern, `seeded case ${caseIndex}`).toEqual(legacyExpected);
     }
   });
 
