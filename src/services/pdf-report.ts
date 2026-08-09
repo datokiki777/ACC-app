@@ -10,6 +10,8 @@ export interface PrintablePdfReport {
   html: string;
 }
 
+let activePrintCleanup: (() => void) | null = null;
+
 function escapeHtml(value: string | number): string {
   return String(value)
     .replaceAll('&', '&amp;')
@@ -133,7 +135,7 @@ export function buildAllPdfReport(
 }
 
 export function openPdfPrintDialog(report: PrintablePdfReport): void {
-  document.querySelectorAll('[data-acc-print-artifact]').forEach((element) => element.remove());
+  activePrintCleanup?.();
   const parsed = new DOMParser().parseFromString(report.html, 'text/html');
   const reportRoot = document.createElement('div');
   reportRoot.className = 'acc-print-root';
@@ -157,13 +159,24 @@ export function openPdfPrintDialog(report: PrintablePdfReport): void {
   document.body.append(reportRoot);
   const previousTitle = document.title;
   document.title = report.filename;
+  let titleRestored = false;
+  const restoreTitle = () => {
+    if (titleRestored) return;
+    titleRestored = true;
+    if (document.title === report.filename) document.title = previousTitle;
+  };
   const cleanup = () => {
     reportRoot.remove();
     screenStyle.remove();
     printStyle.remove();
-    document.title = previousTitle;
+    window.removeEventListener('afterprint', restoreTitle);
+    restoreTitle();
+    if (activePrintCleanup === cleanup) activePrintCleanup = null;
   };
-  window.addEventListener('afterprint', cleanup, { once: true });
+  activePrintCleanup = cleanup;
+  // Android can emit afterprint before Print Spooler captures the page.
+  // Restore the tab title immediately, but keep the hidden report mounted for the spooler.
+  window.addEventListener('afterprint', restoreTitle, { once: true });
   window.setTimeout(() => {
     window.focus();
     window.print();

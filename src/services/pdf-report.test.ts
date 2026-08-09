@@ -53,6 +53,8 @@ describe('PDF reports', () => {
     vi.advanceTimersByTime(350);
     expect(print).toHaveBeenCalledOnce();
     window.dispatchEvent(new Event('afterprint'));
+    expect(document.querySelector('.acc-print-root')).toBeInTheDocument();
+    vi.advanceTimersByTime(300_000);
     expect(document.querySelector('.acc-print-root')).not.toBeInTheDocument();
     print.mockRestore();
     focus.mockRestore();

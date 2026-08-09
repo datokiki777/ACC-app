@@ -39,6 +39,8 @@ export function BackupSheet() {
   const [deviceStorage, setDeviceStorage] = useState<StorageEstimate | null>(null);
   const [pdfMode, setPdfMode] = useState<AppMode>('personal');
   const [pdfPersonId, setPdfPersonId] = useState('');
+  const [pdfPickerOpen, setPdfPickerOpen] = useState(false);
+  const [pdfPickerSearch, setPdfPickerSearch] = useState('');
   const fileRef = useRef<HTMLInputElement>(null);
   const currentData = useMemo(
     () => ({ personal: peopleByMode.personal, work: peopleByMode.work }),
@@ -51,6 +53,9 @@ export function BackupSheet() {
   const insights = useMemo(() => collectDataInsights(currentData), [currentData]);
   const pdfPeople = peopleByMode[pdfMode];
   const pdfPerson = pdfPeople.find((person) => person.id === pdfPersonId) ?? pdfPeople[0];
+  const filteredPdfPeople = pdfPeople.filter((person) =>
+    person.name.toLocaleLowerCase().includes(pdfPickerSearch.trim().toLocaleLowerCase()),
+  );
 
   useEffect(() => {
     let active = true;
@@ -62,6 +67,18 @@ export function BackupSheet() {
       active = false;
     };
   }, []);
+
+  useEffect(() => {
+    if (!pdfPickerOpen) return;
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.stopImmediatePropagation();
+        setPdfPickerOpen(false);
+      }
+    };
+    document.addEventListener('keydown', closeOnEscape, true);
+    return () => document.removeEventListener('keydown', closeOnEscape, true);
+  }, [pdfPickerOpen]);
 
   async function exportJson() {
     setError('');
@@ -185,6 +202,8 @@ export function BackupSheet() {
               onClick={() => {
                 setPdfMode(mode);
                 setPdfPersonId(peopleByMode[mode][0]?.id ?? '');
+                setPdfPickerOpen(false);
+                setPdfPickerSearch('');
               }}
               type="button"
               key={mode}
@@ -198,20 +217,19 @@ export function BackupSheet() {
         <div className="individual-pdf-controls">
           <label>
             <span>{pdfMode === 'personal' ? 'Choose person' : 'Choose team'}</span>
-            <select
+            <button
               aria-label={pdfMode === 'personal' ? 'Choose person for PDF' : 'Choose team for PDF'}
+              className="pdf-person-trigger"
               disabled={!pdfPeople.length}
-              onChange={(event) => setPdfPersonId(event.target.value)}
-              value={pdfPerson?.id ?? ''}
+              onClick={() => {
+                setPdfPickerSearch('');
+                setPdfPickerOpen(true);
+              }}
+              type="button"
             >
-              {!pdfPeople.length && <option value="">No records</option>}
-              {pdfPeople.map((person) => (
-                <option key={person.id} value={person.id}>
-                  {person.name}
-                  {person.archived ? ' · Archived' : ''}
-                </option>
-              ))}
-            </select>
+              <span>{pdfPerson?.name ?? 'No records'}</span>
+              <span aria-hidden="true">⌄</span>
+            </button>
           </label>
           <button
             className="secondary-button"
@@ -226,6 +244,75 @@ export function BackupSheet() {
           PDF opens the phone print screen—choose “Save as PDF”.
         </p>
       </section>
+
+      {pdfPickerOpen && (
+        <div
+          className="pdf-picker-overlay"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) setPdfPickerOpen(false);
+          }}
+        >
+          <section
+            aria-label={pdfMode === 'personal' ? 'Choose person' : 'Choose team'}
+            aria-modal="true"
+            className="pdf-picker-dialog"
+            role="dialog"
+          >
+            <header>
+              <div>
+                <span>PDF report</span>
+                <h3>{pdfMode === 'personal' ? 'Choose person' : 'Choose team'}</h3>
+              </div>
+              <button
+                aria-label="Close PDF selection"
+                className="icon-button"
+                onClick={() => setPdfPickerOpen(false)}
+                type="button"
+              >
+                ×
+              </button>
+            </header>
+            <label className="pdf-picker-search">
+              <span className="sr-only">Search names</span>
+              <svg aria-hidden="true" viewBox="0 0 24 24">
+                <circle cx="11" cy="11" r="7" />
+                <path d="m16 16 4 4" />
+              </svg>
+              <input
+                autoFocus
+                onChange={(event) => setPdfPickerSearch(event.target.value)}
+                placeholder={pdfMode === 'personal' ? 'Search people' : 'Search teams'}
+                type="search"
+                value={pdfPickerSearch}
+              />
+            </label>
+            <div className="pdf-picker-list">
+              {filteredPdfPeople.map((person) => (
+                <button
+                  className={person.id === pdfPerson?.id ? 'is-selected' : ''}
+                  key={person.id}
+                  onClick={() => {
+                    setPdfPersonId(person.id);
+                    setPdfPickerOpen(false);
+                  }}
+                  type="button"
+                >
+                  <span>
+                    <strong>{person.name}</strong>
+                    <small>
+                      {person.currency} · {person.entries.length}{' '}
+                      {person.entries.length === 1 ? 'entry' : 'entries'}
+                      {person.archived ? ' · Archived' : ''}
+                    </small>
+                  </span>
+                  <span aria-hidden="true">{person.id === pdfPerson?.id ? '✓' : '›'}</span>
+                </button>
+              ))}
+              {!filteredPdfPeople.length && <p>No matching records</p>}
+            </div>
+          </section>
+        </div>
+      )}
 
       <section className="backup-insights" aria-label="Data and device insights">
         <div className="backup-section-heading">

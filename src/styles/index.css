@@ -1688,18 +1688,173 @@ a:focus-visible {
   font-size: 0.7rem;
 }
 
-.individual-pdf-controls select {
+.pdf-person-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
   width: 100%;
   min-width: 0;
   min-height: 44px;
-  padding: 0 34px 0 11px;
+  padding: 0 11px;
+  overflow: hidden;
+  color: var(--text);
+  background: var(--surface-raised);
+  text-overflow: ellipsis;
+  text-align: left;
+}
+
+.pdf-person-trigger > span:first-child {
   overflow: hidden;
   text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pdf-person-trigger > span:last-child {
+  flex: 0 0 auto;
+  color: var(--muted);
+  font-size: 1rem;
 }
 
 .individual-pdf-controls > button {
   min-height: 44px;
   white-space: nowrap;
+}
+
+.pdf-picker-overlay {
+  position: fixed;
+  z-index: 90;
+  inset: 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: max(16px, env(safe-area-inset-top)) 12px max(16px, env(safe-area-inset-bottom));
+  background: rgb(2 8 18 / 68%);
+  backdrop-filter: blur(6px);
+}
+
+.pdf-picker-dialog {
+  width: min(100%, 520px);
+  max-height: min(72dvh, 620px);
+  padding: 14px;
+  border: 1px solid var(--border-strong);
+  border-radius: 22px;
+  background: var(--bg);
+  box-shadow: 0 18px 50px rgb(0 0 0 / 38%);
+  animation: sheet-in 160ms ease-out;
+}
+
+.pdf-picker-dialog > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.pdf-picker-dialog > header span {
+  color: var(--muted);
+  font-size: 0.7rem;
+}
+
+.pdf-picker-dialog > header h3 {
+  margin: 1px 0 0;
+  font-size: 1.05rem;
+}
+
+.pdf-picker-dialog > header .icon-button {
+  width: 42px;
+  min-height: 42px;
+  flex: 0 0 auto;
+  padding: 0;
+  font-size: 1.25rem;
+}
+
+.pdf-picker-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 11px;
+  border: 1px solid var(--border);
+  border-radius: 13px;
+  background: var(--control-bg);
+}
+
+.pdf-picker-search svg {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+  fill: none;
+  stroke: var(--muted);
+  stroke-width: 2;
+}
+
+.pdf-picker-search input {
+  width: 100%;
+  min-height: 40px;
+  padding: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+}
+
+.pdf-picker-list {
+  display: grid;
+  max-height: min(50dvh, 420px);
+  gap: 6px;
+  padding-top: 10px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.pdf-picker-list button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 58px;
+  padding: 8px 12px;
+  border-color: var(--border);
+  border-radius: 13px;
+  background: var(--surface);
+  text-align: left;
+}
+
+.pdf-picker-list button.is-selected {
+  border-color: var(--color-accent-border);
+  background: var(--color-accent-soft);
+}
+
+.pdf-picker-list button > span:first-child {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+
+.pdf-picker-list button strong,
+.pdf-picker-list button small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pdf-picker-list button small,
+.pdf-picker-list > p {
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+
+.pdf-picker-list button > span:last-child {
+  flex: 0 0 auto;
+  color: var(--accent);
+  font-size: 1.1rem;
+}
+
+.pdf-picker-list > p {
+  padding: 22px 8px;
+  margin: 0;
+  text-align: center;
 }
 
 @media (max-width: 379px) {
