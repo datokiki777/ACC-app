@@ -50,7 +50,7 @@ describe('PDF reports', () => {
       'body > *:not(.acc-print-root)',
     );
 
-    vi.advanceTimersByTime(50);
+    vi.advanceTimersByTime(350);
     expect(print).toHaveBeenCalledOnce();
     window.dispatchEvent(new Event('afterprint'));
     expect(document.querySelector('.acc-print-root')).not.toBeInTheDocument();

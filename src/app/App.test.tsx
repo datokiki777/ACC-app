@@ -138,7 +138,8 @@ describe('ACC application', () => {
     await user.click(within(navigation).getByRole('button', { name: 'Backup' }));
     const backup = screen.getByRole('dialog', { name: 'Data & Backup' });
     expect(backup).toBeVisible();
-    expect(within(backup).getByRole('heading', { name: 'Person / Team PDF' })).toBeVisible();
+    expect(within(backup).getByRole('heading', { name: 'PDF Reports' })).toBeVisible();
+    expect(within(backup).getByRole('button', { name: 'Export All Data PDF' })).toBeEnabled();
     expect(within(backup).getByRole('option', { name: 'PDF person' })).toBeInTheDocument();
     expect(within(backup).getByRole('button', { name: 'Export Person PDF' })).toBeEnabled();
     await user.click(screen.getByRole('button', { name: 'Close' }));

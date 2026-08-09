@@ -167,6 +167,6 @@ export function openPdfPrintDialog(report: PrintablePdfReport): void {
   window.setTimeout(() => {
     window.focus();
     window.print();
-  }, 50);
+  }, 350);
   window.setTimeout(cleanup, 300_000);
 }

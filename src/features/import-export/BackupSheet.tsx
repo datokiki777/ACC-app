@@ -148,9 +148,6 @@ export function BackupSheet() {
         <button className="primary-button" onClick={() => void exportJson()} type="button">
           Export JSON
         </button>
-        <button className="secondary-button" onClick={exportPdf} type="button">
-          All data PDF
-        </button>
         <button className="secondary-button" onClick={() => fileRef.current?.click()} type="button">
           Choose backup
         </button>
@@ -163,15 +160,22 @@ export function BackupSheet() {
         />
       </div>
       <p className="backup-format-note">
-        JSON is the restorable backup. PDF opens the phone print screen—choose “Save as PDF”.
+        JSON is the restorable backup format for importing data back into ACC.
       </p>
 
       <section className="individual-pdf-card" aria-label="Individual PDF export">
         <div className="backup-section-heading">
           <div>
-            <span>Single report</span>
-            <h3>Person / Team PDF</h3>
+            <span>Readable documents</span>
+            <h3>PDF Reports</h3>
           </div>
+        </div>
+        <button className="secondary-button all-data-pdf-button" onClick={exportPdf} type="button">
+          Export All Data PDF
+        </button>
+        <div className="pdf-section-label">
+          <span>Single report</span>
+          <strong>Person / Team PDF</strong>
         </div>
         <div className="pdf-mode-switch" role="group" aria-label="PDF report type">
           {(['personal', 'work'] as const).map((mode) => (
@@ -218,6 +222,9 @@ export function BackupSheet() {
             Export {pdfMode === 'personal' ? 'Person' : 'Team'} PDF
           </button>
         </div>
+        <p className="backup-format-note pdf-format-note">
+          PDF opens the phone print screen—choose “Save as PDF”.
+        </p>
       </section>
 
       <section className="backup-insights" aria-label="Data and device insights">
