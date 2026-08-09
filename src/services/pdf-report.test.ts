@@ -33,6 +33,8 @@ describe('PDF reports', () => {
     expect(report.html).toContain('Personal record');
     expect(report.html).toContain('Work team');
     expect(report.html).toContain('Complete report');
+    expect(report.html).toContain('class="report-cover"');
+    expect(report.html).toContain('break-after:page');
   });
 
   it('prints only the generated report from the main document on Android-compatible print', () => {
