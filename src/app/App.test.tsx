@@ -668,6 +668,8 @@ describe('ACC application', () => {
       screen.queryByText('Delete', { selector: '.card-actions button' }),
     ).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: '+ Add Entry' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Team PDF' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Person PDF' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Edit' })).not.toBeInTheDocument();
   });
 
