@@ -113,7 +113,7 @@ describe('ACC application', () => {
     expect(screen.getByRole('heading', { name: 'No records yet' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Open app menu' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Statistics' })).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Add person' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Add' })).toBeInTheDocument();
     const navigation = screen.getByRole('navigation', { name: 'Primary navigation' });
     expect(within(navigation).getByRole('button', { name: 'Home' })).toHaveAttribute(
       'aria-current',
@@ -176,7 +176,8 @@ describe('ACC application', () => {
     await waitFor(() => expect(store.getState().initialized).toBe(true));
     const navigation = screen.getByRole('navigation', { name: 'Primary navigation' });
 
-    await user.click(screen.getByRole('button', { name: 'Add person' }));
+    await user.click(screen.getByRole('button', { name: 'Add' }));
+    await user.click(await screen.findByRole('button', { name: 'Add Person' }));
     expect(screen.getByRole('dialog', { name: 'Add Person' })).toBeVisible();
     pressBrowserBack();
     await waitFor(() =>
@@ -235,13 +236,15 @@ describe('ACC application', () => {
     const store = renderApp();
     await waitFor(() => expect(store.getState().initialized).toBe(true));
 
-    await user.click(screen.getByRole('button', { name: 'Add person' }));
+    await user.click(screen.getByRole('button', { name: 'Add' }));
+    await user.click(await screen.findByRole('button', { name: 'Add Person' }));
     pressBrowserBack();
     await waitFor(() =>
       expect(screen.queryByRole('dialog', { name: 'Add Person' })).not.toBeInTheDocument(),
     );
 
-    await user.click(screen.getByRole('button', { name: 'Add person' }));
+    await user.click(screen.getByRole('button', { name: 'Add' }));
+    await user.click(await screen.findByRole('button', { name: 'Add Person' }));
     await user.type(screen.getByRole('textbox', { name: 'Name' }), 'Unsaved person');
     pressBrowserBack();
     const discard = await screen.findByRole('dialog', { name: 'Discard changes?' });
@@ -380,7 +383,8 @@ describe('ACC application', () => {
     expect(search).toHaveAttribute('autocapitalize', 'none');
     expect(search).toHaveAttribute('inputmode', 'search');
 
-    await user.click(screen.getByRole('button', { name: 'Add person' }));
+    await user.click(screen.getByRole('button', { name: 'Add' }));
+    await user.click(await screen.findByRole('button', { name: 'Add Person' }));
     const name = screen.getByRole('textbox', { name: /^Name$/ });
     const tag = screen.getByRole('textbox', { name: 'Tag optional' });
     expect(name).toHaveAttribute('autocomplete', 'off');
@@ -489,13 +493,53 @@ describe('ACC application', () => {
     await waitFor(() => expect(store.getState().peopleByMode.personal).toHaveLength(0));
   });
 
+  it('adds an entry via the FAB menu and person picker', async () => {
+    const user = userEvent.setup();
+    const store = renderApp();
+    await waitFor(() => expect(store.getState().initialized).toBe(true));
+    await act(async () => store.getState().addPerson(draft('Riley')));
+    await act(async () => store.getState().addPerson(draft('Sam')));
+
+    await user.click(screen.getByRole('button', { name: 'Add' }));
+    await user.click(await screen.findByRole('button', { name: 'Add Entry' }));
+
+    const picker = await screen.findByRole('dialog', { name: 'Add entry for…' });
+    await user.click(within(picker).getByRole('button', { name: /Riley/ }));
+
+    const entryDialog = await screen.findByRole('dialog', { name: 'Add Entry · Riley' });
+    await user.type(within(entryDialog).getByRole('spinbutton', { name: 'Amount' }), '42');
+    await user.click(within(entryDialog).getByRole('button', { name: 'Save' }));
+
+    await waitFor(() => {
+      const riley = store
+        .getState()
+        .peopleByMode.personal.find((person) => person.name === 'Riley');
+      expect(riley?.entries).toHaveLength(1);
+    });
+    const sam = store.getState().peopleByMode.personal.find((person) => person.name === 'Sam');
+    expect(sam?.entries).toHaveLength(0);
+  });
+
+  it('prompts to add a person first when the FAB entry picker has nothing to show', async () => {
+    const user = userEvent.setup();
+    const store = renderApp();
+    await waitFor(() => expect(store.getState().initialized).toBe(true));
+
+    await user.click(screen.getByRole('button', { name: 'Add' }));
+    await user.click(await screen.findByRole('button', { name: 'Add Entry' }));
+
+    const picker = await screen.findByRole('dialog', { name: 'Add entry for…' });
+    expect(picker.querySelector('.mini-empty')).toHaveTextContent(/No persons yet/i);
+  });
+
   it('creates a person and an entry through the touch UI', async () => {
     const user = userEvent.setup();
     const store = renderApp();
     await waitFor(() => expect(store.getState().initialized).toBe(true));
     await waitForElementToBeRemoved(() => screen.queryByRole('status', { name: 'ACC is loading' }));
 
-    await user.click(screen.getByRole('button', { name: 'Add person' }));
+    await user.click(screen.getByRole('button', { name: 'Add' }));
+    await user.click(await screen.findByRole('button', { name: 'Add Person' }));
     await user.type(screen.getByRole('textbox', { name: 'Name' }), 'Taylor');
     await user.click(screen.getByRole('button', { name: 'Save' }));
 

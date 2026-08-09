@@ -2,8 +2,10 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { BottomNavigation, type AppDestination } from '../components/BottomNavigation';
 import { ConfirmDialog } from '../components/ConfirmDialog';
+import { FabMenu } from '../components/FabMenu';
 import { InstallPrompt } from '../components/InstallPrompt';
 import { ModeSwitch } from '../components/ModeSwitch';
+import { PersonPickerSheet } from '../components/PersonPickerSheet';
 import { SettingsSheet } from '../components/SettingsSheet';
 import { StartupScreen } from '../components/StartupScreen';
 import { UndoToast } from '../components/UndoToast';
@@ -83,6 +85,8 @@ export function App() {
   const toggleArchive = useAppStore((state) => state.toggleArchive);
   const [confirmation, setConfirmation] = useState<Confirmation | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [fabMenuOpen, setFabMenuOpen] = useState(false);
+  const [entryPersonPickerOpen, setEntryPersonPickerOpen] = useState(false);
   const dirtyRef = useRef(false);
   const confirmationRef = useRef<Confirmation | null>(null);
   const historyReadyRef = useRef(false);
@@ -383,12 +387,7 @@ export function App() {
       </div>
 
       {initialized && (
-        <button
-          aria-label={`Add ${mode === 'work' ? 'team' : 'person'}`}
-          className="fab"
-          onClick={() => openSheet('person-form')}
-          type="button"
-        >
+        <button aria-label="Add" className="fab" onClick={() => setFabMenuOpen(true)} type="button">
           +
         </button>
       )}
@@ -414,6 +413,31 @@ export function App() {
           onChangeTheme={(next) => void setTheme(next)}
           onClose={requestClose}
           theme={theme}
+        />
+      )}
+      {fabMenuOpen && (
+        <FabMenu
+          onAddEntry={() => {
+            setFabMenuOpen(false);
+            setEntryPersonPickerOpen(true);
+          }}
+          onAddPerson={() => {
+            setFabMenuOpen(false);
+            openSheet('person-form');
+          }}
+          onClose={() => setFabMenuOpen(false)}
+          personLabel={mode === 'work' ? 'Team' : 'Person'}
+        />
+      )}
+      {entryPersonPickerOpen && (
+        <PersonPickerSheet
+          mode={mode}
+          onClose={() => setEntryPersonPickerOpen(false)}
+          onSelect={(person) => {
+            setEntryPersonPickerOpen(false);
+            openSheet('entry-form', person.id);
+          }}
+          people={people}
         />
       )}
       {confirmation && (
