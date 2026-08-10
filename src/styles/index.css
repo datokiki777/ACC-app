@@ -737,6 +737,14 @@ a:focus-visible {
   font-weight: 800;
 }
 
+.tag-chip {
+  background: color-mix(in srgb, currentcolor 12%, transparent);
+}
+
+.tag-chip.tag-chip-dot-only {
+  padding: 2px;
+}
+
 .status-overdue,
 .money-pill.overdue {
   border-color: color-mix(in srgb, var(--danger) 45%, transparent);
@@ -755,8 +763,9 @@ a:focus-visible {
 }
 
 .tag-dot {
-  width: 7px;
-  height: 7px;
+  width: 9px;
+  height: 9px;
+  flex: 0 0 auto;
   border-radius: 50%;
 }
 

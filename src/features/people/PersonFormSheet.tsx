@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { BottomSheet } from '../../components/BottomSheet';
 import { PickerField } from '../../components/PickerField';
 import { useAppNavigation, useUnsavedForm } from '../../app/useAppNavigation';
+import { TAG_COLORS } from '../../domain/tag-colors';
 import type { PersonDraft } from '../../store/app-store';
 import { useAppStore } from '../../store/hooks';
 import type { Currency, PayDelayMode } from '../../types/domain';
@@ -21,17 +22,6 @@ const PAY_DELAY_OPTIONS: { value: PayDelayMode; label: string }[] = [
   { value: '2weeks', label: '2 weeks after period' },
   { value: '4weeks', label: '4 weeks after period' },
   { value: 'firstOfMonth', label: '1st of next month' },
-];
-
-const COLORS = [
-  '#5692ff',
-  '#35c26b',
-  '#ff6b6b',
-  '#ffb84d',
-  '#b98cff',
-  '#4fd1c5',
-  '#ff8fce',
-  '#9aaac4',
 ];
 
 const personSchema = z
@@ -161,7 +151,7 @@ export function PersonFormSheet() {
           >
             ×
           </button>
-          {COLORS.map((color) => (
+          {TAG_COLORS.map((color) => (
             <button
               aria-label={`Tag color ${color}`}
               className={tagColor === color ? 'color-swatch is-selected' : 'color-swatch'}

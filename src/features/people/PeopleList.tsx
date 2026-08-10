@@ -1,19 +1,11 @@
 import { useEffect, useState } from 'react';
 
 import type { PersistedPerson } from '../../types/persistence';
+import { TAG_COLORS } from '../../domain/tag-colors';
 import { useAppStore } from '../../store/hooks';
 import { PersonCard, type PersonSwipeAction } from './PersonCard';
 
-const COLOR_ORDER = [
-  '#5692ff',
-  '#35c26b',
-  '#ff6b6b',
-  '#ffb84d',
-  '#b98cff',
-  '#4fd1c5',
-  '#ff8fce',
-  '#9aaac4',
-];
+const COLOR_ORDER: readonly string[] = TAG_COLORS;
 
 function activityTime(person: PersistedPerson): number {
   const entryTimes = person.entries.map((entry) => Date.parse(entry.date)).filter(Number.isFinite);

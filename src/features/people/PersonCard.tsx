@@ -259,7 +259,7 @@ export function PersonCard({
               {salary?.due ? <span className="status-chip status-overdue">Overdue</span> : null}
               {(person.tagLabel || person.tagColor) && (
                 <span
-                  className="tag-chip"
+                  className={`tag-chip ${person.tagColor && !person.tagLabel ? 'tag-chip-dot-only' : ''}`}
                   style={
                     person.tagColor
                       ? { color: person.tagColor, borderColor: `${person.tagColor}77` }
