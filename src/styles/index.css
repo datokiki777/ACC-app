@@ -11,21 +11,21 @@
   background: var(--color-bg);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
-  --color-bg: #17283f;
-  --color-bg-secondary: #132237;
-  --color-bg-deep: #13223a;
-  --color-toolbar: #1a2d47;
-  --color-surface: #1e3350;
-  --color-surface-elevated: #25405f;
-  --color-surface-expanded: #2a4364;
-  --color-surface-panel: #305076;
-  --color-surface-entry: #264160;
-  --color-surface-control: #203552;
-  --color-filter-control: #2a4362;
-  --color-surface-selected: #3a5c82;
-  --color-nav: #182a42;
-  --color-border: #3d5a7c;
-  --color-border-strong: #4d6f92;
+  --color-bg: #1a2c46;
+  --color-bg-secondary: #16273d;
+  --color-bg-deep: #101d30;
+  --color-toolbar: #223a5c;
+  --color-surface: #25405f;
+  --color-surface-elevated: #2c4a6c;
+  --color-surface-expanded: #315277;
+  --color-surface-panel: #37588c;
+  --color-surface-entry: #2b4868;
+  --color-surface-control: #22395a;
+  --color-filter-control: #2c4666;
+  --color-surface-selected: #3d6088;
+  --color-nav: #101d30;
+  --color-border: #435f82;
+  --color-border-strong: #527298;
   --color-divider: rgb(150 185 220 / 16%);
   --color-text: #f2f6fc;
   --color-text-secondary: #a6b5c9;
@@ -741,8 +741,12 @@ a:focus-visible {
   background: color-mix(in srgb, currentcolor 12%, transparent);
 }
 
-.tag-chip.tag-chip-dot-only {
-  padding: 2px;
+.tag-swatch {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px rgb(0 0 0 / 15%);
 }
 
 .status-overdue,

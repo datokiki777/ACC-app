@@ -257,9 +257,9 @@ export function PersonCard({
               <strong>{person.name}</strong>
               {person.archived && <span className="status-chip">Archived</span>}
               {salary?.due ? <span className="status-chip status-overdue">Overdue</span> : null}
-              {(person.tagLabel || person.tagColor) && (
+              {person.tagLabel ? (
                 <span
-                  className={`tag-chip ${person.tagColor && !person.tagLabel ? 'tag-chip-dot-only' : ''}`}
+                  className="tag-chip"
                   style={
                     person.tagColor
                       ? { color: person.tagColor, borderColor: `${person.tagColor}77` }
@@ -271,6 +271,14 @@ export function PersonCard({
                   )}
                   {person.tagLabel}
                 </span>
+              ) : (
+                person.tagColor && (
+                  <span
+                    aria-hidden="true"
+                    className="tag-swatch"
+                    style={{ background: person.tagColor }}
+                  />
+                )
               )}
             </span>
             <small>

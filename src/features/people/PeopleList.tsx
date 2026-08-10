@@ -1,16 +1,9 @@
 import { useEffect, useState } from 'react';
 
 import type { PersistedPerson } from '../../types/persistence';
-import { TAG_COLORS } from '../../domain/tag-colors';
+import { sortPeopleByTagAndActivity } from '../../domain/people-sort';
 import { useAppStore } from '../../store/hooks';
 import { PersonCard, type PersonSwipeAction } from './PersonCard';
-
-const COLOR_ORDER: readonly string[] = TAG_COLORS;
-
-function activityTime(person: PersistedPerson): number {
-  const entryTimes = person.entries.map((entry) => Date.parse(entry.date)).filter(Number.isFinite);
-  return Math.max(0, ...entryTimes, person.createdAt ? Date.parse(person.createdAt) : 0);
-}
 
 interface PeopleListProps {
   onDeletePerson: (person: PersistedPerson) => void;
@@ -27,16 +20,11 @@ export function PeopleList({ onDeletePerson, onDeleteEntry, onToggleArchive }: P
   const people = useAppStore((state) => state.peopleByMode[state.mode]);
   const search = useAppStore((state) => state.search.trim().toLowerCase());
   const filter = useAppStore((state) => state.filter);
-  const filtered = people
-    .filter((person) => search || Boolean(person.archived) === (filter === 'archived'))
-    .filter((person) => person.name.toLowerCase().includes(search))
-    .sort((first, second) => {
-      const firstColor = COLOR_ORDER.indexOf(first.tagColor ?? '');
-      const secondColor = COLOR_ORDER.indexOf(second.tagColor ?? '');
-      const colorDifference =
-        (firstColor < 0 ? 999 : firstColor) - (secondColor < 0 ? 999 : secondColor);
-      return colorDifference || activityTime(second) - activityTime(first);
-    });
+  const filtered = sortPeopleByTagAndActivity(
+    people
+      .filter((person) => search || Boolean(person.archived) === (filter === 'archived'))
+      .filter((person) => person.name.toLowerCase().includes(search)),
+  );
   useEffect(() => {
     if (!openSwipe) return;
     const closeOpenSwipe = (event: PointerEvent) => {
