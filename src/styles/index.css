@@ -11,21 +11,21 @@
   background: var(--color-bg);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
-  --color-bg: #1a2c46;
-  --color-bg-secondary: #16273d;
-  --color-bg-deep: #101d30;
-  --color-toolbar: #223a5c;
-  --color-surface: #25405f;
-  --color-surface-elevated: #2c4a6c;
-  --color-surface-expanded: #315277;
-  --color-surface-panel: #37588c;
-  --color-surface-entry: #2b4868;
-  --color-surface-control: #22395a;
-  --color-filter-control: #2c4666;
-  --color-surface-selected: #3d6088;
-  --color-nav: #101d30;
-  --color-border: #435f82;
-  --color-border-strong: #527298;
+  --color-bg: #17263d;
+  --color-bg-secondary: #142137;
+  --color-bg-deep: #0d1826;
+  --color-toolbar: #24405f;
+  --color-surface: #2a4667;
+  --color-surface-elevated: #315274;
+  --color-surface-expanded: #375c81;
+  --color-surface-panel: #4a7099;
+  --color-surface-entry: #3a5e8c;
+  --color-surface-control: #25415f;
+  --color-filter-control: #2f4e70;
+  --color-surface-selected: #45699b;
+  --color-nav: #0c1725;
+  --color-border: #4a698e;
+  --color-border-strong: #5a7ba3;
   --color-divider: rgb(150 185 220 / 16%);
   --color-text: #f2f6fc;
   --color-text-secondary: #a6b5c9;
@@ -798,9 +798,10 @@ a:focus-visible {
 
 .payroll-panel {
   padding: 11px 12px 10px;
-  border: 1px solid color-mix(in srgb, var(--accent) 14%, var(--border));
+  border: 1px solid color-mix(in srgb, var(--accent) 20%, var(--border-strong));
   border-radius: 15px;
-  background: color-mix(in srgb, var(--surface-raised) 82%, var(--accent) 3%);
+  background: color-mix(in srgb, var(--surface-panel) 90%, var(--accent) 4%);
+  box-shadow: inset 0 1px rgb(255 255 255 / 5%);
 }
 
 .panel-heading,
@@ -910,9 +911,9 @@ a:focus-visible {
 .other-panel {
   align-items: center;
   padding: 9px 11px;
-  border: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
+  border: 1px solid var(--border);
   border-radius: 13px;
-  background: color-mix(in srgb, var(--surface-raised) 70%, var(--bg));
+  background: var(--surface-panel);
 }
 
 .totals-row {
@@ -995,12 +996,12 @@ a:focus-visible {
   column-gap: 8px;
   min-height: 62px;
   padding: 8px 12px;
-  border: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+  border: 1px solid var(--border);
   border-radius: 13px;
-  background: color-mix(in srgb, var(--surface-raised) 76%, var(--bg));
+  background: var(--surface-entry);
   box-shadow:
     0 2px 5px rgb(0 0 0 / 6%),
-    inset 0 1px rgb(255 255 255 / 3%);
+    inset 0 1px rgb(255 255 255 / 4%);
   touch-action: pan-y;
   transition: transform 165ms cubic-bezier(0.22, 0.8, 0.3, 1);
   will-change: transform;
@@ -1397,6 +1398,14 @@ a:focus-visible {
 
 .choice-row {
   gap: 6px;
+}
+
+.choice-panel {
+  padding: 11px 12px 12px;
+  border: 1px solid var(--border);
+  border-radius: 15px;
+  background: var(--surface-raised);
+  box-shadow: inset 0 1px rgb(255 255 255 / 3%);
 }
 
 .choice-button {
@@ -2784,18 +2793,24 @@ a:focus-visible {
   font-weight: 750;
 }
 
-.payroll-panel,
-.other-panel,
+.payroll-panel {
+  border-color: color-mix(in srgb, var(--color-accent) 20%, var(--color-border-strong));
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--color-surface-panel) 90%, var(--color-accent) 4%);
+  box-shadow: inset 0 1px rgb(255 255 255 / 5%);
+}
+
+.other-panel {
+  border-color: var(--color-border);
+  border-radius: 14px;
+  background: var(--color-surface-panel);
+  box-shadow: none;
+}
+
 .totals-row,
 .entry-card-surface {
   border-color: var(--color-border);
   background: var(--color-surface-entry);
-  box-shadow: none;
-}
-
-.payroll-panel,
-.other-panel {
-  border-radius: 14px;
 }
 
 .money-pill.overdue {

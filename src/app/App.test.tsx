@@ -214,6 +214,27 @@ describe('ACC application', () => {
     );
   });
 
+  it('closes the FAB menu and person picker with browser Back', async () => {
+    const user = userEvent.setup();
+    const store = renderApp();
+    await waitFor(() => expect(store.getState().initialized).toBe(true));
+
+    await user.click(screen.getByRole('button', { name: 'Add' }));
+    expect(screen.getByRole('dialog', { name: 'Add' })).toBeVisible();
+    pressBrowserBack();
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog', { name: 'Add' })).not.toBeInTheDocument(),
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Add' }));
+    await user.click(await screen.findByRole('button', { name: 'Add Entry' }));
+    expect(screen.getByRole('dialog', { name: 'Add entry for…' })).toBeVisible();
+    pressBrowserBack();
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog', { name: 'Add entry for…' })).not.toBeInTheDocument(),
+    );
+  });
+
   it('closes confirmation dialogs before changing the underlying Back state', async () => {
     const user = userEvent.setup();
     const store = renderApp();

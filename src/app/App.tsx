@@ -89,11 +89,15 @@ export function App() {
   const [entryPersonPickerOpen, setEntryPersonPickerOpen] = useState(false);
   const dirtyRef = useRef(false);
   const confirmationRef = useRef<Confirmation | null>(null);
+  const fabMenuOpenRef = useRef(false);
+  const entryPersonPickerOpenRef = useRef(false);
   const historyReadyRef = useRef(false);
   const historyDepthRef = useRef(0);
   const lastSnapshotKeyRef = useRef('');
   const ignoredSnapshotKeyRef = useRef('');
-  const returningAfterBlockedBackRef = useRef<'confirmation' | 'dirty' | null>(null);
+  const returningAfterBlockedBackRef = useRef<
+    'confirmation' | 'dirty' | 'fabMenu' | 'personPicker' | null
+  >(null);
   useThemeEffect(theme);
 
   useEffect(() => {
@@ -103,6 +107,14 @@ export function App() {
   useEffect(() => {
     confirmationRef.current = confirmation;
   }, [confirmation]);
+
+  useEffect(() => {
+    fabMenuOpenRef.current = fabMenuOpen;
+  }, [fabMenuOpen]);
+
+  useEffect(() => {
+    entryPersonPickerOpenRef.current = entryPersonPickerOpen;
+  }, [entryPersonPickerOpen]);
 
   const activeCount = people.filter((person) => !person.archived).length;
   const archivedCount = people.filter((person) => person.archived).length;
@@ -221,6 +233,22 @@ export function App() {
         confirmationRef.current = null;
         setConfirmation(null);
         returningAfterBlockedBackRef.current = 'confirmation';
+        window.history.forward();
+        return;
+      }
+
+      if (entryPersonPickerOpenRef.current) {
+        entryPersonPickerOpenRef.current = false;
+        setEntryPersonPickerOpen(false);
+        returningAfterBlockedBackRef.current = 'personPicker';
+        window.history.forward();
+        return;
+      }
+
+      if (fabMenuOpenRef.current) {
+        fabMenuOpenRef.current = false;
+        setFabMenuOpen(false);
+        returningAfterBlockedBackRef.current = 'fabMenu';
         window.history.forward();
         return;
       }

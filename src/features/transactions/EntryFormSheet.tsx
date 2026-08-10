@@ -101,7 +101,7 @@ export function EntryFormSheet() {
         </label>
 
         {mode === 'work' && (
-          <div className="field">
+          <div className="field choice-panel">
             <span>Kind</span>
             <div className="choice-row">
               <button
@@ -124,7 +124,7 @@ export function EntryFormSheet() {
           </div>
         )}
 
-        <div className="field">
+        <div className="field choice-panel">
           <span>{category === 'salary' ? 'Direction' : 'Type'}</span>
           <div className="choice-row">
             <button
