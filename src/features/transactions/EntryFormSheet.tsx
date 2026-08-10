@@ -107,10 +107,7 @@ export function EntryFormSheet() {
               <button
                 aria-pressed={category === 'salary'}
                 className={category === 'salary' ? 'choice-button is-selected' : 'choice-button'}
-                onClick={() => {
-                  setValue('category', 'salary', { shouldDirty: true });
-                  setValue('type', 'Gave', { shouldDirty: true });
-                }}
+                onClick={() => setValue('category', 'salary', { shouldDirty: true })}
                 type="button"
               >
                 Salary
@@ -127,35 +124,31 @@ export function EntryFormSheet() {
           </div>
         )}
 
-        {category !== 'salary' && (
-          <div className="field">
-            <span>Type</span>
-            <div className="choice-row">
-              <button
-                aria-pressed={type === 'Gave'}
-                className={
-                  type === 'Gave' ? 'choice-button is-selected choice-gave' : 'choice-button'
-                }
-                onClick={() => setValue('type', 'Gave', { shouldDirty: true })}
-                type="button"
-              >
-                ↗ Gave
-              </button>
-              <button
-                aria-pressed={type === 'Received'}
-                className={
-                  type === 'Received'
-                    ? 'choice-button is-selected choice-received'
-                    : 'choice-button'
-                }
-                onClick={() => setValue('type', 'Received', { shouldDirty: true })}
-                type="button"
-              >
-                ↘ Received
-              </button>
-            </div>
+        <div className="field">
+          <span>{category === 'salary' ? 'Direction' : 'Type'}</span>
+          <div className="choice-row">
+            <button
+              aria-pressed={type === 'Gave'}
+              className={
+                type === 'Gave' ? 'choice-button is-selected choice-gave' : 'choice-button'
+              }
+              onClick={() => setValue('type', 'Gave', { shouldDirty: true })}
+              type="button"
+            >
+              {category === 'salary' ? '↗ Paid' : '↗ Gave'}
+            </button>
+            <button
+              aria-pressed={type === 'Received'}
+              className={
+                type === 'Received' ? 'choice-button is-selected choice-received' : 'choice-button'
+              }
+              onClick={() => setValue('type', 'Received', { shouldDirty: true })}
+              type="button"
+            >
+              {category === 'salary' ? '↘ Refunded' : '↘ Received'}
+            </button>
           </div>
-        )}
+        </div>
 
         <label className="field">
           <span>Date</span>

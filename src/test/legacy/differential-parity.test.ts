@@ -285,6 +285,9 @@ describe('legacy differential parity', () => {
       const optionalEnd =
         random() < 0.35 ? shiftDate(startDate, randomInteger(random, 1, 400)) : undefined;
       const entries = createRandomEntries(random, startDate);
+      const hasReceivedSalaryEntry = entries.some(
+        (candidate) => candidate.type === 'Received' && candidate.category === 'salary',
+      );
       const currencies = ['EUR', 'USD', 'GEL', 'CAD'] as const;
       const currency = currencies[randomInteger(random, 0, currencies.length - 1)] ?? 'EUR';
       const delay = delays[randomInteger(random, 0, delays.length - 1)] ?? 'none';
@@ -300,6 +303,12 @@ describe('legacy differential parity', () => {
       });
       const referenceDate = fromDateString(referenceDateString);
       const modern = calculateSalary(fixture, referenceDate);
+      // Intentional deviation from legacy: a Received entry categorized as salary now nets
+      // against what's been paid (a refund/clawback), instead of being ignored entirely. This
+      // touches paid/due/upcoming/nextPayDate/daysUntilNextPay/paySoon in ways that can't be
+      // cheaply reconstructed from legacy's output, so those cases are covered by dedicated unit
+      // tests (salary.test.ts) instead of this fuzz comparison.
+      if (hasReceivedSalaryEntry) continue;
       const legacy = plain(legacyHarness.personSalarySummary(fixture, referenceDate));
       // Intentional deviation from legacy: once the currently-targeted pay period is fully paid
       // (including advance payment before its boundary date), 'upcoming' is now 0 instead of

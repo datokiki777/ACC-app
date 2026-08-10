@@ -133,7 +133,7 @@ describe('Zustand application actions', () => {
       category: 'salary',
     });
     const paid = store.getState().peopleByMode.work[0]!;
-    expect(paid.entries[0]?.type).toBe('Gave');
+    expect(paid.entries[0]?.type).toBe('Received');
 
     await store.getState().editPerson(employee.id, {
       ...salaryDraft(),

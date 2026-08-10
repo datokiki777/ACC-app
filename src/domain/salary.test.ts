@@ -73,15 +73,37 @@ describe('salary calculation parity', () => {
     expect(result.daysUntilNextPay).toBeNull();
   });
 
-  it('counts only Gave salary entries as paid, including legacy comments', () => {
+  it('nets Received salary entries against Gave salary entries when counting what is paid', () => {
     const person = weeklySalaryPerson({
       entries: [
         entry({ id: 'one', amount: 40, category: 'salary' }),
         entry({ id: 'two', amount: 20, comment: '[Salary] Legacy' }),
-        entry({ id: 'three', amount: 500, type: 'Received', category: 'salary' }),
+        entry({ id: 'three', amount: 15, type: 'Received', category: 'salary' }),
       ],
     });
-    expect(salaryPaid(person)).toBe(60);
+    expect(salaryPaid(person)).toBe(45);
+  });
+
+  it('lets a Received salary entry represent a refund/clawback that reduces what is owed', () => {
+    // Real scenario: an earlier personal loan (not salary) was partly paid back, and the net
+    // remaining balance should count against an upcoming salary payment. Rather than fabricating
+    // a new entry, the original Gave and Received entries are simply re-categorized as salary.
+    const person = weeklySalaryPerson({
+      salaryAmount: 3000,
+      salaryStartDate: '2026-07-01',
+      salaryPayPeriodWeeks: 2,
+      entries: [
+        entry({ id: 'loan', amount: 1500, category: 'salary', date: '2026-08-09' }),
+        entry({
+          id: 'partial-refund',
+          amount: 300,
+          type: 'Received',
+          category: 'salary',
+          date: '2026-08-10',
+        }),
+      ],
+    });
+    expect(salaryPaid(person)).toBe(1200);
   });
 
   it('identifies the earliest unpaid completed period behind a paid period', () => {

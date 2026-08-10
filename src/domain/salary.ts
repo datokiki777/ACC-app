@@ -42,8 +42,10 @@ export function getSalarySettings(person: Person): SalarySettings | null {
 
 export function salaryPaid(person: Pick<Person, 'entries'>): number {
   return person.entries.reduce((sum, entry) => {
-    if (!isSalaryEntry(entry) || entry.type !== 'Gave') return sum;
-    return sum + normalizeAmount(entry.amount);
+    if (!isSalaryEntry(entry)) return sum;
+    if (entry.type === 'Gave') return sum + normalizeAmount(entry.amount);
+    if (entry.type === 'Received') return sum - normalizeAmount(entry.amount);
+    return sum;
   }, 0);
 }
 

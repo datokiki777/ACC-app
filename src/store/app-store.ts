@@ -204,7 +204,7 @@ function entryFromDraft(draft: EntryDraft, id: string): PersistedEntry {
   return {
     id,
     amount: Math.round(draft.amount),
-    type: category === 'salary' ? 'Gave' : draft.type,
+    type: draft.type,
     date: draft.date,
     comment: draft.comment.trim(),
     ...(category ? { category } : {}),

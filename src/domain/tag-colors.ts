@@ -1,12 +1,5 @@
-// Tag colors intentionally avoid the app's semantic hues (positive green, negative red, accent
-// gold) so a person's tag never reads as a balance state or a warning at a glance.
-export const TAG_COLORS = [
-  '#5B9BFF', // Blue
-  '#7C86FF', // Indigo
-  '#A78BFA', // Violet
-  '#E879C8', // Orchid
-  '#FB7BA2', // Pink
-  '#38BFC4', // Teal
-  '#E08B5E', // Terracotta
-  '#94A3B8', // Slate
-] as const;
+// Tag colors intentionally avoid the app's other semantic hues (accent gold) and stay limited to
+// a small, easy-to-scan set. These exact hex values match what's already assigned to existing
+// people's records — changing them would silently break tag-based sorting for anyone who already
+// picked a color, since sorting matches by exact hex value.
+export const TAG_COLORS = ['#5692ff', '#35c26b', '#ff6b6b'] as const;

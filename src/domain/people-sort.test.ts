@@ -16,8 +16,8 @@ function makePerson(overrides: Partial<PersistedPerson> = {}): PersistedPerson {
 
 describe('sortPeopleByTagAndActivity', () => {
   it('orders people by their tag color position in the palette', () => {
-    const later = TAG_COLORS[3];
-    const earlier = TAG_COLORS[1];
+    const later = TAG_COLORS[2];
+    const earlier = TAG_COLORS[0];
     const first = makePerson({ id: 'a', name: 'A', tagColor: later });
     const second = makePerson({ id: 'b', name: 'B', tagColor: earlier });
 
