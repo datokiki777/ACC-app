@@ -74,4 +74,28 @@ describe('sortPeopleByTagAndActivity', () => {
         .sort(),
     ).toEqual(['none', 'unknown']);
   });
+
+  it('orders same-name people in the same color group by real creation date, not recent activity', () => {
+    const color = TAG_COLORS[0];
+    const olderGiorgi = makePerson({
+      id: 'older',
+      name: 'Giorgi',
+      tagColor: color,
+      createdAt: '2026-01-01T00:00:00.000Z',
+      // Recent activity would otherwise put this one first under the general tiebreak.
+      entries: [{ id: 'e1', amount: 10, type: 'Gave', date: '2026-08-01' }],
+    });
+    const newerGiorgi = makePerson({
+      id: 'newer',
+      name: 'Giorgi',
+      tagColor: color,
+      createdAt: '2026-06-01T00:00:00.000Z',
+      entries: [],
+    });
+
+    expect(sortPeopleByTagAndActivity([newerGiorgi, olderGiorgi]).map((p) => p.id)).toEqual([
+      'older',
+      'newer',
+    ]);
+  });
 });

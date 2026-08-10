@@ -6,11 +6,20 @@ export function activityTime(person: PersistedPerson): number {
   return Math.max(0, ...entryTimes, person.createdAt ? Date.parse(person.createdAt) : 0);
 }
 
+function createdTime(person: PersistedPerson): number {
+  return person.createdAt ? Date.parse(person.createdAt) : NaN;
+}
+
 /**
  * Sorts people by their tag color's position in the TAG_COLORS palette (so the color swatch
  * order controls the list order). People who share a color — or have no tag color at all —
  * are grouped together and ordered by most recent activity (latest entry, falling back to when
  * they were created). People with no tag color sort after every colored group.
+ *
+ * Duplicate names are fully supported (there's no uniqueness requirement) — when two people in
+ * the same color group also share a name, they're additionally ordered by when they were
+ * actually created (oldest first), so it's clear which record is which regardless of which one
+ * has more recent activity.
  */
 export function sortPeopleByTagAndActivity(people: PersistedPerson[]): PersistedPerson[] {
   return [...people].sort((first, second) => {
@@ -19,6 +28,17 @@ export function sortPeopleByTagAndActivity(people: PersistedPerson[]): Persisted
     const colorDifference =
       (firstColor < 0 ? TAG_COLORS.length : firstColor) -
       (secondColor < 0 ? TAG_COLORS.length : secondColor);
-    return colorDifference || activityTime(second) - activityTime(first);
+    if (colorDifference) return colorDifference;
+
+    if (first.name.trim().toLowerCase() === second.name.trim().toLowerCase()) {
+      const firstCreated = createdTime(first);
+      const secondCreated = createdTime(second);
+      if (Number.isFinite(firstCreated) && Number.isFinite(secondCreated)) {
+        const createdDifference = firstCreated - secondCreated;
+        if (createdDifference) return createdDifference;
+      }
+    }
+
+    return activityTime(second) - activityTime(first);
   });
 }

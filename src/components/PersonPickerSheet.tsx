@@ -1,7 +1,9 @@
 import { useState } from 'react';
 
+import { sortPeopleByTagAndActivity } from '../domain/people-sort';
 import type { AppMode } from '../types/domain';
 import type { PersistedPerson } from '../types/persistence';
+import { formatDate } from '../utils/format';
 import { BottomSheet } from './BottomSheet';
 
 interface PersonPickerSheetProps {
@@ -14,7 +16,12 @@ interface PersonPickerSheetProps {
 export function PersonPickerSheet({ people, mode, onSelect, onClose }: PersonPickerSheetProps) {
   const [search, setSearch] = useState('');
   const label = mode === 'work' ? 'team' : 'person';
-  const active = people.filter((person) => !person.archived);
+  const active = sortPeopleByTagAndActivity(people.filter((person) => !person.archived));
+  const nameCounts = new Map<string, number>();
+  active.forEach((person) => {
+    const key = person.name.trim().toLowerCase();
+    nameCounts.set(key, (nameCounts.get(key) ?? 0) + 1);
+  });
   const filtered = active.filter((person) =>
     person.name.toLowerCase().includes(search.trim().toLowerCase()),
   );
@@ -44,21 +51,27 @@ export function PersonPickerSheet({ people, mode, onSelect, onClose }: PersonPic
         <p className="mini-empty">No matches.</p>
       ) : (
         <div className="picker-options">
-          {filtered.map((person) => (
-            <button
-              className="picker-option"
-              key={person.id}
-              onClick={() => onSelect(person)}
-              type="button"
-            >
-              <span className="picker-option-text">
-                <span>{person.name}</span>
-                <small>
-                  {person.currency} · {person.entries.length} entries
-                </small>
-              </span>
-            </button>
-          ))}
+          {filtered.map((person) => {
+            const isDuplicateName = (nameCounts.get(person.name.trim().toLowerCase()) ?? 0) > 1;
+            return (
+              <button
+                className="picker-option"
+                key={person.id}
+                onClick={() => onSelect(person)}
+                type="button"
+              >
+                <span className="picker-option-text">
+                  <span>{person.name}</span>
+                  <small>
+                    {person.currency} · {person.entries.length} entries
+                    {isDuplicateName && person.createdAt
+                      ? ` · added ${formatDate(person.createdAt.slice(0, 10))}`
+                      : ''}
+                  </small>
+                </span>
+              </button>
+            );
+          })}
         </div>
       )}
     </BottomSheet>

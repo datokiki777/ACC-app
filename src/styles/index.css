@@ -14,7 +14,7 @@
   --color-bg: #17263d;
   --color-bg-secondary: #142137;
   --color-bg-deep: #0d1826;
-  --color-toolbar: #24405f;
+  --color-toolbar: #0f1f33;
   --color-surface: #2a4667;
   --color-surface-elevated: #315274;
   --color-surface-expanded: #375c81;
@@ -263,7 +263,7 @@ a:focus-visible {
 .scope-switch button {
   min-height: 32px;
   border-radius: 9px;
-  border: 0;
+  border: 1px solid transparent;
   background: transparent;
   color: var(--muted);
   font-size: 0.86rem;
@@ -272,6 +272,7 @@ a:focus-visible {
 
 .filter-switch button.is-selected,
 .scope-switch button.is-selected {
+  border-color: color-mix(in srgb, var(--color-accent) 30%, transparent);
   color: var(--text);
   background: var(--color-surface-selected);
   box-shadow: 0 3px 9px rgb(0 0 0 / 10%);
