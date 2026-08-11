@@ -83,7 +83,7 @@
   --color-bg: #c3d6ea;
   --color-bg-secondary: #b9cee5;
   --color-bg-deep: #aec4dc;
-  --color-toolbar: #b3cadf;
+  --color-toolbar: var(--color-bg);
   --color-surface: #e7eef6;
   --color-surface-elevated: #dde7f1;
   --color-surface-expanded: #e3edf6;
