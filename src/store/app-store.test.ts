@@ -190,6 +190,37 @@ describe('Zustand application actions', () => {
     expect(archived.salaryEndDate).toBeFalsy();
   });
 
+  it('re-syncs the period anchor when the salary start date is corrected after it went stale', async () => {
+    const store = makeStore();
+    await store.getState().initialize();
+    await store.getState().setMode('work');
+    await store.getState().addPerson(salaryDraft());
+    const employee = store.getState().peopleByMode.work[0]!;
+
+    // Changing the pay period banks accrued salary and sets an explicit anchor date (today),
+    // which would otherwise keep driving period boundaries even after the start date below is
+    // corrected.
+    await store.getState().editPerson(employee.id, {
+      ...salaryDraft(),
+      salaryPayPeriodWeeks: 2,
+      salaryPayDelayMode: 'none',
+    });
+    const afterPeriodChange = store.getState().peopleByMode.work[0]!;
+    expect(afterPeriodChange.salaryPeriodAnchorDate).toBe('2026-08-06');
+
+    await store.getState().editPerson(employee.id, {
+      ...salaryDraft(),
+      salaryPayPeriodWeeks: 2,
+      salaryPayDelayMode: 'none',
+      salaryStartDate: '2026-07-20',
+    });
+    const corrected = store.getState().peopleByMode.work[0]!;
+    expect(corrected.salaryStartDate).toBe('2026-07-20');
+    expect(corrected.salaryPeriodAnchorDate).toBe('2026-07-20');
+    expect(corrected.salaryAccruedBaseline).toBe(0);
+    expect(calculateSalary(corrected, NOW).nextPayDate).toBe('2026-08-17');
+  });
+
   it('reloads persisted application data in a new store', async () => {
     const first = makeStore();
     await first.getState().initialize();

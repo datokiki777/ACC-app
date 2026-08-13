@@ -163,17 +163,22 @@ function applyDraftToPerson(
   referenceDate: Date,
 ): PersistedPerson {
   let next = structuredClone(original);
-  if (
-    draft.salaryEnabled &&
-    original.salaryAmount &&
-    original.salaryStartDate &&
+  const wasConfigured = Boolean(original.salaryAmount && original.salaryStartDate);
+  const periodWeeksChanged =
+    wasConfigured &&
     Number(original.salaryPayPeriodWeeks ?? original.salaryPayDay ?? 1) !==
-      draft.salaryPayPeriodWeeks
-  ) {
+      draft.salaryPayPeriodWeeks;
+  const startDateChanged =
+    wasConfigured && draft.salaryEnabled && original.salaryStartDate !== draft.salaryStartDate;
+
+  if (draft.salaryEnabled && periodWeeksChanged) {
     next = retainPersistedFields(
       next,
       applyPayPeriodChange(next, draft.salaryPayPeriodWeeks, referenceDate),
     );
+  } else if (startDateChanged) {
+    next.salaryPeriodAnchorDate = draft.salaryStartDate;
+    next.salaryAccruedBaseline = 0;
   }
   next.name = draft.name.trim();
   next.tagLabel = draft.tagLabel.trim();
