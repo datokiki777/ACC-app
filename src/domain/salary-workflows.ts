@@ -1,7 +1,7 @@
 import type { Entry, Person } from '../types/domain';
 import { normalizeAmount } from './entries';
 import { formatReferenceDate } from './pay-dates';
-import { calculateSalary, salaryPaid } from './salary';
+import { calculateSalary } from './salary';
 
 export function applyPayPeriodChange(
   person: Person,
@@ -46,17 +46,20 @@ export function syncPayDate(person: Person, input: SyncPayDateInput): Person {
     });
   }
   const next = { ...person, entries };
-  next.salaryAccruedBaseline = salaryPaid(next);
+  // 'paid' (salaryPaid) is always a live sum over every salary entry, regardless of date — it
+  // already reflects everything paid so far without needing a separate banked snapshot here.
+  next.salaryAccruedBaseline = 0;
   next.salaryPeriodAnchorDate = input.newAnchorDate;
   return next;
 }
 
 export function resetSalaryWhenUnarchiving(person: Person, referenceDate: Date): Person {
-  const paid = calculateSalary(person, referenceDate).paid;
   return {
     ...person,
     entries: person.entries.map((entry) => ({ ...entry })),
-    salaryAccruedBaseline: paid,
+    // See syncPayDate: 'paid' is always live, so banking it here would only create a stale
+    // snapshot that drifts if any already-counted entry is edited later.
+    salaryAccruedBaseline: 0,
     salaryPeriodAnchorDate: formatReferenceDate(referenceDate),
     salaryEndDate: '',
     archived: false,

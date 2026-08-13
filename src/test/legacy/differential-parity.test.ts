@@ -347,6 +347,9 @@ describe('legacy differential parity', () => {
     expect(applyPayPeriodChange(fixture, 3, referenceDate)).toEqual(
       legacyHarness.applyPayPeriodChange(fixture, 3, referenceDate),
     );
+    // Intentional deviation from legacy: baseline no longer banks a snapshot of 'paid' (which is
+    // always live over all entries already) — that redundant snapshot went stale whenever an
+    // already-counted entry was edited afterward, under- or over-counting what's actually owed.
     expect(
       syncPayDate(fixture, {
         adjustmentAmount: 60.7,
@@ -354,13 +357,17 @@ describe('legacy differential parity', () => {
         adjustmentEntryId: 'sync',
         referenceDate,
       }),
-    ).toEqual(legacyHarness.syncPayDate(fixture, 60.7, '2026-03-10', 'sync', referenceDate));
+    ).toEqual({
+      ...legacyHarness.syncPayDate(fixture, 60.7, '2026-03-10', 'sync', referenceDate),
+      salaryAccruedBaseline: 0,
+    });
     // Intentional deviation from legacy: unarchiving now also clears salaryEndDate, since
     // archiving now auto-sets it (see endSalaryWhenArchiving) and it must not linger and
     // permanently cap accrual after the person resumes.
     expect(resetSalaryWhenUnarchiving(fixture, referenceDate)).toEqual({
       ...legacyHarness.resetSalaryWhenUnarchiving(fixture, referenceDate),
       salaryEndDate: '',
+      salaryAccruedBaseline: 0,
     });
   });
 

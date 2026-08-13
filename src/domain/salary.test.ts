@@ -213,7 +213,7 @@ describe('salary workflow parity', () => {
     expect(changed.salaryPeriodAnchorDate).toBeUndefined();
   });
 
-  it('adds the sync adjustment before setting the paid baseline', () => {
+  it('adds the sync adjustment as a real entry, without banking a separate paid snapshot', () => {
     const synced = syncPayDate(
       weeklySalaryPerson({ entries: [entry({ amount: 40, category: 'salary' })] }),
       {
@@ -229,11 +229,14 @@ describe('salary workflow parity', () => {
       category: 'salary',
       date: '2026-03-10',
     });
-    expect(synced.salaryAccruedBaseline).toBe(100);
+    // Baseline stays 0 — 'paid' (live over all entries, including the one above) already
+    // reflects everything without needing a frozen snapshot that could go stale if an entry is
+    // edited later.
+    expect(synced.salaryAccruedBaseline).toBe(0);
     expect(synced.salaryPeriodAnchorDate).toBe('2026-03-10');
   });
 
-  it('resets a salaried unarchive to paid salary and today', () => {
+  it('resets a salaried unarchive to today, without banking a separate paid snapshot', () => {
     const reset = resetSalaryWhenUnarchiving(
       weeklySalaryPerson({
         archived: true,
@@ -245,7 +248,7 @@ describe('salary workflow parity', () => {
     expect(reset).toMatchObject({
       archived: false,
       expanded: false,
-      salaryAccruedBaseline: 100,
+      salaryAccruedBaseline: 0,
       salaryPeriodAnchorDate: '2026-04-05',
       salaryEndDate: '',
     });
@@ -260,5 +263,33 @@ describe('salary workflow parity', () => {
       date(2026, 4, 5),
     );
     expect(unchanged.salaryEndDate).toBe('2026-06-01');
+  });
+
+  it('fully reflects a later edit to an entry that already existed at sync time', () => {
+    // Real reported scenario: sync the schedule (no adjustment), then go back and correct the
+    // amount on the entry that was already there. The full new amount must count, not just the
+    // delta minus whatever got silently banked into a stale baseline snapshot.
+    const before = weeklySalaryPerson({
+      salaryAmount: 2000,
+      salaryStartDate: '2026-07-27',
+      salaryPayPeriodWeeks: 2,
+      entries: [entry({ id: 'e1', amount: 50, category: 'salary', date: '2026-08-09' })],
+    });
+    const synced = syncPayDate(before, {
+      adjustmentAmount: 0,
+      newAnchorDate: '2026-07-27',
+      adjustmentEntryId: 'unused',
+      referenceDate: date(2026, 8, 13),
+    });
+    expect(calculateSalary(synced, date(2026, 8, 13)).due).toBe(950);
+
+    // Now correct that same entry's amount from 50 to 100.
+    const corrected = {
+      ...synced,
+      entries: synced.entries.map((e) => (e.id === 'e1' ? { ...e, amount: 100 } : e)),
+    };
+    const result = calculateSalary(corrected, date(2026, 8, 13));
+    expect(result.paid).toBe(100);
+    expect(result.due).toBe(900);
   });
 });
