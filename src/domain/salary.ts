@@ -120,9 +120,9 @@ export function calculateSalary(person: Person, referenceDate: Date): SalaryCalc
   const nextPayDateForecast = computeSalaryPayDate(nextPeriodEndDate, config.payDelayMode);
   const earliestUnpaidDate = earliestUnpaidPayDate(config, boundariesReached, paid, periodAmount);
   const isPastDue =
-    boundariesReached > 0 &&
     overdueRemaining > 0.0001 &&
-    daysUntil(earliestUnpaidDate, referenceDate) < -SALARY_GRACE_DAYS;
+    (config.accruedBaseline > 0 ||
+      (boundariesReached > 0 && daysUntil(earliestUnpaidDate, referenceDate) < -SALARY_GRACE_DAYS));
   const due = isPastDue ? Math.min(overdueRemaining, remaining) : 0;
   const nextPayDate =
     overdueRemaining > 0.0001 && !isPastDue ? earliestUnpaidDate : nextPayDateForecast;

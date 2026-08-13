@@ -25,6 +25,22 @@ export function applyPayPeriodChange(
   return next;
 }
 
+export function applySalaryAmountChange(
+  person: Person,
+  nextAmount: number,
+  effectiveDate: Date,
+): Person {
+  const wasConfigured = Boolean(person.salaryAmount && person.salaryStartDate);
+  const next = { ...person, entries: person.entries.map((entry) => ({ ...entry })) };
+
+  if (wasConfigured && person.salaryAmount !== nextAmount) {
+    next.salaryAccruedBaseline = calculateSalary(person, effectiveDate).accrued;
+    next.salaryPeriodAnchorDate = formatReferenceDate(effectiveDate);
+  }
+  next.salaryAmount = nextAmount;
+  return next;
+}
+
 export interface SyncPayDateInput {
   adjustmentAmount: number;
   newAnchorDate: string;

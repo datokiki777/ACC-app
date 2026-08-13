@@ -221,6 +221,24 @@ describe('Zustand application actions', () => {
     expect(calculateSalary(corrected, NOW).nextPayDate).toBe('2026-08-17');
   });
 
+  it('banks the old rate up to the effective date when the salary amount changes', async () => {
+    const store = makeStore();
+    await store.getState().initialize();
+    await store.getState().setMode('work');
+    await store.getState().addPerson(salaryDraft());
+    const employee = store.getState().peopleByMode.work[0]!;
+
+    await store.getState().editPerson(employee.id, {
+      ...salaryDraft(),
+      salaryAmount: 800,
+      salaryAmountEffectiveDate: '2026-08-06',
+    });
+    const changed = store.getState().peopleByMode.work[0]!;
+    expect(changed.salaryAmount).toBe(800);
+    expect(changed.salaryPeriodAnchorDate).toBe('2026-08-06');
+    expect(changed.salaryAccruedBaseline).toBeGreaterThan(0);
+  });
+
   it('reloads persisted application data in a new store', async () => {
     const first = makeStore();
     await first.getState().initialize();

@@ -9,6 +9,7 @@ import { TAG_COLORS } from '../../domain/tag-colors';
 import type { PersonDraft } from '../../store/app-store';
 import { useAppStore } from '../../store/hooks';
 import type { Currency, PayDelayMode } from '../../types/domain';
+import { localDateString } from '../../utils/format';
 
 const CURRENCY_OPTIONS: { value: Currency; label: string }[] = [
   { value: 'EUR', label: 'EUR €' },
@@ -59,6 +60,8 @@ export function PersonFormSheet() {
   const { closeAfterSave, requestClose } = useAppNavigation();
   const existing = people.find((person) => person.id === personId);
   const [formError, setFormError] = useState('');
+  const [pendingSalaryChange, setPendingSalaryChange] = useState<PersonDraft | null>(null);
+  const [effectiveDate, setEffectiveDate] = useState(localDateString());
   const {
     control,
     register,
@@ -85,20 +88,36 @@ export function PersonFormSheet() {
   const salaryPayDelayMode = useWatch({ control, name: 'salaryPayDelayMode' });
   useUnsavedForm(isDirty);
 
+  const wasSalaried = Boolean(existing?.salaryAmount && existing.salaryStartDate);
+
+  async function savePerson(data: PersonDraft) {
+    try {
+      if (existing) await editPerson(existing.id, data);
+      else await addPerson(data);
+      closeAfterSave();
+    } catch (error) {
+      setFormError(error instanceof Error ? error.message : 'Could not save');
+    }
+  }
+
   const submit = handleSubmit(async (raw) => {
     const result = personSchema.safeParse(raw);
     if (!result.success) {
       setFormError(result.error.issues[0]?.message ?? 'Check the form');
       return;
     }
-    try {
-      if (existing) await editPerson(existing.id, result.data);
-      else await addPerson(result.data);
-      closeAfterSave();
-    } catch (error) {
-      setFormError(error instanceof Error ? error.message : 'Could not save');
+    if (existing && wasSalaried && result.data.salaryAmount !== existing.salaryAmount) {
+      setEffectiveDate(localDateString());
+      setPendingSalaryChange(result.data);
+      return;
     }
+    await savePerson(result.data);
   });
+
+  const confirmSalaryChange = async () => {
+    if (!pendingSalaryChange) return;
+    await savePerson({ ...pendingSalaryChange, salaryAmountEffectiveDate: effectiveDate });
+  };
 
   return (
     <BottomSheet
@@ -238,6 +257,40 @@ export function PersonFormSheet() {
           </button>
         </div>
       </form>
+      {pendingSalaryChange && (
+        <BottomSheet onClose={() => setPendingSalaryChange(null)} title="Apply new salary from…">
+          <p className="inline-note">
+            Periods and amounts before this date keep the old salary and accounting. The new salary
+            only applies to periods starting on or after it.
+          </p>
+          <label className="field">
+            <span>Effective date</span>
+            <input
+              autoComplete="off"
+              onChange={(event) => setEffectiveDate(event.target.value)}
+              type="date"
+              value={effectiveDate}
+            />
+          </label>
+          <div className="form-actions">
+            <button
+              className="secondary-button"
+              onClick={() => setPendingSalaryChange(null)}
+              type="button"
+            >
+              Cancel
+            </button>
+            <button
+              className="primary-button"
+              disabled={!effectiveDate}
+              onClick={() => void confirmSalaryChange()}
+              type="button"
+            >
+              Save
+            </button>
+          </div>
+        </BottomSheet>
+      )}
     </BottomSheet>
   );
 }

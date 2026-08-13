@@ -3,6 +3,7 @@ import { createStore, type StoreApi } from 'zustand/vanilla';
 import type { AppRepository } from '../db/repository';
 import {
   applyPayPeriodChange,
+  applySalaryAmountChange,
   endSalaryWhenArchiving,
   resetSalaryWhenUnarchiving,
   syncPayDate,
@@ -53,6 +54,7 @@ export interface PersonDraft {
   salaryEndDate: string;
   salaryPayPeriodWeeks: number;
   salaryPayDelayMode: PayDelayMode;
+  salaryAmountEffectiveDate?: string;
 }
 
 export interface EntryDraft {
@@ -157,6 +159,13 @@ function personFromDraft(draft: PersonDraft, id: string, createdAt: string): Per
   };
 }
 
+function parseDateInput(value: string): Date | null {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+  if (!match) return null;
+  const [, y, m, d] = match;
+  return new Date(Number(y), Number(m) - 1, Number(d), 12);
+}
+
 function applyDraftToPerson(
   original: PersistedPerson,
   draft: PersonDraft,
@@ -164,6 +173,8 @@ function applyDraftToPerson(
 ): PersistedPerson {
   let next = structuredClone(original);
   const wasConfigured = Boolean(original.salaryAmount && original.salaryStartDate);
+  const amountChanged =
+    wasConfigured && draft.salaryEnabled && original.salaryAmount !== draft.salaryAmount;
   const periodWeeksChanged =
     wasConfigured &&
     Number(original.salaryPayPeriodWeeks ?? original.salaryPayDay ?? 1) !==
@@ -171,7 +182,16 @@ function applyDraftToPerson(
   const startDateChanged =
     wasConfigured && draft.salaryEnabled && original.salaryStartDate !== draft.salaryStartDate;
 
-  if (draft.salaryEnabled && periodWeeksChanged) {
+  if (draft.salaryEnabled && amountChanged && draft.salaryAmountEffectiveDate) {
+    next = retainPersistedFields(
+      next,
+      applySalaryAmountChange(
+        next,
+        draft.salaryAmount,
+        parseDateInput(draft.salaryAmountEffectiveDate) ?? referenceDate,
+      ),
+    );
+  } else if (draft.salaryEnabled && periodWeeksChanged) {
     next = retainPersistedFields(
       next,
       applyPayPeriodChange(next, draft.salaryPayPeriodWeeks, referenceDate),

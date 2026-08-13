@@ -7,6 +7,7 @@ import {
 } from './salary';
 import {
   applyPayPeriodChange,
+  applySalaryAmountChange,
   endSalaryWhenArchiving,
   resetSalaryWhenUnarchiving,
   syncPayDate,
@@ -263,6 +264,33 @@ describe('salary workflow parity', () => {
       date(2026, 4, 5),
     );
     expect(unchanged.salaryEndDate).toBe('2026-06-01');
+  });
+
+  it('banks accrued at the old rate up to the effective date, then applies the new rate', () => {
+    const before = weeklySalaryPerson({
+      salaryAmount: 2000,
+      salaryStartDate: '2026-07-27',
+      salaryPayPeriodWeeks: 2,
+      entries: [entry({ id: 'e1', amount: 50, category: 'salary', date: '2026-08-09' })],
+    });
+    const changed = applySalaryAmountChange(before, 3000, date(2026, 8, 13));
+    expect(changed.salaryAmount).toBe(3000);
+    expect(changed.salaryPeriodAnchorDate).toBe('2026-08-13');
+    // Accrued under the OLD 2000/month rate as of 2026-08-13: one completed period (1000).
+    expect(changed.salaryAccruedBaseline).toBe(1000);
+
+    const result = calculateSalary(changed, date(2026, 8, 13));
+    // Nothing has elapsed under the new rate/anchor yet, so nothing new is due; the banked old
+    // balance (1000) minus what's already been paid (50) is still owed.
+    expect(result.due).toBe(950);
+    expect(result.periodAmount).toBe(1500);
+  });
+
+  it('does not re-anchor when the salary amount is unchanged', () => {
+    const before = weeklySalaryPerson();
+    const changed = applySalaryAmountChange(before, before.salaryAmount ?? 0, date(2026, 4, 5));
+    expect(changed.salaryPeriodAnchorDate).toBeUndefined();
+    expect(changed.salaryAccruedBaseline).toBeUndefined();
   });
 
   it('fully reflects a later edit to an entry that already existed at sync time', () => {

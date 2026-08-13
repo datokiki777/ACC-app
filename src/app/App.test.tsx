@@ -701,6 +701,43 @@ describe('ACC application', () => {
     expect(store.getState().peopleByMode.personal[0]?.entries).toHaveLength(2);
   });
 
+  it('asks for an effective date when the salary amount changes, then banks the old rate', async () => {
+    const user = userEvent.setup();
+    const store = renderApp();
+    await waitFor(() => expect(store.getState().initialized).toBe(true));
+    let personId = '';
+    await act(async () => {
+      await store.getState().setMode('work');
+      const person = await store.getState().addPerson({
+        ...draft('Raise target'),
+        salaryEnabled: true,
+        salaryAmount: 2000,
+        salaryStartDate: '2026-07-01',
+      });
+      personId = person.id;
+    });
+
+    const summary = await findPersonSummary('Raise target');
+    await longPress(summary);
+    const editDialog = screen.getByRole('dialog', { name: 'Edit Team' });
+    const amountField = within(editDialog).getByRole('spinbutton', { name: 'Monthly salary' });
+    await user.clear(amountField);
+    await user.type(amountField, '3000');
+    await user.click(within(editDialog).getByRole('button', { name: 'Save' }));
+
+    const prompt = await screen.findByRole('dialog', { name: 'Apply new salary from…' });
+    const dateField = within(prompt).getByLabelText('Effective date');
+    fireEvent.change(dateField, { target: { value: '2026-08-06' } });
+    await user.click(within(prompt).getByRole('button', { name: 'Save' }));
+
+    await waitFor(() => {
+      const person = store.getState().peopleByMode.work.find((p) => p.id === personId);
+      expect(person?.salaryAmount).toBe(3000);
+      expect(person?.salaryPeriodAnchorDate).toBe('2026-08-06');
+      expect(person?.salaryAccruedBaseline).toBeGreaterThan(0);
+    });
+  }, 15_000);
+
   it('keeps payroll totals inside one summary card with only compact bottom actions', async () => {
     const user = userEvent.setup();
     const store = renderApp();
