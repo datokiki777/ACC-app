@@ -16,7 +16,7 @@ import {
 } from './pay-dates';
 
 export const SALARY_PAY_SOON_DAYS = 3;
-export const SALARY_GRACE_DAYS = 1;
+export const SALARY_GRACE_DAYS = 0;
 
 export function getSalarySettings(person: Person): SalarySettings | null {
   const monthly = normalizeAmount(person.salaryAmount ?? 0);

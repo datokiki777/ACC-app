@@ -83,6 +83,9 @@ export function PayrollSummaryCard({
       </div>
       <div className="panel-grid">
         <span>
+          Started <strong>{salary.startDate ? formatDate(salary.startDate) : '—'}</strong>
+        </span>
+        <span>
           Paid <strong>{formatMoney(salary.paid, salary.currency, false)}</strong>
         </span>
         <span>

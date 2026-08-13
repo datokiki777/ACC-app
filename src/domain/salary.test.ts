@@ -32,7 +32,7 @@ describe('salary calculation parity', () => {
   it.each([
     [date(2026, 3, 7), 0, 100, '2026-03-08', 1, true],
     [date(2026, 3, 8), 0, 100, '2026-03-08', 0, true],
-    [date(2026, 3, 9), 0, 200, '2026-03-08', -1, true],
+    [date(2026, 3, 9), 100, 100, '2026-03-15', 6, false],
     [date(2026, 3, 10), 100, 100, '2026-03-15', 5, false],
   ] as const)(
     'preserves grace and upcoming behavior at %s',
@@ -159,6 +159,39 @@ describe('salary calculation parity', () => {
     expect(result.due).toBe(0);
     expect(result.upcoming).toBe(0);
     expect(result.nextPayDate).toBe('2026-08-12');
+  });
+
+  it('flags a missed payment as overdue the very next day, with no extra grace day', () => {
+    const person = weeklySalaryPerson({
+      salaryAmount: 3000,
+      salaryStartDate: '2026-07-01',
+      salaryPayPeriodWeeks: 2,
+      entries: [
+        entry({ id: 'e1', amount: 1500, category: 'salary', date: '2026-07-15' }),
+        entry({ id: 'e2', amount: 1500, category: 'salary', date: '2026-07-29' }),
+      ],
+    });
+    // The 2026-08-12 boundary (3rd period) was never paid. One day later it must already read
+    // as overdue, and the following (currently in-progress) period shows separately as upcoming.
+    const result = calculateSalary(person, date(2026, 8, 13));
+    expect(result.due).toBe(1500);
+    expect(result.upcoming).toBe(1500);
+    expect(result.nextPayDate).toBe('2026-08-26');
+  });
+
+  it('shows a final unpaid balance as overdue (not upcoming) the day after the salary ends', () => {
+    const person = weeklySalaryPerson({
+      salaryAmount: 3500,
+      salaryStartDate: '2026-01-01',
+      salaryPayPeriodWeeks: 2,
+      // Exactly 6 periods (84 days) after the start date.
+      salaryEndDate: '2026-03-26',
+      entries: [entry({ id: 'e1', amount: 8750, category: 'salary', date: '2026-03-20' })],
+    });
+    const result = calculateSalary(person, date(2026, 3, 27));
+    expect(result.ended).toBe(true);
+    expect(result.due).toBe(1750);
+    expect(result.upcoming).toBe(0);
   });
 
   it('calculates the Work gift summary independently', () => {
