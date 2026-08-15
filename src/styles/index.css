@@ -11,11 +11,12 @@
   background: var(--color-bg);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
-  --color-bg: #17263d;
-  --color-bg-secondary: #142137;
-  --color-bg-deep: #0d1826;
-  --color-toolbar: #0f1f33;
+  --color-bg: #101d33;
+  --color-bg-secondary: #0d1a2e;
+  --color-bg-deep: #0a1420;
+  --color-toolbar: #0c1a2b;
   --color-surface: #2a4667;
+  --color-person-card: #3f77c2;
   --color-surface-elevated: #315274;
   --color-surface-expanded: #375c81;
   --color-surface-panel: #142b42;
@@ -50,6 +51,7 @@
   --bg-secondary: var(--color-bg-secondary);
   --toolbar-bg: var(--color-toolbar);
   --surface: var(--color-surface);
+  --person-card: var(--color-person-card);
   --surface-raised: var(--color-surface-elevated);
   --surface-expanded: var(--color-surface-expanded);
   --surface-panel: var(--color-surface-panel);
@@ -517,7 +519,7 @@ a:focus-visible {
   position: relative;
   min-height: 64px;
   overflow: hidden;
-  background: var(--surface);
+  background: var(--person-card);
   touch-action: pan-y;
 }
 
@@ -2593,13 +2595,19 @@ a:focus-visible {
   gap: 9px;
 }
 
-.person-card,
 .empty-card,
 .stats-section,
 .safety-card {
   border-color: var(--color-border);
   border-radius: 16px;
   background: var(--color-surface);
+  box-shadow: var(--shadow);
+}
+
+.person-card {
+  border-color: var(--color-border);
+  border-radius: 16px;
+  background: var(--color-person-card);
   box-shadow: var(--shadow);
 }
 
@@ -2631,7 +2639,7 @@ a:focus-visible {
 
 .swipe-summary-shell,
 .person-summary {
-  background: var(--color-surface);
+  background: var(--color-person-card);
 }
 
 .person-summary {
