@@ -13,6 +13,7 @@ import {
   getDocs,
   serverTimestamp,
   setDoc,
+  Timestamp,
 } from 'firebase/firestore';
 
 import type { ReactBackupData } from '../types/persistence';
@@ -124,8 +125,13 @@ export async function saveBackupToCloud(
     'backups_history',
     historyDateKey(referenceDate),
   );
+  const expireAt = new Date(referenceDate);
+  expireAt.setDate(expireAt.getDate() + CLOUD_HISTORY_RETENTION_DAYS);
   const record = { payload, exportDate: backup.exportDate, savedAt: serverTimestamp() };
-  await Promise.all([setDoc(latestRef, record), setDoc(historyRef, record)]);
+  await Promise.all([
+    setDoc(latestRef, record),
+    setDoc(historyRef, { ...record, expireAt: Timestamp.fromDate(expireAt) }),
+  ]);
   await pruneOldHistory(uid, referenceDate);
 }
 
