@@ -11,8 +11,6 @@ import {
   doc,
   getDoc,
   getDocs,
-  orderBy,
-  query,
   serverTimestamp,
   setDoc,
 } from 'firebase/firestore';
@@ -136,7 +134,7 @@ export async function listCloudBackups(uid: string): Promise<CloudBackupEntry[]>
   const historyRef = collection(firestore, 'acc_users', uid, 'backups_history');
   const [latestSnapshot, historySnapshot] = await Promise.all([
     getDoc(latestRef),
-    getDocs(query(historyRef, orderBy('__name__', 'desc'))),
+    getDocs(historyRef),
   ]);
 
   const entries: CloudBackupEntry[] = [];
@@ -149,7 +147,8 @@ export async function listCloudBackups(uid: string): Promise<CloudBackupEntry[]>
       savedAt: exportDate,
     });
   }
-  historySnapshot.docs.forEach((entry) => {
+  const historyDocs = [...historySnapshot.docs].sort((a, b) => (a.id < b.id ? 1 : -1));
+  historyDocs.forEach((entry) => {
     entries.push({
       id: entry.id,
       kind: 'history',
