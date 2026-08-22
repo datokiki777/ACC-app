@@ -79,6 +79,7 @@ export interface AppStoreState {
   filter: PeopleFilter;
   expandedPersonId: string | null;
   theme: ThemeMode;
+  privacyMode: boolean;
   ui: TransientUiState;
   undoAction: UndoAction | null;
   lastRestoreReport: RestoreVerificationReport | null;
@@ -86,6 +87,7 @@ export interface AppStoreState {
   initialize: () => Promise<void>;
   setMode: (mode: AppMode) => Promise<void>;
   setTheme: (theme: ThemeMode) => Promise<void>;
+  setPrivacyMode: (enabled: boolean) => Promise<void>;
   setSearch: (search: string) => void;
   setFilter: (filter: PeopleFilter) => void;
   setExpandedPerson: (personId: string | null) => void;
@@ -267,6 +269,7 @@ export function createAppStore(dependencies: StoreDependencies): StoreApi<AppSto
       filter: 'active',
       expandedPersonId: null,
       theme: 'system',
+      privacyMode: false,
       ui: EMPTY_UI,
       undoAction: null,
       lastRestoreReport: null,
@@ -277,11 +280,12 @@ export function createAppStore(dependencies: StoreDependencies): StoreApi<AppSto
         set({ loading: true, error: null });
         try {
           await repository.initialize();
-          const [personal, work, mode, theme, backupMetadata] = await Promise.all([
+          const [personal, work, mode, theme, privacyMode, backupMetadata] = await Promise.all([
             repository.getPeople('personal'),
             repository.getPeople('work'),
             repository.getMode(),
             repository.getTheme(),
+            repository.getPrivacyMode(),
             repository.getBackupMetadata(),
           ]);
           set({
@@ -290,6 +294,7 @@ export function createAppStore(dependencies: StoreDependencies): StoreApi<AppSto
             peopleByMode: { personal, work },
             mode,
             theme,
+            privacyMode,
             backupMetadata,
           });
         } catch (error) {
@@ -308,6 +313,13 @@ export function createAppStore(dependencies: StoreDependencies): StoreApi<AppSto
         await withError(async () => {
           await repository.setTheme(theme);
           set({ theme });
+        });
+      },
+
+      async setPrivacyMode(enabled) {
+        await withError(async () => {
+          await repository.setPrivacyMode(enabled);
+          set({ privacyMode: enabled });
         });
       },
 

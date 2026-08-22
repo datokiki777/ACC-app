@@ -12,6 +12,8 @@ export interface AppRepository {
   setMode(mode: AppMode): Promise<void>;
   getTheme(): Promise<ThemeMode>;
   setTheme(theme: ThemeMode): Promise<void>;
+  getPrivacyMode(): Promise<boolean>;
+  setPrivacyMode(enabled: boolean): Promise<void>;
   getBackupMetadata(): Promise<BackupMetadata>;
   setBackupMetadata(metadata: BackupMetadata): Promise<void>;
   getSchemaVersion(): Promise<number>;
@@ -43,6 +45,9 @@ export class DexieAppRepository implements AppRepository {
         }
         if (!(await this.database.settings.get('theme'))) {
           await this.database.settings.add({ key: 'theme', value: 'system' });
+        }
+        if (!(await this.database.settings.get('privacyMode'))) {
+          await this.database.settings.add({ key: 'privacyMode', value: false });
         }
         if (!(await this.database.metadata.get('backup'))) {
           await this.database.metadata.add({
@@ -102,6 +107,15 @@ export class DexieAppRepository implements AppRepository {
 
   public async setTheme(theme: ThemeMode): Promise<void> {
     await this.database.settings.put({ key: 'theme', value: theme });
+  }
+
+  public async getPrivacyMode(): Promise<boolean> {
+    const record = await this.database.settings.get('privacyMode');
+    return record?.value === true;
+  }
+
+  public async setPrivacyMode(enabled: boolean): Promise<void> {
+    await this.database.settings.put({ key: 'privacyMode', value: enabled });
   }
 
   public async getBackupMetadata(): Promise<BackupMetadata> {

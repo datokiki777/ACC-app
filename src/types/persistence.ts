@@ -13,11 +13,11 @@ export interface ModeDataRecord {
   updatedAt: string;
 }
 
-export type SettingKey = 'activeMode' | 'theme';
+export type SettingKey = 'activeMode' | 'theme' | 'privacyMode';
 
 export interface SettingRecord {
   key: SettingKey;
-  value: AppMode | ThemeMode;
+  value: AppMode | ThemeMode | boolean;
 }
 
 export interface MetadataRecord {

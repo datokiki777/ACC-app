@@ -62,6 +62,7 @@ export function PersonCard({
   const expanded = useAppStore((state) => state.expandedPersonId === person.id);
   const setExpanded = useAppStore((state) => state.setExpandedPerson);
   const openSheet = useAppStore((state) => state.openSheet);
+  const privacyMode = useAppStore((state) => state.privacyMode);
   const balance = personOpenBalance(person, mode);
   const totals = personTotals(person);
   const salary = mode === 'work' ? calculateSalary(person, new Date()) : null;
@@ -287,7 +288,7 @@ export function PersonCard({
             </small>
           </span>
           <span
-            className={`money-value-pill balance-value ${moneyTone(balance)} ${moneyScale(balance, person.currency)}`}
+            className={`money-value-pill balance-value ${moneyTone(balance)} ${moneyScale(balance, person.currency)} ${privacyMode && !expanded ? 'money-masked' : ''}`}
           >
             {formatMoney(balance, person.currency, false)}
           </span>

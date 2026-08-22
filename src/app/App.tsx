@@ -68,6 +68,8 @@ export function App() {
   const setMode = useAppStore((state) => state.setMode);
   const theme = useAppStore((state) => state.theme);
   const setTheme = useAppStore((state) => state.setTheme);
+  const privacyMode = useAppStore((state) => state.privacyMode);
+  const setPrivacyMode = useAppStore((state) => state.setPrivacyMode);
   const people = useAppStore((state) => state.peopleByMode[state.mode]);
   const search = useAppStore((state) => state.search);
   const setSearch = useAppStore((state) => state.setSearch);
@@ -438,8 +440,10 @@ export function App() {
       {sheet === 'backup' && <BackupSheet />}
       {settingsOpen && (
         <SettingsSheet
+          onChangePrivacyMode={(next) => void setPrivacyMode(next)}
           onChangeTheme={(next) => void setTheme(next)}
           onClose={requestClose}
+          privacyMode={privacyMode}
           theme={theme}
         />
       )}

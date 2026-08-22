@@ -170,6 +170,34 @@ describe('ACC application', () => {
     await waitFor(() => expect(summary).toHaveAttribute('aria-expanded', 'true'));
   });
 
+  it('blurs the collapsed balance in privacy mode and reveals it when the card is expanded', async () => {
+    const user = userEvent.setup();
+    const store = renderApp();
+    await waitFor(() => expect(store.getState().initialized).toBe(true));
+    await act(async () => {
+      const person = await store.getState().addPerson(draft('Private target'));
+      await store
+        .getState()
+        .addEntry(person.id, { amount: 40, type: 'Gave', date: '2026-08-01', comment: '' });
+    });
+    const navigation = screen.getByRole('navigation', { name: 'Primary navigation' });
+
+    await user.click(within(navigation).getByRole('button', { name: 'Settings' }));
+    const settingsDialog = screen.getByRole('dialog', { name: 'Settings' });
+    await user.click(within(settingsDialog).getByRole('switch', { name: 'Hide amounts' }));
+    pressBrowserBack();
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog', { name: 'Settings' })).not.toBeInTheDocument(),
+    );
+
+    const summary = await findPersonSummary('Private target');
+    const balance = within(summary).getByText('40€');
+    expect(balance).toHaveClass('money-masked');
+
+    await user.click(summary);
+    await waitFor(() => expect(balance).not.toHaveClass('money-masked'));
+  });
+
   it('uses browser Back to close sheets, Settings, and Backup', async () => {
     const user = userEvent.setup();
     const store = renderApp();

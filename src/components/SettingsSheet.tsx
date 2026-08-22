@@ -4,10 +4,18 @@ import { BottomSheet } from './BottomSheet';
 interface SettingsSheetProps {
   theme: ThemeMode;
   onChangeTheme: (theme: ThemeMode) => void;
+  privacyMode: boolean;
+  onChangePrivacyMode: (enabled: boolean) => void;
   onClose: () => void;
 }
 
-export function SettingsSheet({ theme, onChangeTheme, onClose }: SettingsSheetProps) {
+export function SettingsSheet({
+  theme,
+  onChangeTheme,
+  privacyMode,
+  onChangePrivacyMode,
+  onClose,
+}: SettingsSheetProps) {
   const options: Array<{ value: ThemeMode; label: string }> = [
     { value: 'system', label: 'System' },
     { value: 'dark', label: 'Dark' },
@@ -33,6 +41,24 @@ export function SettingsSheet({ theme, onChangeTheme, onClose }: SettingsSheetPr
               {option.label}
             </button>
           ))}
+        </div>
+      </section>
+      <section className="settings-section">
+        <div className="settings-row">
+          <div className="settings-heading">
+            <span>Hide amounts</span>
+            <small>Blurs money on the Home list until you open a person's card.</small>
+          </div>
+          <button
+            aria-checked={privacyMode}
+            aria-label="Hide amounts"
+            className={`settings-switch ${privacyMode ? 'is-on' : ''}`}
+            onClick={() => onChangePrivacyMode(!privacyMode)}
+            role="switch"
+            type="button"
+          >
+            <span className="settings-switch-knob" />
+          </button>
         </div>
       </section>
       <section className="settings-section settings-about">
