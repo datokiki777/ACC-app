@@ -32,10 +32,22 @@ export function BackupSheet() {
   const report = useAppStore((state) => state.lastRestoreReport);
   const peopleByMode = useAppStore((state) => state.peopleByMode);
   const backupMetadata = useAppStore((state) => state.backupMetadata);
+  const cloudUser = useAppStore((state) => state.cloudUser);
+  const cloudBackups = useAppStore((state) => state.cloudBackups);
+  const cloudBusy = useAppStore((state) => state.cloudBusy);
+  const cloudError = useAppStore((state) => state.cloudError);
+  const initCloudAuth = useAppStore((state) => state.initCloudAuth);
+  const signInCloud = useAppStore((state) => state.signInCloud);
+  const signOutCloud = useAppStore((state) => state.signOutCloud);
+  const saveToCloud = useAppStore((state) => state.saveToCloud);
+  const refreshCloudBackups = useAppStore((state) => state.refreshCloudBackups);
+  const fetchCloudBackupPayload = useAppStore((state) => state.fetchCloudBackupPayload);
   const [inspection, setInspection] = useState<BackupInspection | null>(null);
   const [replaceConfirmed, setReplaceConfirmed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [cloudPickerOpen, setCloudPickerOpen] = useState(false);
+  const [cloudSyncedAt, setCloudSyncedAt] = useState('');
   const [deviceStorage, setDeviceStorage] = useState<StorageEstimate | null>(null);
   const [pdfMode, setPdfMode] = useState<AppMode>('personal');
   const [pdfPersonId, setPdfPersonId] = useState('');
@@ -56,6 +68,10 @@ export function BackupSheet() {
   const filteredPdfPeople = pdfPeople.filter((person) =>
     person.name.toLocaleLowerCase().includes(pdfPickerSearch.trim().toLocaleLowerCase()),
   );
+
+  useEffect(() => {
+    initCloudAuth();
+  }, [initCloudAuth]);
 
   useEffect(() => {
     let active = true;
@@ -113,6 +129,31 @@ export function BackupSheet() {
     setError('');
     setReplaceConfirmed(false);
     setInspection(inspectBackupText(await file.text(), file.name));
+  }
+
+  async function handleSaveToCloud() {
+    setError('');
+    await saveToCloud();
+    setCloudSyncedAt(new Date().toLocaleTimeString());
+  }
+
+  async function openCloudPicker() {
+    setError('');
+    setCloudPickerOpen(true);
+    await refreshCloudBackups();
+  }
+
+  async function selectCloudEntry(entryId: string, label: string) {
+    setError('');
+    try {
+      const payload = await fetchCloudBackupPayload(entryId);
+      setReplaceConfirmed(false);
+      setInspection(inspectBackupText(payload, label));
+      setCloudPickerOpen(false);
+      setCloudSyncedAt(new Date().toLocaleTimeString());
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : 'Could not load from the cloud');
+    }
   }
 
   async function restore(mode: ImportMode) {
@@ -179,6 +220,79 @@ export function BackupSheet() {
       <p className="backup-format-note">
         JSON is the restorable backup format for importing data back into ACC.
       </p>
+
+      <section className="cloud-backup-card" aria-label="Cloud backup">
+        <div className="backup-section-heading">
+          <div>
+            <span>Cross-device</span>
+            <h3>Cloud Backup</h3>
+          </div>
+        </div>
+        {cloudUser ? (
+          <>
+            <div className="cloud-account-row">
+              <span>{cloudUser.email ?? cloudUser.displayName ?? 'Signed in'}</span>
+              <button className="text-button" onClick={() => void signOutCloud()} type="button">
+                Sign out
+              </button>
+            </div>
+            <div className="backup-actions-main">
+              <button
+                className="secondary-button"
+                disabled={cloudBusy}
+                onClick={() => void handleSaveToCloud()}
+                type="button"
+              >
+                ☁ Save to cloud now
+              </button>
+              <button
+                className="secondary-button"
+                disabled={cloudBusy}
+                onClick={() => void openCloudPicker()}
+                type="button"
+              >
+                ☁ Load from cloud
+              </button>
+            </div>
+            {cloudSyncedAt && <p className="cloud-sync-status">Synced - {cloudSyncedAt}</p>}
+          </>
+        ) : (
+          <button
+            className="secondary-button"
+            disabled={cloudBusy}
+            onClick={() => void signInCloud()}
+            type="button"
+          >
+            Sign in with Google
+          </button>
+        )}
+        {cloudError && <p className="form-error">{cloudError}</p>}
+      </section>
+
+      {cloudPickerOpen && (
+        <BottomSheet onClose={() => setCloudPickerOpen(false)} title="Restore source">
+          {cloudBusy && cloudBackups.length === 0 ? (
+            <p className="mini-empty">Loading…</p>
+          ) : cloudBackups.length === 0 ? (
+            <p className="mini-empty">No cloud backups yet.</p>
+          ) : (
+            <div className="picker-options">
+              {cloudBackups.map((entry) => (
+                <button
+                  className="picker-option"
+                  key={entry.id}
+                  onClick={() => void selectCloudEntry(entry.id, entry.label)}
+                  type="button"
+                >
+                  <span className="picker-option-text">
+                    <span>{entry.label}</span>
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
+        </BottomSheet>
+      )}
 
       <section className="individual-pdf-card" aria-label="Individual PDF export">
         <div className="backup-section-heading">

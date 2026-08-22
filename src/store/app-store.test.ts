@@ -3,7 +3,8 @@ import 'fake-indexeddb/auto';
 import { createAccReactDatabase, type AccReactDatabase } from '../db/database';
 import { createAppRepository } from '../db/repository';
 import { calculateSalary } from '../domain/salary';
-import type { PersonDraft } from './app-store';
+import type { CloudBackupEntry } from '../services/cloud-backup';
+import type { CloudService, PersonDraft } from './app-store';
 import { createAppStore } from './app-store';
 
 const NOW = new Date(2026, 7, 6, 12);
@@ -48,12 +49,31 @@ describe('Zustand application actions', () => {
     await database.delete();
   });
 
-  function makeStore() {
+  function makeStore(cloud?: CloudService) {
     return createAppStore({
       repository: createAppRepository(database),
       now: () => new Date(NOW),
       createId: () => ids.shift() ?? crypto.randomUUID(),
+      ...(cloud ? { cloud } : {}),
     });
+  }
+
+  function makeMockCloud(overrides: Partial<CloudService> = {}): CloudService {
+    return {
+      onCloudAuthChange: () => () => {},
+      signInWithGoogle: () =>
+        Promise.resolve({
+          uid: 'user-1',
+          displayName: 'Alex',
+          email: 'alex@example.com',
+          photoURL: null,
+        }),
+      signOutOfCloud: async () => {},
+      saveBackupToCloud: () => Promise.resolve(),
+      listCloudBackups: () => Promise.resolve([]),
+      fetchCloudBackupPayload: () => Promise.resolve('{}'),
+      ...overrides,
+    };
   }
 
   it('initializes and persists mode, theme, search, filter, and expanded state', async () => {
@@ -263,5 +283,86 @@ describe('Zustand application actions', () => {
       entryCount: 0,
     });
     expect(store.getState().backupMetadata.dataSignature).toBeTruthy();
+  });
+
+  it('signs in, saves to the cloud, lists backups, and fetches a chosen payload', async () => {
+    const historyEntries: CloudBackupEntry[] = [
+      { id: 'latest', kind: 'latest', label: 'Latest Cloud - 21/08/2026', savedAt: '2026-08-21' },
+      { id: '2026-08-20', kind: 'history', label: 'History - 20/08/2026', savedAt: '2026-08-20' },
+    ];
+    let savedUid = '';
+    const cloud = makeMockCloud({
+      saveBackupToCloud: (uid) => {
+        savedUid = uid;
+        return Promise.resolve();
+      },
+      listCloudBackups: () => Promise.resolve(historyEntries),
+      fetchCloudBackupPayload: () => Promise.resolve(JSON.stringify({ personal: [], work: [] })),
+    });
+    const store = makeStore(cloud);
+    await store.getState().initialize();
+    expect(store.getState().cloudUser).toBeNull();
+
+    await store.getState().signInCloud();
+    expect(store.getState().cloudUser).toMatchObject({ uid: 'user-1', email: 'alex@example.com' });
+
+    await store.getState().saveToCloud();
+    expect(savedUid).toBe('user-1');
+    expect(store.getState().cloudError).toBeNull();
+
+    await store.getState().refreshCloudBackups();
+    expect(store.getState().cloudBackups).toEqual(historyEntries);
+
+    const payload = await store.getState().fetchCloudBackupPayload('latest');
+    expect(JSON.parse(payload)).toEqual({ personal: [], work: [] });
+
+    await store.getState().signOutCloud();
+    expect(store.getState().cloudUser).toBeNull();
+    expect(store.getState().cloudBackups).toEqual([]);
+  });
+
+  it('surfaces cloud errors without saving a payload', async () => {
+    const cloud = makeMockCloud({
+      saveBackupToCloud: () => Promise.reject(new Error('network down')),
+    });
+    const store = makeStore(cloud);
+    await store.getState().initialize();
+    await store.getState().signInCloud();
+
+    await store.getState().saveToCloud();
+    expect(store.getState().cloudError).toBe('network down');
+    expect(store.getState().cloudBusy).toBe(false);
+  });
+
+  it('refuses cloud actions before signing in', async () => {
+    const cloud = makeMockCloud();
+    const store = makeStore(cloud);
+    await store.getState().initialize();
+
+    await store.getState().saveToCloud();
+    expect(store.getState().cloudError).toBe('Sign in first');
+
+    await expect(store.getState().fetchCloudBackupPayload('latest')).rejects.toThrow(
+      'Sign in first',
+    );
+  });
+
+  it('subscribes to cloud auth changes only once even if initCloudAuth is called repeatedly', async () => {
+    let subscribeCount = 0;
+    const cloud = makeMockCloud({
+      onCloudAuthChange: () => {
+        subscribeCount += 1;
+        return () => {};
+      },
+    });
+    const store = makeStore(cloud);
+    await store.getState().initialize();
+
+    store.getState().initCloudAuth();
+    store.getState().initCloudAuth();
+    store.getState().initCloudAuth();
+    await Promise.resolve();
+
+    expect(subscribeCount).toBe(1);
   });
 });

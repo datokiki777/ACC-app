@@ -1677,6 +1677,32 @@ a:focus-visible {
   background: var(--surface);
 }
 
+.cloud-backup-card {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  margin-bottom: 12px;
+  background: var(--surface);
+}
+
+.cloud-account-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 0.86rem;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.cloud-sync-status {
+  color: var(--success);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
 .all-data-pdf-button {
   width: 100%;
   min-height: 44px;

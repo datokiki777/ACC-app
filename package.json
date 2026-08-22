@@ -19,6 +19,7 @@
   "dependencies": {
     "@hookform/resolvers": "^5.7.1",
     "dexie": "^4.4.4",
+    "firebase": "^12.18.0",
     "react": "latest",
     "react-dom": "latest",
     "react-hook-form": "^7.84.0",

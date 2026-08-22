@@ -31,6 +31,7 @@ import {
   RestoreVerificationError,
 } from '../services/backup';
 import { createBackupSnapshot } from '../services/backup-health';
+import type { CloudBackupEntry, CloudUser } from '../services/cloud-backup';
 import type { RestoreVerificationReport } from '../services/restore-verification';
 
 export type PeopleFilter = 'active' | 'archived';
@@ -109,12 +110,32 @@ export interface AppStoreState {
   ) => Promise<RestoreVerificationReport>;
   exportBackup: () => Promise<ReactBackupData>;
   clearError: () => void;
+  cloudUser: CloudUser | null;
+  cloudBackups: CloudBackupEntry[];
+  cloudBusy: boolean;
+  cloudError: string | null;
+  initCloudAuth: () => void;
+  signInCloud: () => Promise<void>;
+  signOutCloud: () => Promise<void>;
+  saveToCloud: () => Promise<void>;
+  refreshCloudBackups: () => Promise<void>;
+  fetchCloudBackupPayload: (entryId: string) => Promise<string>;
+}
+
+export interface CloudService {
+  onCloudAuthChange: (callback: (user: CloudUser | null) => void) => () => void;
+  signInWithGoogle: () => Promise<CloudUser>;
+  signOutOfCloud: () => Promise<void>;
+  saveBackupToCloud: (uid: string, backup: ReactBackupData, referenceDate: Date) => Promise<void>;
+  listCloudBackups: (uid: string) => Promise<CloudBackupEntry[]>;
+  fetchCloudBackupPayload: (uid: string, entryId: string) => Promise<string>;
 }
 
 export interface StoreDependencies {
   repository: AppRepository;
   now?: () => Date;
   createId?: () => string;
+  cloud?: CloudService;
 }
 
 const EMPTY_UI: TransientUiState = { sheet: 'none', personId: null, entryId: null };
@@ -242,6 +263,14 @@ export function createAppStore(dependencies: StoreDependencies): StoreApi<AppSto
   const repository = dependencies.repository;
   const now = dependencies.now ?? (() => new Date());
   const createId = dependencies.createId ?? defaultId;
+  let cloudServiceCache: CloudService | null = dependencies.cloud ?? null;
+  let cloudAuthSubscribed = false;
+  const resolveCloud = async (): Promise<CloudService> => {
+    if (!cloudServiceCache) {
+      cloudServiceCache = await import('../services/cloud-backup');
+    }
+    return cloudServiceCache;
+  };
 
   return createStore<AppStoreState>()((set, get) => {
     const persistModePeople = async (mode: AppMode, people: PersistedPerson[]) => {
@@ -274,6 +303,10 @@ export function createAppStore(dependencies: StoreDependencies): StoreApi<AppSto
       undoAction: null,
       lastRestoreReport: null,
       backupMetadata: { lastBackup: '', count: 0 },
+      cloudUser: null,
+      cloudBackups: [],
+      cloudBusy: false,
+      cloudError: null,
 
       async initialize() {
         if (get().initialized || get().loading) return;
@@ -539,6 +572,81 @@ export function createAppStore(dependencies: StoreDependencies): StoreApi<AppSto
 
       clearError() {
         set({ error: null });
+      },
+
+      initCloudAuth() {
+        if (cloudAuthSubscribed) return;
+        cloudAuthSubscribed = true;
+        void resolveCloud().then((cloud) =>
+          cloud.onCloudAuthChange((user) => set({ cloudUser: user })),
+        );
+      },
+
+      async signInCloud() {
+        set({ cloudError: null, cloudBusy: true });
+        try {
+          const cloud = await resolveCloud();
+          const user = await cloud.signInWithGoogle();
+          set({ cloudUser: user, cloudBusy: false });
+        } catch (error) {
+          set({ cloudBusy: false, cloudError: messageFrom(error) });
+        }
+      },
+
+      async signOutCloud() {
+        set({ cloudError: null, cloudBusy: true });
+        try {
+          const cloud = await resolveCloud();
+          await cloud.signOutOfCloud();
+          set({ cloudUser: null, cloudBackups: [], cloudBusy: false });
+        } catch (error) {
+          set({ cloudBusy: false, cloudError: messageFrom(error) });
+        }
+      },
+
+      async saveToCloud() {
+        const user = get().cloudUser;
+        if (!user) {
+          set({ cloudError: 'Sign in first' });
+          return;
+        }
+        set({ cloudError: null, cloudBusy: true });
+        try {
+          const cloud = await resolveCloud();
+          const backup = await createBackupExport(repository, now());
+          await cloud.saveBackupToCloud(user.uid, backup, now());
+          set({ cloudBusy: false });
+        } catch (error) {
+          set({ cloudBusy: false, cloudError: messageFrom(error) });
+        }
+      },
+
+      async refreshCloudBackups() {
+        const user = get().cloudUser;
+        if (!user) return;
+        set({ cloudError: null, cloudBusy: true });
+        try {
+          const cloud = await resolveCloud();
+          const entries = await cloud.listCloudBackups(user.uid);
+          set({ cloudBackups: entries, cloudBusy: false });
+        } catch (error) {
+          set({ cloudBusy: false, cloudError: messageFrom(error) });
+        }
+      },
+
+      async fetchCloudBackupPayload(entryId) {
+        const user = get().cloudUser;
+        if (!user) throw new Error('Sign in first');
+        set({ cloudError: null, cloudBusy: true });
+        try {
+          const cloud = await resolveCloud();
+          const payload = await cloud.fetchCloudBackupPayload(user.uid, entryId);
+          set({ cloudBusy: false });
+          return payload;
+        } catch (error) {
+          set({ cloudBusy: false, cloudError: messageFrom(error) });
+          throw error;
+        }
       },
     };
   });
