@@ -8,7 +8,11 @@ import {
   type BackupInspection,
   type ImportMode,
 } from '../../services/backup';
-import { analyzeBackupHealth, collectDataInsights } from '../../services/backup-health';
+import {
+  analyzeBackupHealth,
+  collectDataInsights,
+  createBackupSnapshot,
+} from '../../services/backup-health';
 import {
   buildAllPdfReport,
   buildPersonPdfReport,
@@ -36,6 +40,7 @@ export function BackupSheet() {
   const cloudBackups = useAppStore((state) => state.cloudBackups);
   const cloudBusy = useAppStore((state) => state.cloudBusy);
   const cloudError = useAppStore((state) => state.cloudError);
+  const cloudSyncMetadata = useAppStore((state) => state.cloudSyncMetadata);
   const initCloudAuth = useAppStore((state) => state.initCloudAuth);
   const signInCloud = useAppStore((state) => state.signInCloud);
   const registerCloud = useAppStore((state) => state.registerCloud);
@@ -48,7 +53,6 @@ export function BackupSheet() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [cloudPickerOpen, setCloudPickerOpen] = useState(false);
-  const [cloudSyncedAt, setCloudSyncedAt] = useState('');
   const [cloudEmail, setCloudEmail] = useState('');
   const [cloudPassword, setCloudPassword] = useState('');
   const [cloudMode, setCloudMode] = useState<'signIn' | 'register'>('signIn');
@@ -67,6 +71,13 @@ export function BackupSheet() {
     [backupMetadata, currentData],
   );
   const insights = useMemo(() => collectDataInsights(currentData), [currentData]);
+  const cloudSignature = useMemo(
+    () => createBackupSnapshot(currentData).dataSignature,
+    [currentData],
+  );
+  const cloudPendingChanges = Boolean(
+    cloudSyncMetadata && cloudSyncMetadata.signature !== cloudSignature,
+  );
   const pdfPeople = peopleByMode[pdfMode];
   const pdfPerson = pdfPeople.find((person) => person.id === pdfPersonId) ?? pdfPeople[0];
   const filteredPdfPeople = pdfPeople.filter((person) =>
@@ -138,7 +149,6 @@ export function BackupSheet() {
   async function handleSaveToCloud() {
     setError('');
     await saveToCloud();
-    setCloudSyncedAt(new Date().toLocaleTimeString());
   }
 
   async function submitCloudAuth() {
@@ -160,7 +170,6 @@ export function BackupSheet() {
       setReplaceConfirmed(false);
       setInspection(inspectBackupText(payload, label));
       setCloudPickerOpen(false);
-      setCloudSyncedAt(new Date().toLocaleTimeString());
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : 'Could not load from the cloud');
     }
@@ -246,6 +255,11 @@ export function BackupSheet() {
                 Sign out
               </button>
             </div>
+            <p className={`cloud-sync-status ${cloudPendingChanges ? 'is-pending' : 'is-synced'}`}>
+              {cloudSyncMetadata
+                ? `${cloudPendingChanges ? '⏳ Pending — last synced' : '✓ Synced'} ${new Date(cloudSyncMetadata.syncedAt).toLocaleString()}`
+                : '○ Not synced yet'}
+            </p>
             <div className="backup-actions-main">
               <button
                 className="secondary-button"
@@ -264,7 +278,6 @@ export function BackupSheet() {
                 ☁ Load from cloud
               </button>
             </div>
-            {cloudSyncedAt && <p className="cloud-sync-status">Synced - {cloudSyncedAt}</p>}
           </>
         ) : (
           <div className="cloud-auth-form">

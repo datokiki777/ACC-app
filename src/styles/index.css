@@ -1698,9 +1698,17 @@ a:focus-visible {
 }
 
 .cloud-sync-status {
-  color: var(--success);
   font-size: 0.82rem;
   font-weight: 700;
+  color: var(--muted);
+}
+
+.cloud-sync-status.is-synced {
+  color: var(--success);
+}
+
+.cloud-sync-status.is-pending {
+  color: var(--warning);
 }
 
 .cloud-auth-form {
