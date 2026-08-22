@@ -1,5 +1,7 @@
 import 'fake-indexeddb/auto';
 
+import { vi } from 'vitest';
+
 import { createAccReactDatabase, type AccReactDatabase } from '../db/database';
 import { createAppRepository } from '../db/repository';
 import { calculateSalary } from '../domain/salary';
@@ -386,5 +388,57 @@ describe('Zustand application actions', () => {
     await store.getState().registerCloud('new@example.com', 'strongpass');
     expect(registeredWith).toEqual(['new@example.com', 'strongpass']);
     expect(store.getState().cloudUser).toMatchObject({ uid: 'new-user', email: 'new@example.com' });
+  });
+
+  it('auto-syncs a while after local data changes, once signed in', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      let saveCount = 0;
+      const cloud = makeMockCloud({
+        saveBackupToCloud: () => {
+          saveCount += 1;
+          return Promise.resolve();
+        },
+      });
+      const store = makeStore(cloud);
+      await store.getState().initialize();
+      await store.getState().signInCloud('alex@example.com', 'password123');
+
+      await store.getState().addPerson(personalDraft('Auto-sync target'));
+      expect(saveCount).toBe(0); // not yet — still within the debounce window
+
+      await vi.advanceTimersByTimeAsync(31_000);
+      expect(saveCount).toBe(1);
+      expect(store.getState().cloudSyncMetadata).not.toBeNull();
+
+      // No further local changes — a second debounce tick should not sync again.
+      await vi.advanceTimersByTimeAsync(31_000);
+      expect(saveCount).toBe(1);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('detects and syncs unsaved local changes as soon as sign-in resolves on a new session', async () => {
+    let saveCount = 0;
+    const cloud = makeMockCloud({
+      saveBackupToCloud: () => {
+        saveCount += 1;
+        return Promise.resolve();
+      },
+    });
+    const store = makeStore(cloud);
+    await store.getState().initialize();
+    await store.getState().signInCloud('alex@example.com', 'password123');
+    await store.getState().addPerson(personalDraft('Was offline'));
+    expect(saveCount).toBe(0);
+
+    // Simulate reopening the app already signed in (no debounce involved).
+    await store.getState().autoSyncIfNeeded();
+    expect(saveCount).toBe(1);
+
+    // Already in sync — calling it again should not trigger another save.
+    await store.getState().autoSyncIfNeeded();
+    expect(saveCount).toBe(1);
   });
 });

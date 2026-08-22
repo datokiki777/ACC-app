@@ -60,6 +60,7 @@ function hasMeaningfulNavigationState(snapshot: NavigationSnapshot) {
 
 export function App() {
   const initialize = useAppStore((state) => state.initialize);
+  const initCloudAuth = useAppStore((state) => state.initCloudAuth);
   const initialized = useAppStore((state) => state.initialized);
   const loading = useAppStore((state) => state.loading);
   const error = useAppStore((state) => state.error);
@@ -105,6 +106,11 @@ export function App() {
   useEffect(() => {
     void initialize();
   }, [initialize]);
+
+  useEffect(() => {
+    if (!initialized) return;
+    initCloudAuth();
+  }, [initialized, initCloudAuth]);
 
   useEffect(() => {
     confirmationRef.current = confirmation;

@@ -21,8 +21,13 @@ export interface SettingRecord {
 }
 
 export interface MetadataRecord {
-  key: 'backup' | 'schemaVersion';
+  key: 'backup' | 'schemaVersion' | 'cloudSync';
   value: unknown;
+}
+
+export interface CloudSyncMetadata {
+  signature: string;
+  syncedAt: string;
 }
 
 export interface BackupMetadata {

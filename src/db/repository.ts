@@ -1,5 +1,10 @@
 import type { AppMode, ThemeMode } from '../types/domain';
-import type { BackupMetadata, MetadataRecord, PersistedPerson } from '../types/persistence';
+import type {
+  BackupMetadata,
+  CloudSyncMetadata,
+  MetadataRecord,
+  PersistedPerson,
+} from '../types/persistence';
 import { ACC_REACT_SCHEMA_VERSION, type AccReactDatabase } from './database';
 
 export interface AppRepository {
@@ -16,6 +21,8 @@ export interface AppRepository {
   setPrivacyMode(enabled: boolean): Promise<void>;
   getBackupMetadata(): Promise<BackupMetadata>;
   setBackupMetadata(metadata: BackupMetadata): Promise<void>;
+  getCloudSyncMetadata(): Promise<CloudSyncMetadata | null>;
+  setCloudSyncMetadata(metadata: CloudSyncMetadata | null): Promise<void>;
   getSchemaVersion(): Promise<number>;
 }
 
@@ -144,6 +151,20 @@ export class DexieAppRepository implements AppRepository {
 
   public async setBackupMetadata(metadata: BackupMetadata): Promise<void> {
     const record: MetadataRecord = { key: 'backup', value: structuredClone(metadata) };
+    await this.database.metadata.put(record);
+  }
+
+  public async getCloudSyncMetadata(): Promise<CloudSyncMetadata | null> {
+    const record = await this.database.metadata.get('cloudSync');
+    const value = record?.value as Partial<CloudSyncMetadata> | undefined;
+    if (!value || typeof value.signature !== 'string' || typeof value.syncedAt !== 'string') {
+      return null;
+    }
+    return { signature: value.signature, syncedAt: value.syncedAt };
+  }
+
+  public async setCloudSyncMetadata(metadata: CloudSyncMetadata | null): Promise<void> {
+    const record: MetadataRecord = { key: 'cloudSync', value: metadata };
     await this.database.metadata.put(record);
   }
 

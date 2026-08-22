@@ -19,6 +19,7 @@ import type {
 } from '../types/domain';
 import type {
   BackupMetadata,
+  CloudSyncMetadata,
   PersistedEntry,
   PersistedPerson,
   ReactBackupData,
@@ -114,6 +115,7 @@ export interface AppStoreState {
   cloudBackups: CloudBackupEntry[];
   cloudBusy: boolean;
   cloudError: string | null;
+  cloudSyncMetadata: CloudSyncMetadata | null;
   initCloudAuth: () => void;
   signInCloud: (email: string, password: string) => Promise<void>;
   registerCloud: (email: string, password: string) => Promise<void>;
@@ -121,6 +123,7 @@ export interface AppStoreState {
   saveToCloud: () => Promise<void>;
   refreshCloudBackups: () => Promise<void>;
   fetchCloudBackupPayload: (entryId: string) => Promise<string>;
+  autoSyncIfNeeded: () => Promise<void>;
 }
 
 export interface CloudService {
@@ -141,6 +144,8 @@ export interface StoreDependencies {
 }
 
 const EMPTY_UI: TransientUiState = { sheet: 'none', personId: null, entryId: null };
+// How long to wait after data stops changing before auto-syncing to the cloud.
+const AUTO_SYNC_DEBOUNCE_MS = 30_000;
 
 function defaultId(): string {
   return (
@@ -274,7 +279,7 @@ export function createAppStore(dependencies: StoreDependencies): StoreApi<AppSto
     return cloudServiceCache;
   };
 
-  return createStore<AppStoreState>()((set, get) => {
+  const store = createStore<AppStoreState>()((set, get) => {
     const persistModePeople = async (mode: AppMode, people: PersistedPerson[]) => {
       await repository.replacePeople(mode, people);
       set((state) => ({ peopleByMode: { ...state.peopleByMode, [mode]: people } }));
@@ -309,20 +314,23 @@ export function createAppStore(dependencies: StoreDependencies): StoreApi<AppSto
       cloudBackups: [],
       cloudBusy: false,
       cloudError: null,
+      cloudSyncMetadata: null,
 
       async initialize() {
         if (get().initialized || get().loading) return;
         set({ loading: true, error: null });
         try {
           await repository.initialize();
-          const [personal, work, mode, theme, privacyMode, backupMetadata] = await Promise.all([
-            repository.getPeople('personal'),
-            repository.getPeople('work'),
-            repository.getMode(),
-            repository.getTheme(),
-            repository.getPrivacyMode(),
-            repository.getBackupMetadata(),
-          ]);
+          const [personal, work, mode, theme, privacyMode, backupMetadata, cloudSyncMetadata] =
+            await Promise.all([
+              repository.getPeople('personal'),
+              repository.getPeople('work'),
+              repository.getMode(),
+              repository.getTheme(),
+              repository.getPrivacyMode(),
+              repository.getBackupMetadata(),
+              repository.getCloudSyncMetadata(),
+            ]);
           set({
             initialized: true,
             loading: false,
@@ -331,6 +339,7 @@ export function createAppStore(dependencies: StoreDependencies): StoreApi<AppSto
             theme,
             privacyMode,
             backupMetadata,
+            cloudSyncMetadata,
           });
         } catch (error) {
           set({ loading: false, error: messageFrom(error) });
@@ -580,7 +589,10 @@ export function createAppStore(dependencies: StoreDependencies): StoreApi<AppSto
         if (cloudAuthSubscribed) return;
         cloudAuthSubscribed = true;
         void resolveCloud().then((cloud) =>
-          cloud.onCloudAuthChange((user) => set({ cloudUser: user })),
+          cloud.onCloudAuthChange((user) => {
+            set({ cloudUser: user });
+            if (user) void get().autoSyncIfNeeded();
+          }),
         );
       },
 
@@ -628,10 +640,23 @@ export function createAppStore(dependencies: StoreDependencies): StoreApi<AppSto
           const cloud = await resolveCloud();
           const backup = await createBackupExport(repository, now());
           await cloud.saveBackupToCloud(user.uid, backup, now());
-          set({ cloudBusy: false });
+          const metadata: CloudSyncMetadata = {
+            signature: createBackupSnapshot(backup).dataSignature,
+            syncedAt: now().toISOString(),
+          };
+          await repository.setCloudSyncMetadata(metadata);
+          set({ cloudBusy: false, cloudSyncMetadata: metadata });
         } catch (error) {
           set({ cloudBusy: false, cloudError: messageFrom(error) });
         }
+      },
+
+      async autoSyncIfNeeded() {
+        const user = get().cloudUser;
+        if (!user) return;
+        const currentSignature = createBackupSnapshot(get().peopleByMode).dataSignature;
+        if (get().cloudSyncMetadata?.signature === currentSignature) return;
+        await get().saveToCloud();
       },
 
       async refreshCloudBackups() {
@@ -663,4 +688,17 @@ export function createAppStore(dependencies: StoreDependencies): StoreApi<AppSto
       },
     };
   });
+
+  let autoSyncTimer: ReturnType<typeof setTimeout> | null = null;
+  store.subscribe((state, previous) => {
+    if (state.peopleByMode === previous.peopleByMode) return;
+    if (!state.cloudUser) return;
+    if (autoSyncTimer) clearTimeout(autoSyncTimer);
+    autoSyncTimer = setTimeout(() => {
+      autoSyncTimer = null;
+      void store.getState().autoSyncIfNeeded();
+    }, AUTO_SYNC_DEBOUNCE_MS);
+  });
+
+  return store;
 }
