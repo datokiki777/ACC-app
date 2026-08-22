@@ -38,6 +38,7 @@ export function BackupSheet() {
   const cloudError = useAppStore((state) => state.cloudError);
   const initCloudAuth = useAppStore((state) => state.initCloudAuth);
   const signInCloud = useAppStore((state) => state.signInCloud);
+  const registerCloud = useAppStore((state) => state.registerCloud);
   const signOutCloud = useAppStore((state) => state.signOutCloud);
   const saveToCloud = useAppStore((state) => state.saveToCloud);
   const refreshCloudBackups = useAppStore((state) => state.refreshCloudBackups);
@@ -48,6 +49,9 @@ export function BackupSheet() {
   const [error, setError] = useState('');
   const [cloudPickerOpen, setCloudPickerOpen] = useState(false);
   const [cloudSyncedAt, setCloudSyncedAt] = useState('');
+  const [cloudEmail, setCloudEmail] = useState('');
+  const [cloudPassword, setCloudPassword] = useState('');
+  const [cloudMode, setCloudMode] = useState<'signIn' | 'register'>('signIn');
   const [deviceStorage, setDeviceStorage] = useState<StorageEstimate | null>(null);
   const [pdfMode, setPdfMode] = useState<AppMode>('personal');
   const [pdfPersonId, setPdfPersonId] = useState('');
@@ -135,6 +139,12 @@ export function BackupSheet() {
     setError('');
     await saveToCloud();
     setCloudSyncedAt(new Date().toLocaleTimeString());
+  }
+
+  async function submitCloudAuth() {
+    setError('');
+    if (cloudMode === 'signIn') await signInCloud(cloudEmail.trim(), cloudPassword);
+    else await registerCloud(cloudEmail.trim(), cloudPassword);
   }
 
   async function openCloudPicker() {
@@ -257,14 +267,46 @@ export function BackupSheet() {
             {cloudSyncedAt && <p className="cloud-sync-status">Synced - {cloudSyncedAt}</p>}
           </>
         ) : (
-          <button
-            className="secondary-button"
-            disabled={cloudBusy}
-            onClick={() => void signInCloud()}
-            type="button"
-          >
-            Sign in with Google
-          </button>
+          <div className="cloud-auth-form">
+            <div className="field">
+              <span>Email</span>
+              <input
+                autoCapitalize="off"
+                autoComplete="email"
+                onChange={(event) => setCloudEmail(event.target.value)}
+                placeholder="you@example.com"
+                type="email"
+                value={cloudEmail}
+              />
+            </div>
+            <div className="field">
+              <span>Password</span>
+              <input
+                autoComplete={cloudMode === 'signIn' ? 'current-password' : 'new-password'}
+                onChange={(event) => setCloudPassword(event.target.value)}
+                placeholder="••••••••"
+                type="password"
+                value={cloudPassword}
+              />
+            </div>
+            <button
+              className="primary-button"
+              disabled={cloudBusy || !cloudEmail.trim() || !cloudPassword}
+              onClick={() => void submitCloudAuth()}
+              type="button"
+            >
+              {cloudMode === 'signIn' ? 'Sign in' : 'Create account'}
+            </button>
+            <button
+              className="text-button"
+              onClick={() => setCloudMode(cloudMode === 'signIn' ? 'register' : 'signIn')}
+              type="button"
+            >
+              {cloudMode === 'signIn'
+                ? "Don't have an account? Create one"
+                : 'Have an account? Sign in'}
+            </button>
+          </div>
         )}
         {cloudError && <p className="form-error">{cloudError}</p>}
       </section>

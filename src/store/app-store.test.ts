@@ -59,15 +59,16 @@ describe('Zustand application actions', () => {
   }
 
   function makeMockCloud(overrides: Partial<CloudService> = {}): CloudService {
+    const cloudUser = {
+      uid: 'user-1',
+      displayName: 'Alex',
+      email: 'alex@example.com',
+      photoURL: null,
+    };
     return {
       onCloudAuthChange: () => () => {},
-      signInWithGoogle: () =>
-        Promise.resolve({
-          uid: 'user-1',
-          displayName: 'Alex',
-          email: 'alex@example.com',
-          photoURL: null,
-        }),
+      signInWithEmail: () => Promise.resolve(cloudUser),
+      registerWithEmail: () => Promise.resolve(cloudUser),
       signOutOfCloud: async () => {},
       saveBackupToCloud: () => Promise.resolve(),
       listCloudBackups: () => Promise.resolve([]),
@@ -303,7 +304,7 @@ describe('Zustand application actions', () => {
     await store.getState().initialize();
     expect(store.getState().cloudUser).toBeNull();
 
-    await store.getState().signInCloud();
+    await store.getState().signInCloud('alex@example.com', 'password123');
     expect(store.getState().cloudUser).toMatchObject({ uid: 'user-1', email: 'alex@example.com' });
 
     await store.getState().saveToCloud();
@@ -327,7 +328,7 @@ describe('Zustand application actions', () => {
     });
     const store = makeStore(cloud);
     await store.getState().initialize();
-    await store.getState().signInCloud();
+    await store.getState().signInCloud('alex@example.com', 'password123');
 
     await store.getState().saveToCloud();
     expect(store.getState().cloudError).toBe('network down');
@@ -364,5 +365,26 @@ describe('Zustand application actions', () => {
     await Promise.resolve();
 
     expect(subscribeCount).toBe(1);
+  });
+
+  it('creates a new cloud account via registerCloud', async () => {
+    let registeredWith: [string, string] | null = null;
+    const cloud = makeMockCloud({
+      registerWithEmail: (email, password) => {
+        registeredWith = [email, password];
+        return Promise.resolve({
+          uid: 'new-user',
+          displayName: null,
+          email,
+          photoURL: null,
+        });
+      },
+    });
+    const store = makeStore(cloud);
+    await store.getState().initialize();
+
+    await store.getState().registerCloud('new@example.com', 'strongpass');
+    expect(registeredWith).toEqual(['new@example.com', 'strongpass']);
+    expect(store.getState().cloudUser).toMatchObject({ uid: 'new-user', email: 'new@example.com' });
   });
 });

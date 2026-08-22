@@ -1,5 +1,10 @@
 import type { User } from 'firebase/auth';
-import { onAuthStateChanged, signInWithPopup, signOut } from 'firebase/auth';
+import {
+  createUserWithEmailAndPassword,
+  onAuthStateChanged,
+  signInWithEmailAndPassword,
+  signOut,
+} from 'firebase/auth';
 import {
   collection,
   deleteDoc,
@@ -13,7 +18,7 @@ import {
 } from 'firebase/firestore';
 
 import type { ReactBackupData } from '../types/persistence';
-import { firebaseAuth, firestore, googleAuthProvider } from './firebase';
+import { firebaseAuth, firestore } from './firebase';
 
 export const CLOUD_HISTORY_RETENTION_DAYS = 30;
 
@@ -44,9 +49,36 @@ export function onCloudAuthChange(callback: (user: CloudUser | null) => void): (
   return onAuthStateChanged(firebaseAuth, (user) => callback(user ? toCloudUser(user) : null));
 }
 
-export async function signInWithGoogle(): Promise<CloudUser> {
-  const result = await signInWithPopup(firebaseAuth, googleAuthProvider);
-  return toCloudUser(result.user);
+function friendlyAuthError(error: unknown): Error {
+  const code = (error as { code?: string } | undefined)?.code ?? '';
+  const messages: Record<string, string> = {
+    'auth/invalid-email': 'That email address looks invalid.',
+    'auth/invalid-credential': 'Wrong email or password.',
+    'auth/wrong-password': 'Wrong email or password.',
+    'auth/user-not-found': 'No account with that email — try Create account.',
+    'auth/email-already-in-use': 'An account with that email already exists — try Sign in.',
+    'auth/weak-password': 'Password must be at least 6 characters.',
+    'auth/too-many-requests': 'Too many attempts — try again in a moment.',
+  };
+  return new Error(messages[code] ?? (error instanceof Error ? error.message : 'Sign-in failed'));
+}
+
+export async function signInWithEmail(email: string, password: string): Promise<CloudUser> {
+  try {
+    const result = await signInWithEmailAndPassword(firebaseAuth, email, password);
+    return toCloudUser(result.user);
+  } catch (error) {
+    throw friendlyAuthError(error);
+  }
+}
+
+export async function registerWithEmail(email: string, password: string): Promise<CloudUser> {
+  try {
+    const result = await createUserWithEmailAndPassword(firebaseAuth, email, password);
+    return toCloudUser(result.user);
+  } catch (error) {
+    throw friendlyAuthError(error);
+  }
 }
 
 export async function signOutOfCloud(): Promise<void> {

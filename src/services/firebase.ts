@@ -1,5 +1,5 @@
 import { initializeApp } from 'firebase/app';
-import { getAuth, GoogleAuthProvider } from 'firebase/auth';
+import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 
 // Public client config — safe to embed; access is enforced by Firestore security rules
@@ -16,4 +16,3 @@ const firebaseConfig = {
 export const firebaseApp = initializeApp(firebaseConfig);
 export const firebaseAuth = getAuth(firebaseApp);
 export const firestore = getFirestore(firebaseApp);
-export const googleAuthProvider = new GoogleAuthProvider();

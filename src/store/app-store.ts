@@ -115,7 +115,8 @@ export interface AppStoreState {
   cloudBusy: boolean;
   cloudError: string | null;
   initCloudAuth: () => void;
-  signInCloud: () => Promise<void>;
+  signInCloud: (email: string, password: string) => Promise<void>;
+  registerCloud: (email: string, password: string) => Promise<void>;
   signOutCloud: () => Promise<void>;
   saveToCloud: () => Promise<void>;
   refreshCloudBackups: () => Promise<void>;
@@ -124,7 +125,8 @@ export interface AppStoreState {
 
 export interface CloudService {
   onCloudAuthChange: (callback: (user: CloudUser | null) => void) => () => void;
-  signInWithGoogle: () => Promise<CloudUser>;
+  signInWithEmail: (email: string, password: string) => Promise<CloudUser>;
+  registerWithEmail: (email: string, password: string) => Promise<CloudUser>;
   signOutOfCloud: () => Promise<void>;
   saveBackupToCloud: (uid: string, backup: ReactBackupData, referenceDate: Date) => Promise<void>;
   listCloudBackups: (uid: string) => Promise<CloudBackupEntry[]>;
@@ -582,11 +584,22 @@ export function createAppStore(dependencies: StoreDependencies): StoreApi<AppSto
         );
       },
 
-      async signInCloud() {
+      async signInCloud(email, password) {
         set({ cloudError: null, cloudBusy: true });
         try {
           const cloud = await resolveCloud();
-          const user = await cloud.signInWithGoogle();
+          const user = await cloud.signInWithEmail(email, password);
+          set({ cloudUser: user, cloudBusy: false });
+        } catch (error) {
+          set({ cloudBusy: false, cloudError: messageFrom(error) });
+        }
+      },
+
+      async registerCloud(email, password) {
+        set({ cloudError: null, cloudBusy: true });
+        try {
+          const cloud = await resolveCloud();
+          const user = await cloud.registerWithEmail(email, password);
           set({ cloudUser: user, cloudBusy: false });
         } catch (error) {
           set({ cloudBusy: false, cloudError: messageFrom(error) });

@@ -1703,6 +1703,11 @@ a:focus-visible {
   font-weight: 700;
 }
 
+.cloud-auth-form {
+  display: grid;
+  gap: 10px;
+}
+
 .all-data-pdf-button {
   width: 100%;
   min-height: 44px;
