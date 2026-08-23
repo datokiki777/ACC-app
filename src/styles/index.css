@@ -952,7 +952,7 @@ a:focus-visible {
 
 .payroll-totals-row strong {
   font-size: 0.8rem;
-  text-align: right;
+  text-align: left;
 }
 
 .other-panel {
