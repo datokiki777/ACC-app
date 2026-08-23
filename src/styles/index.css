@@ -81,10 +81,6 @@
   --archived-status: var(--color-neutral);
 }
 
-:root[data-theme='dark'] {
-  background: linear-gradient(180deg, #24466f 0%, #0d1a2e 55%, #050810 100%) fixed;
-}
-
 :root[data-theme='light'] {
   --color-bg: #c3d6ea;
   --color-bg-secondary: #b9cee5;
@@ -2708,18 +2704,6 @@ a:focus-visible {
   border-radius: 16px;
   background: var(--color-person-card);
   box-shadow: var(--shadow);
-}
-
-:root[data-theme='dark'] .person-card {
-  border: 1px solid rgb(56 189 248 / 20%);
-  background: rgb(20 40 70 / 45%);
-  backdrop-filter: blur(18px) saturate(140%);
-  -webkit-backdrop-filter: blur(18px) saturate(140%);
-}
-
-:root[data-theme='dark'] .swipe-summary-shell,
-:root[data-theme='dark'] .person-summary {
-  background: transparent;
 }
 
 .person-card {
