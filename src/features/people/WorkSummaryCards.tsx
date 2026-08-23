@@ -1,6 +1,8 @@
+import { useState } from 'react';
+
 import type { PersonTotals } from '../../domain/balances';
 import type { GiftSummary } from '../../domain/salary';
-import type { SalaryCalculationResult } from '../../types/domain';
+import type { SalaryCalculationResult, SalaryChangeRecord } from '../../types/domain';
 import type { PersistedPerson } from '../../types/persistence';
 import { formatDate, formatMoney } from '../../utils/format';
 
@@ -48,6 +50,7 @@ interface PayrollSummaryCardProps {
   currency: PersistedPerson['currency'];
   onSyncPayDate: () => void;
   salary: SalaryCalculationResult;
+  salaryHistory: SalaryChangeRecord[] | undefined;
   totals: PersonTotals;
 }
 
@@ -55,8 +58,12 @@ export function PayrollSummaryCard({
   currency,
   onSyncPayDate,
   salary,
+  salaryHistory,
   totals,
 }: PayrollSummaryCardProps) {
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const history = salaryHistory ?? [];
+
   return (
     <section className="payroll-panel work-summary-panel">
       <div className="panel-heading">
@@ -93,9 +100,35 @@ export function PayrollSummaryCard({
           <strong>{formatDate(salary.ended ? salary.endDate : salary.nextPayDate)}</strong>
         </span>
       </div>
-      <button className="text-button" onClick={onSyncPayDate} type="button">
-        ↻ Sync Pay Date
-      </button>
+      <div className="payroll-secondary-actions">
+        <button className="text-button" onClick={onSyncPayDate} type="button">
+          ↻ Sync Pay Date
+        </button>
+        {history.length > 0 && (
+          <button
+            aria-expanded={historyOpen}
+            className="text-button"
+            onClick={() => setHistoryOpen((open) => !open)}
+            type="button"
+          >
+            {historyOpen ? '▾' : '▸'} Salary history ({history.length})
+          </button>
+        )}
+      </div>
+      {historyOpen && history.length > 0 && (
+        <ul className="salary-history-list">
+          {history.map((change) => (
+            <li key={`${change.effectiveDate}-${change.newAmount}`}>
+              <span className="salary-history-date">{formatDate(change.effectiveDate)}</span>
+              <span className="salary-history-change">
+                {formatMoney(change.previousAmount, currency, false)}
+                {' → '}
+                <strong>{formatMoney(change.newAmount, currency, false)}</strong>
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
       <FlowTotalsRow
         className="payroll-totals-row"
         currency={currency}

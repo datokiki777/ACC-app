@@ -135,7 +135,10 @@ export async function saveBackupToCloud(
   await pruneOldHistory(uid, referenceDate);
 }
 
-export async function listCloudBackups(uid: string): Promise<CloudBackupEntry[]> {
+export async function listCloudBackups(
+  uid: string,
+  referenceDate: Date,
+): Promise<CloudBackupEntry[]> {
   const latestRef = doc(firestore, 'acc_users', uid, 'backups', 'latest');
   const historyRef = collection(firestore, 'acc_users', uid, 'backups_history');
   const [latestSnapshot, historySnapshot] = await Promise.all([
@@ -143,17 +146,22 @@ export async function listCloudBackups(uid: string): Promise<CloudBackupEntry[]>
     getDocs(historyRef),
   ]);
 
+  const todayKey = historyDateKey(referenceDate);
   const entries: CloudBackupEntry[] = [];
   if (latestSnapshot.exists()) {
     const exportDate = (latestSnapshot.data().exportDate as string | undefined) ?? '';
-    entries.push({
-      id: 'latest',
-      kind: 'latest',
-      label: `Latest Cloud - ${exportDate ? formatDateLabel(exportDate.slice(0, 10)) : '—'}`,
-      savedAt: exportDate,
-    });
+    if (exportDate.slice(0, 10) !== todayKey) {
+      entries.push({
+        id: 'latest',
+        kind: 'latest',
+        label: `Latest Cloud - ${exportDate ? formatDateLabel(exportDate.slice(0, 10)) : '—'}`,
+        savedAt: exportDate,
+      });
+    }
   }
-  const historyDocs = [...historySnapshot.docs].sort((a, b) => (a.id < b.id ? 1 : -1));
+  const historyDocs = [...historySnapshot.docs]
+    .filter((entry) => entry.id !== todayKey)
+    .sort((a, b) => (a.id < b.id ? 1 : -1));
   historyDocs.forEach((entry) => {
     entries.push({
       id: entry.id,

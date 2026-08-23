@@ -294,12 +294,16 @@ describe('Zustand application actions', () => {
       { id: '2026-08-20', kind: 'history', label: 'History - 20/08/2026', savedAt: '2026-08-20' },
     ];
     let savedUid = '';
+    let listedWithDate: Date | null = null;
     const cloud = makeMockCloud({
       saveBackupToCloud: (uid) => {
         savedUid = uid;
         return Promise.resolve();
       },
-      listCloudBackups: () => Promise.resolve(historyEntries),
+      listCloudBackups: (_uid, referenceDate) => {
+        listedWithDate = referenceDate;
+        return Promise.resolve(historyEntries);
+      },
       fetchCloudBackupPayload: () => Promise.resolve(JSON.stringify({ personal: [], work: [] })),
     });
     const store = makeStore(cloud);
@@ -315,6 +319,7 @@ describe('Zustand application actions', () => {
 
     await store.getState().refreshCloudBackups();
     expect(store.getState().cloudBackups).toEqual(historyEntries);
+    expect(listedWithDate).toEqual(NOW);
 
     const payload = await store.getState().fetchCloudBackupPayload('latest');
     expect(JSON.parse(payload)).toEqual({ personal: [], work: [] });

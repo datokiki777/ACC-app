@@ -25,6 +25,12 @@ export interface SalarySettings {
   payDelayMode: PayDelayMode;
 }
 
+export interface SalaryChangeRecord {
+  effectiveDate: string;
+  previousAmount: number;
+  newAmount: number;
+}
+
 export interface Person {
   id: string;
   name: string;
@@ -45,6 +51,7 @@ export interface Person {
   salaryCurrency?: Currency;
   salaryPeriodAnchorDate?: string;
   salaryAccruedBaseline?: number;
+  salaryHistory?: SalaryChangeRecord[];
 }
 
 export interface SalaryCalculationResult {

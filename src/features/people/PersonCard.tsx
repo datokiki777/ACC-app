@@ -309,6 +309,7 @@ export function PersonCard({
                   currency={person.currency}
                   onSyncPayDate={() => openSheet('salary-sync', person.id)}
                   salary={salary}
+                  salaryHistory={person.salaryHistory}
                   totals={totals}
                 />
               )}

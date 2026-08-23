@@ -132,7 +132,7 @@ export interface CloudService {
   registerWithEmail: (email: string, password: string) => Promise<CloudUser>;
   signOutOfCloud: () => Promise<void>;
   saveBackupToCloud: (uid: string, backup: ReactBackupData, referenceDate: Date) => Promise<void>;
-  listCloudBackups: (uid: string) => Promise<CloudBackupEntry[]>;
+  listCloudBackups: (uid: string, referenceDate: Date) => Promise<CloudBackupEntry[]>;
   fetchCloudBackupPayload: (uid: string, entryId: string) => Promise<string>;
 }
 
@@ -665,7 +665,7 @@ export function createAppStore(dependencies: StoreDependencies): StoreApi<AppSto
         set({ cloudError: null, cloudBusy: true });
         try {
           const cloud = await resolveCloud();
-          const entries = await cloud.listCloudBackups(user.uid);
+          const entries = await cloud.listCloudBackups(user.uid, now());
           set({ cloudBackups: entries, cloudBusy: false });
         } catch (error) {
           set({ cloudBusy: false, cloudError: messageFrom(error) });

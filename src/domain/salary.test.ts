@@ -284,6 +284,22 @@ describe('salary workflow parity', () => {
     // balance (1000) minus what's already been paid (50) is still owed.
     expect(result.due).toBe(950);
     expect(result.periodAmount).toBe(1500);
+    expect(changed.salaryHistory).toEqual([
+      { effectiveDate: '2026-08-13', previousAmount: 2000, newAmount: 3000 },
+    ]);
+  });
+
+  it('prepends new salary changes and keeps history bounded to the most recent 20', () => {
+    const before = weeklySalaryPerson({
+      salaryAmount: 2000,
+      salaryStartDate: '2026-07-27',
+      salaryHistory: [{ effectiveDate: '2026-06-01', previousAmount: 1500, newAmount: 2000 }],
+    });
+    const changed = applySalaryAmountChange(before, 2500, date(2026, 8, 13));
+    expect(changed.salaryHistory).toEqual([
+      { effectiveDate: '2026-08-13', previousAmount: 2000, newAmount: 2500 },
+      { effectiveDate: '2026-06-01', previousAmount: 1500, newAmount: 2000 },
+    ]);
   });
 
   it('does not re-anchor when the salary amount is unchanged', () => {

@@ -1,4 +1,4 @@
-import type { Entry, Person } from '../types/domain';
+import type { Entry, Person, SalaryChangeRecord } from '../types/domain';
 import { normalizeAmount } from './entries';
 import { formatReferenceDate } from './pay-dates';
 import { calculateSalary } from './salary';
@@ -36,6 +36,12 @@ export function applySalaryAmountChange(
   if (wasConfigured && person.salaryAmount !== nextAmount) {
     next.salaryAccruedBaseline = calculateSalary(person, effectiveDate).accrued;
     next.salaryPeriodAnchorDate = formatReferenceDate(effectiveDate);
+    const record: SalaryChangeRecord = {
+      effectiveDate: formatReferenceDate(effectiveDate),
+      previousAmount: person.salaryAmount ?? 0,
+      newAmount: nextAmount,
+    };
+    next.salaryHistory = [record, ...(person.salaryHistory ?? [])].slice(0, 20);
   }
   next.salaryAmount = nextAmount;
   return next;

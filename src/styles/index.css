@@ -842,6 +842,12 @@ a:focus-visible {
   margin-top: 10px;
 }
 
+.payroll-panel .panel-heading {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+}
+
 .payroll-panel .panel-grid {
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px;
@@ -892,6 +898,39 @@ a:focus-visible {
   min-height: 32px;
   font-size: 0.82rem;
   font-weight: 700;
+}
+
+.payroll-secondary-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+}
+
+.salary-history-list {
+  display: grid;
+  gap: 6px;
+  padding: 8px 0 2px;
+  list-style: none;
+}
+
+.salary-history-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 0.82rem;
+}
+
+.salary-history-date {
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.salary-history-change {
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
 }
 
 .payroll-totals-row {
