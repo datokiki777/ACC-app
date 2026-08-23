@@ -104,7 +104,12 @@ export interface AppStoreState {
   deleteEntry: (personId: string, entryId: string) => Promise<void>;
   undoLastDeletion: () => Promise<void>;
   dismissUndo: () => void;
-  syncSalary: (personId: string, adjustmentAmount: number, newAnchorDate: string) => Promise<void>;
+  syncSalary: (
+    personId: string,
+    adjustmentAmount: number,
+    newAnchorDate: string,
+    newAmount?: number,
+  ) => Promise<void>;
   importBackup: (
     inspection: Extract<BackupInspection, { valid: true }>,
     mode: ImportMode,
@@ -519,7 +524,7 @@ export function createAppStore(dependencies: StoreDependencies): StoreApi<AppSto
         set({ undoAction: null });
       },
 
-      async syncSalary(personId, adjustmentAmount, newAnchorDate) {
+      async syncSalary(personId, adjustmentAmount, newAnchorDate, newAmount) {
         await withError(async () => {
           const state = get();
           const people = state.peopleByMode[state.mode].map((person) =>
@@ -531,6 +536,7 @@ export function createAppStore(dependencies: StoreDependencies): StoreApi<AppSto
                     newAnchorDate,
                     adjustmentEntryId: createId(),
                     referenceDate: now(),
+                    ...(newAmount === undefined ? {} : { newAmount }),
                   }),
                 )
               : person,

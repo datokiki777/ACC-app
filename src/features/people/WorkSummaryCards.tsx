@@ -102,7 +102,7 @@ export function PayrollSummaryCard({
       </div>
       <div className="payroll-secondary-actions">
         <button className="text-button" onClick={onSyncPayDate} type="button">
-          ↻ Sync Pay Date
+          ↻ Change Salary
         </button>
         {history.length > 0 && (
           <button

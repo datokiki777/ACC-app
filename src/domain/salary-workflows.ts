@@ -52,6 +52,7 @@ export interface SyncPayDateInput {
   newAnchorDate: string;
   adjustmentEntryId: string;
   referenceDate: Date;
+  newAmount?: number;
 }
 
 export function syncPayDate(person: Person, input: SyncPayDateInput): Person {
@@ -67,10 +68,28 @@ export function syncPayDate(person: Person, input: SyncPayDateInput): Person {
       category: 'salary',
     });
   }
-  const next = { ...person, entries };
-  // 'paid' (salaryPaid) is always a live sum over every salary entry, regardless of date — it
-  // already reflects everything paid so far without needing a separate banked snapshot here.
-  next.salaryAccruedBaseline = 0;
+  const next: Person = { ...person, entries };
+  const wasConfigured = Boolean(person.salaryAmount && person.salaryStartDate);
+  const amountChanging =
+    wasConfigured && input.newAmount !== undefined && person.salaryAmount !== input.newAmount;
+
+  if (amountChanging) {
+    // Amount is changing too: bank accrued-under-the-OLD-rate as of this date, so past periods
+    // keep the old rate/accounting and only periods from here forward use the new one.
+    next.salaryAccruedBaseline = calculateSalary(person, input.referenceDate).accrued;
+    const record: SalaryChangeRecord = {
+      effectiveDate: input.newAnchorDate,
+      previousAmount: person.salaryAmount ?? 0,
+      newAmount: input.newAmount as number,
+    };
+    next.salaryHistory = [record, ...(person.salaryHistory ?? [])].slice(0, 20);
+    next.salaryAmount = input.newAmount as number;
+  } else {
+    // Amount unchanged: 'paid' (salaryPaid) is always a live sum over every salary entry, so a
+    // plain schedule recalibration needs no banked baseline at all — it just goes stale if
+    // banked, since 'paid' already reflects everything without needing a separate snapshot.
+    next.salaryAccruedBaseline = 0;
+  }
   next.salaryPeriodAnchorDate = input.newAnchorDate;
   return next;
 }

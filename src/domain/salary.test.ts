@@ -237,6 +237,29 @@ describe('salary workflow parity', () => {
     expect(synced.salaryPeriodAnchorDate).toBe('2026-03-10');
   });
 
+  it('also changes the salary amount when provided, banking accrued at the old rate', () => {
+    const before = weeklySalaryPerson({
+      salaryAmount: 2000,
+      salaryStartDate: '2026-07-27',
+      salaryPayPeriodWeeks: 2,
+      entries: [entry({ id: 'e1', amount: 50, category: 'salary', date: '2026-08-09' })],
+    });
+    const synced = syncPayDate(before, {
+      adjustmentAmount: 0,
+      newAnchorDate: '2026-08-13',
+      adjustmentEntryId: 'unused',
+      referenceDate: date(2026, 8, 13),
+      newAmount: 3000,
+    });
+    expect(synced.salaryAmount).toBe(3000);
+    expect(synced.salaryPeriodAnchorDate).toBe('2026-08-13');
+    // Accrued under the OLD 2000/month rate as of 2026-08-13: one completed period (1000).
+    expect(synced.salaryAccruedBaseline).toBe(1000);
+    expect(synced.salaryHistory).toEqual([
+      { effectiveDate: '2026-08-13', previousAmount: 2000, newAmount: 3000 },
+    ]);
+  });
+
   it('resets a salaried unarchive to today, without banking a separate paid snapshot', () => {
     const reset = resetSalaryWhenUnarchiving(
       weeklySalaryPerson({

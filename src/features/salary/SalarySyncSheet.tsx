@@ -10,6 +10,7 @@ import { formatMoney, localDateString } from '../../utils/format';
 interface SyncForm {
   adjustmentAmount: number;
   newAnchorDate: string;
+  newAmount: number;
 }
 
 export function SalarySyncSheet() {
@@ -27,7 +28,11 @@ export function SalarySyncSheet() {
     handleSubmit,
     formState: { isDirty, isSubmitting },
   } = useForm<SyncForm>({
-    defaultValues: { adjustmentAmount: owed, newAnchorDate: localDateString() },
+    defaultValues: {
+      adjustmentAmount: owed,
+      newAnchorDate: localDateString(),
+      newAmount: person?.salaryAmount ?? 0,
+    },
   });
   useUnsavedForm(isDirty);
   if (!person || !salary) return null;
@@ -38,19 +43,41 @@ export function SalarySyncSheet() {
       return;
     }
     try {
-      await sync(person.id, values.adjustmentAmount, values.newAnchorDate);
+      const newAmount = Number(values.newAmount);
+      await sync(
+        person.id,
+        values.adjustmentAmount,
+        values.newAnchorDate,
+        Number.isFinite(newAmount) && newAmount > 0 ? newAmount : undefined,
+      );
       closeAfterSave();
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : 'Could not sync salary');
+      setError(caught instanceof Error ? caught.message : 'Could not update salary');
     }
   });
 
   return (
-    <BottomSheet onClose={requestClose} title="Sync Pay Date">
+    <BottomSheet onClose={requestClose} title="Change Salary">
       <form autoComplete="off" className="form-grid" onSubmit={(event) => void submit(event)}>
         <p className="inline-note">
           Earned but not yet paid: <strong>{formatMoney(owed, salary.currency, false)}</strong>
         </p>
+        <label className="field">
+          <span>New cycle start date</span>
+          <input autoComplete="off" type="date" {...register('newAnchorDate')} />
+        </label>
+        <label className="field">
+          <span>New monthly salary</span>
+          <input
+            autoComplete="off"
+            inputMode="decimal"
+            min={0}
+            step={1}
+            type="number"
+            {...register('newAmount', { valueAsNumber: true })}
+          />
+          <small>Applies from the date above onward. Leave as-is to keep the current rate.</small>
+        </label>
         <label className="field">
           <span>One-time adjustment</span>
           <input
@@ -61,10 +88,7 @@ export function SalarySyncSheet() {
             type="number"
             {...register('adjustmentAmount', { valueAsNumber: true })}
           />
-        </label>
-        <label className="field">
-          <span>New cycle start date</span>
-          <input autoComplete="off" type="date" {...register('newAnchorDate')} />
+          <small>An extra payment to record on the date above, if any.</small>
         </label>
         {error && <p className="form-error">{error}</p>}
         <div className="form-actions">
@@ -72,7 +96,7 @@ export function SalarySyncSheet() {
             Cancel
           </button>
           <button className="primary-button" disabled={isSubmitting} type="submit">
-            Sync
+            Save
           </button>
         </div>
       </form>
