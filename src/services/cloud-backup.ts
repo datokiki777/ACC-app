@@ -150,14 +150,12 @@ export async function listCloudBackups(
   const entries: CloudBackupEntry[] = [];
   if (latestSnapshot.exists()) {
     const exportDate = (latestSnapshot.data().exportDate as string | undefined) ?? '';
-    if (exportDate.slice(0, 10) !== todayKey) {
-      entries.push({
-        id: 'latest',
-        kind: 'latest',
-        label: `Latest Cloud - ${exportDate ? formatDateLabel(exportDate.slice(0, 10)) : '—'}`,
-        savedAt: exportDate,
-      });
-    }
+    entries.push({
+      id: 'latest',
+      kind: 'latest',
+      label: `Latest Cloud - ${exportDate ? formatDateLabel(exportDate.slice(0, 10)) : '—'}`,
+      savedAt: exportDate,
+    });
   }
   const historyDocs = [...historySnapshot.docs]
     .filter((entry) => entry.id !== todayKey)
