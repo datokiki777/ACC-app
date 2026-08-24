@@ -16,6 +16,8 @@
   --color-bg-deep: #0d1826;
   --color-toolbar: #0f1f33;
   --color-surface: #2a4667;
+  --color-person-card: #1e3a8a;
+  --color-person-card-border: #2563eb;
   --color-surface-elevated: #315274;
   --color-surface-expanded: #375c81;
   --color-surface-panel: #142b42;
@@ -50,6 +52,8 @@
   --bg-secondary: var(--color-bg-secondary);
   --toolbar-bg: var(--color-toolbar);
   --surface: var(--color-surface);
+  --person-card: var(--color-person-card);
+  --person-card-border: var(--color-person-card-border);
   --surface-raised: var(--color-surface-elevated);
   --surface-expanded: var(--color-surface-expanded);
   --surface-panel: var(--color-surface-panel);
@@ -85,6 +89,8 @@
   --color-bg-deep: #aec4dc;
   --color-toolbar: var(--color-bg);
   --color-surface: #e7eef6;
+  --color-person-card: #e7eef6;
+  --color-person-card-border: #8fabc4;
   --color-surface-elevated: #dde7f1;
   --color-surface-expanded: #e3edf6;
   --color-surface-panel: #b9cde2;
@@ -494,7 +500,6 @@ a:focus-visible {
   gap: 10px;
 }
 
-.person-card,
 .empty-card,
 .stats-section,
 .safety-card {
@@ -506,8 +511,9 @@ a:focus-visible {
 
 .person-card {
   overflow: hidden;
+  border: 1px solid var(--person-card-border);
   border-radius: 18px;
-  border-color: color-mix(in srgb, var(--border) 82%, transparent);
+  background: var(--person-card);
   box-shadow:
     0 5px 16px rgb(0 0 0 / 10%),
     inset 0 1px rgb(255 255 255 / 3%);
@@ -517,7 +523,7 @@ a:focus-visible {
   position: relative;
   min-height: 64px;
   overflow: hidden;
-  background: var(--surface);
+  background: var(--person-card);
   touch-action: pan-y;
 }
 
@@ -2677,7 +2683,6 @@ a:focus-visible {
   gap: 9px;
 }
 
-.person-card,
 .empty-card,
 .stats-section,
 .safety-card {
@@ -2688,12 +2693,19 @@ a:focus-visible {
 }
 
 .person-card {
+  border-color: var(--color-person-card-border);
+  border-radius: 16px;
+  background: var(--color-person-card);
+  box-shadow: var(--shadow);
+}
+
+.person-card {
   position: relative;
   overflow: hidden;
 }
 
 .person-card.is-expanded {
-  border-color: var(--color-border-strong);
+  border-color: color-mix(in srgb, var(--color-person-card-border) 70%, white);
   box-shadow:
     0 6px 18px rgb(0 0 0 / 14%),
     inset 0 1px rgb(255 255 255 / 3%);
@@ -2715,7 +2727,7 @@ a:focus-visible {
 
 .swipe-summary-shell,
 .person-summary {
-  background: var(--color-surface);
+  background: var(--color-person-card);
 }
 
 .person-summary {
