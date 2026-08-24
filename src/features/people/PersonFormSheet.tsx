@@ -18,12 +18,7 @@ const CURRENCY_OPTIONS: { value: Currency; label: string }[] = [
   { value: 'CAD', label: 'CAD C$' },
 ];
 
-const PAY_DELAY_OPTIONS: { value: PayDelayMode; label: string }[] = [
-  { value: 'none', label: 'At period end' },
-  { value: '2weeks', label: '2 weeks after period' },
-  { value: '4weeks', label: '4 weeks after period' },
-  { value: 'firstOfMonth', label: '1st of next month' },
-];
+import { PAY_DELAY_OPTIONS } from '../../domain/salary-options';
 
 const personSchema = z
   .object({

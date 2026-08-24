@@ -74,6 +74,31 @@ describe('salary calculation parity', () => {
     expect(result.daysUntilNextPay).toBeNull();
   });
 
+  it('respects the configured payment delay even after the salary has ended', () => {
+    // Monthly salary, 4-week period, 4-week payment delay, work ends 2026-07-31.
+    const person = weeklySalaryPerson({
+      salaryAmount: 1500,
+      salaryStartDate: '2026-07-01',
+      salaryPayPeriodWeeks: 4,
+      salaryPayDelayMode: '4weeks',
+      salaryEndDate: '2026-07-31',
+      entries: [],
+    });
+
+    // Right after ending: the final period completed, but the 4-week delay hasn't elapsed yet —
+    // the amount should show as upcoming, not overdue.
+    const soonAfterEnd = calculateSalary(person, date(2026, 8, 1));
+    expect(soonAfterEnd.ended).toBe(true);
+    expect(soonAfterEnd.due).toBe(0);
+    expect(soonAfterEnd.upcoming).toBe(1500);
+    expect(soonAfterEnd.nextPayDate).toBe('2026-08-26');
+
+    // Well past the delay window — should now flip to overdue.
+    const wellAfterDelay = calculateSalary(person, date(2026, 9, 5));
+    expect(wellAfterDelay.due).toBe(1500);
+    expect(wellAfterDelay.upcoming).toBe(0);
+  });
+
   it('nets Received salary entries against Gave salary entries when counting what is paid', () => {
     const person = weeklySalaryPerson({
       entries: [
@@ -258,6 +283,29 @@ describe('salary workflow parity', () => {
     expect(synced.salaryHistory).toEqual([
       { effectiveDate: '2026-08-13', previousAmount: 2000, newAmount: 3000 },
     ]);
+  });
+
+  it('also updates the payment delay mode when provided', () => {
+    const before = weeklySalaryPerson({ salaryPayDelayMode: 'none' });
+    const synced = syncPayDate(before, {
+      adjustmentAmount: 0,
+      newAnchorDate: '2026-03-10',
+      adjustmentEntryId: 'unused',
+      referenceDate: date(2026, 3, 10),
+      payDelayMode: '4weeks',
+    });
+    expect(synced.salaryPayDelayMode).toBe('4weeks');
+  });
+
+  it('leaves the payment delay mode untouched when not provided', () => {
+    const before = weeklySalaryPerson({ salaryPayDelayMode: '2weeks' });
+    const synced = syncPayDate(before, {
+      adjustmentAmount: 0,
+      newAnchorDate: '2026-03-10',
+      adjustmentEntryId: 'unused',
+      referenceDate: date(2026, 3, 10),
+    });
+    expect(synced.salaryPayDelayMode).toBe('2weeks');
   });
 
   it('resets a salaried unarchive to today, without banking a separate paid snapshot', () => {

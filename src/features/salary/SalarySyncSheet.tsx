@@ -1,16 +1,20 @@
 import { useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 
 import { BottomSheet } from '../../components/BottomSheet';
+import { PickerField } from '../../components/PickerField';
 import { useAppNavigation, useUnsavedForm } from '../../app/useAppNavigation';
 import { calculateSalary } from '../../domain/salary';
+import { PAY_DELAY_OPTIONS } from '../../domain/salary-options';
 import { useAppStore } from '../../store/hooks';
+import type { PayDelayMode } from '../../types/domain';
 import { formatMoney, localDateString } from '../../utils/format';
 
 interface SyncForm {
   adjustmentAmount: number;
   newAnchorDate: string;
   newAmount: number;
+  payDelayMode: PayDelayMode;
 }
 
 export function SalarySyncSheet() {
@@ -26,14 +30,18 @@ export function SalarySyncSheet() {
   const {
     register,
     handleSubmit,
+    setValue,
+    control,
     formState: { isDirty, isSubmitting },
   } = useForm<SyncForm>({
     defaultValues: {
       adjustmentAmount: owed,
       newAnchorDate: localDateString(),
       newAmount: person?.salaryAmount ?? 0,
+      payDelayMode: person?.salaryPayDelayMode ?? 'none',
     },
   });
+  const payDelayMode = useWatch({ control, name: 'payDelayMode' });
   useUnsavedForm(isDirty);
   if (!person || !salary) return null;
 
@@ -49,6 +57,7 @@ export function SalarySyncSheet() {
         values.adjustmentAmount,
         values.newAnchorDate,
         Number.isFinite(newAmount) && newAmount > 0 ? newAmount : undefined,
+        values.payDelayMode,
       );
       closeAfterSave();
     } catch (caught) {
@@ -78,6 +87,12 @@ export function SalarySyncSheet() {
           />
           <small>Applies from the date above onward. Leave as-is to keep the current rate.</small>
         </label>
+        <PickerField
+          label="Payment timing"
+          onChange={(next) => setValue('payDelayMode', next as PayDelayMode, { shouldDirty: true })}
+          options={PAY_DELAY_OPTIONS}
+          value={payDelayMode}
+        />
         <label className="field">
           <span>One-time adjustment</span>
           <input

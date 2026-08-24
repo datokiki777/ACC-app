@@ -109,6 +109,7 @@ export interface AppStoreState {
     adjustmentAmount: number,
     newAnchorDate: string,
     newAmount?: number,
+    payDelayMode?: PayDelayMode,
   ) => Promise<void>;
   importBackup: (
     inspection: Extract<BackupInspection, { valid: true }>,
@@ -524,7 +525,7 @@ export function createAppStore(dependencies: StoreDependencies): StoreApi<AppSto
         set({ undoAction: null });
       },
 
-      async syncSalary(personId, adjustmentAmount, newAnchorDate, newAmount) {
+      async syncSalary(personId, adjustmentAmount, newAnchorDate, newAmount, payDelayMode) {
         await withError(async () => {
           const state = get();
           const people = state.peopleByMode[state.mode].map((person) =>
@@ -537,6 +538,7 @@ export function createAppStore(dependencies: StoreDependencies): StoreApi<AppSto
                     adjustmentEntryId: createId(),
                     referenceDate: now(),
                     ...(newAmount === undefined ? {} : { newAmount }),
+                    ...(payDelayMode === undefined ? {} : { payDelayMode }),
                   }),
                 )
               : person,

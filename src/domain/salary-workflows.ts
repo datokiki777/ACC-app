@@ -1,4 +1,4 @@
-import type { Entry, Person, SalaryChangeRecord } from '../types/domain';
+import type { Entry, PayDelayMode, Person, SalaryChangeRecord } from '../types/domain';
 import { normalizeAmount } from './entries';
 import { formatReferenceDate } from './pay-dates';
 import { calculateSalary } from './salary';
@@ -53,6 +53,7 @@ export interface SyncPayDateInput {
   adjustmentEntryId: string;
   referenceDate: Date;
   newAmount?: number;
+  payDelayMode?: PayDelayMode;
 }
 
 export function syncPayDate(person: Person, input: SyncPayDateInput): Person {
@@ -91,6 +92,7 @@ export function syncPayDate(person: Person, input: SyncPayDateInput): Person {
     next.salaryAccruedBaseline = 0;
   }
   next.salaryPeriodAnchorDate = input.newAnchorDate;
+  if (input.payDelayMode !== undefined) next.salaryPayDelayMode = input.payDelayMode;
   return next;
 }
 
