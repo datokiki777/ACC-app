@@ -360,6 +360,28 @@ describe('salary workflow parity', () => {
     ]);
   });
 
+  it('does not let a stale banked baseline bypass the grace period for a later, genuinely new pay date', () => {
+    // Same setup as above: banked baseline from a past salary change (anchor 2026-08-13).
+    const before = weeklySalaryPerson({
+      salaryAmount: 2000,
+      salaryStartDate: '2026-07-27',
+      salaryPayPeriodWeeks: 2,
+      entries: [entry({ id: 'e1', amount: 50, category: 'salary', date: '2026-08-09' })],
+    });
+    const changed = applySalaryAmountChange(before, 3000, date(2026, 8, 13));
+
+    // Weeks later, a genuinely NEW period boundary lands exactly today (2026-08-27) — the banked
+    // baseline is still nonzero (never reset), but this new period must still get the normal
+    // grace: not overdue on the pay date itself.
+    const onPayDate = calculateSalary(changed, date(2026, 8, 27));
+    expect(onPayDate.due).toBe(0);
+    expect(onPayDate.upcoming).toBeGreaterThan(0);
+
+    // The day after, it correctly becomes overdue.
+    const dayAfter = calculateSalary(changed, date(2026, 8, 28));
+    expect(dayAfter.due).toBeGreaterThan(0);
+  });
+
   it('prepends new salary changes and keeps history bounded to the most recent 20', () => {
     const before = weeklySalaryPerson({
       salaryAmount: 2000,
