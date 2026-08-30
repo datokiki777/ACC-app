@@ -108,26 +108,34 @@ export function StatisticsSheet() {
             <div className="month-column" key={month.key}>
               <div className="bars">
                 <div className="bar-track">
-                  {month.gave > 0 && (
-                    <small className="bar-value">
-                      {formatMoney(month.gave, chartCurrency, false)}
-                    </small>
-                  )}
-                  <span
-                    className="gave-bar"
-                    style={{ height: `${Math.round((month.gave / maxMonthly) * 100)}%` }}
-                  />
+                  <div className="bar-value-zone">
+                    {month.gave > 0 && (
+                      <small className="bar-value">
+                        {formatMoney(month.gave, chartCurrency, false)}
+                      </small>
+                    )}
+                  </div>
+                  <div className="bar-fill-zone">
+                    <span
+                      className="gave-bar"
+                      style={{ height: `${Math.round((month.gave / maxMonthly) * 100)}%` }}
+                    />
+                  </div>
                 </div>
                 <div className="bar-track">
-                  {month.received > 0 && (
-                    <small className="bar-value">
-                      {formatMoney(month.received, chartCurrency, false)}
-                    </small>
-                  )}
-                  <span
-                    className="received-bar"
-                    style={{ height: `${Math.round((month.received / maxMonthly) * 100)}%` }}
-                  />
+                  <div className="bar-value-zone">
+                    {month.received > 0 && (
+                      <small className="bar-value">
+                        {formatMoney(month.received, chartCurrency, false)}
+                      </small>
+                    )}
+                  </div>
+                  <div className="bar-fill-zone">
+                    <span
+                      className="received-bar"
+                      style={{ height: `${Math.round((month.received / maxMonthly) * 100)}%` }}
+                    />
+                  </div>
                 </div>
               </div>
               <small>{month.label}</small>
