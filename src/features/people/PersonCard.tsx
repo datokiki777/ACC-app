@@ -6,7 +6,7 @@ import { entryEffect } from '../../domain/entries';
 import { calculateSalary, giftSummary } from '../../domain/salary';
 import { useAppStore } from '../../store/hooks';
 import { useLongPress } from '../../hooks/useLongPress';
-import type { PersistedPerson } from '../../types/persistence';
+import type { PersistedEntry, PersistedPerson } from '../../types/persistence';
 import { formatMoney } from '../../utils/format';
 import { EntryCard } from './EntryCard';
 import { OtherSummaryCard, PayrollSummaryCard } from './WorkSummaryCards';
@@ -16,6 +16,7 @@ export type PersonSwipeAction = 'archive' | 'delete';
 const SWIPE_ACTION_WIDTH = 92;
 const SWIPE_OPEN_THRESHOLD = 46;
 const SWIPE_AXIS_THRESHOLD = 7;
+const ENTRY_CHUNK_SIZE = 15;
 
 function moneyTone(value: number) {
   return value > 0 ? 'money-positive' : value < 0 ? 'money-negative' : 'money-neutral';
@@ -58,6 +59,7 @@ export function PersonCard({
   const [dragOffset, setDragOffset] = useState<number | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [openEntrySwipeId, setOpenEntrySwipeId] = useState<string | null>(null);
+  const [openEntryChunks, setOpenEntryChunks] = useState<Set<number>>(() => new Set());
   const mode = useAppStore((state) => state.mode);
   const expanded = useAppStore((state) => state.expandedPersonId === person.id);
   const setExpanded = useAppStore((state) => state.setExpandedPerson);
@@ -79,6 +81,38 @@ export function PersonCard({
             currency: person.salaryCurrency ?? person.currency,
           }
       : null;
+  const visibleEntries = person.entries.slice(0, ENTRY_CHUNK_SIZE);
+  const olderEntryChunks: PersistedEntry[][] = [];
+  for (let start = ENTRY_CHUNK_SIZE; start < person.entries.length; start += ENTRY_CHUNK_SIZE) {
+    olderEntryChunks.push(person.entries.slice(start, start + ENTRY_CHUNK_SIZE));
+  }
+  function renderEntry(entry: PersistedEntry) {
+    const effect = entryEffect(entry.type, entry.amount);
+    return (
+      <EntryCard
+        currency={person.currency}
+        effect={effect}
+        entry={entry}
+        key={entry.id}
+        onDelete={() => onDeleteEntry(entry.id)}
+        onEdit={() => {
+          setOpenEntrySwipeId(null);
+          openSheet('entry-form', person.id, entry.id);
+        }}
+        onSwipeOpen={(open) => setOpenEntrySwipeId(open ? entry.id : null)}
+        swipeOpen={openEntrySwipeId === entry.id}
+        title={
+          mode === 'work'
+            ? entry.category === 'salary'
+              ? 'Salary'
+              : entry.category === 'gift'
+                ? 'Other'
+                : entry.type
+            : entry.type
+        }
+      />
+    );
+  }
   const restingOffset =
     swipeOpen === 'archive' ? SWIPE_ACTION_WIDTH : swipeOpen === 'delete' ? -SWIPE_ACTION_WIDTH : 0;
   const visibleOffset = dragOffset ?? restingOffset;
@@ -339,31 +373,28 @@ export function PersonCard({
                 <small>{person.entries.length}</small>
               </div>
               <div className="entries-list">
-                {person.entries.map((entry) => {
-                  const effect = entryEffect(entry.type, entry.amount);
+                {visibleEntries.map((entry) => renderEntry(entry))}
+                {olderEntryChunks.map((chunk, index) => {
+                  const isOpen = openEntryChunks.has(index);
                   return (
-                    <EntryCard
-                      currency={person.currency}
-                      effect={effect}
-                      entry={entry}
-                      key={entry.id}
-                      onDelete={() => onDeleteEntry(entry.id)}
-                      onEdit={() => {
-                        setOpenEntrySwipeId(null);
-                        openSheet('entry-form', person.id, entry.id);
-                      }}
-                      onSwipeOpen={(open) => setOpenEntrySwipeId(open ? entry.id : null)}
-                      swipeOpen={openEntrySwipeId === entry.id}
-                      title={
-                        mode === 'work'
-                          ? entry.category === 'salary'
-                            ? 'Salary'
-                            : entry.category === 'gift'
-                              ? 'Other'
-                              : entry.type
-                          : entry.type
-                      }
-                    />
+                    <div className="entries-chunk" key={`chunk-${index}`}>
+                      <button
+                        aria-expanded={isOpen}
+                        className="entries-chunk-toggle text-button"
+                        onClick={() =>
+                          setOpenEntryChunks((current) => {
+                            const next = new Set(current);
+                            if (next.has(index)) next.delete(index);
+                            else next.add(index);
+                            return next;
+                          })
+                        }
+                        type="button"
+                      >
+                        {isOpen ? '▾' : '▸'} {isOpen ? 'Hide' : 'Show'} {chunk.length} older entries
+                      </button>
+                      {isOpen && chunk.map((entry) => renderEntry(entry))}
+                    </div>
                   );
                 })}
                 {!person.entries.length && <p className="mini-empty">No entries yet</p>}

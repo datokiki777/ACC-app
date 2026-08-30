@@ -998,6 +998,19 @@ a:focus-visible {
   gap: 7px;
 }
 
+.entries-chunk {
+  display: grid;
+  gap: 7px;
+}
+
+.entries-chunk-toggle {
+  justify-self: start;
+  min-height: 38px;
+  padding: 0 4px;
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
 .entry-swipe-shell {
   position: relative;
   min-height: 62px;
