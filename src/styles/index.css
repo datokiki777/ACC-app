@@ -2998,7 +2998,7 @@ a:focus-visible {
   bottom: 0;
   left: 0;
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   width: min(100%, 760px);
   min-height: calc(64px + env(safe-area-inset-bottom));
   padding: 5px 8px max(5px, env(safe-area-inset-bottom));
@@ -3007,6 +3007,12 @@ a:focus-visible {
   background: color-mix(in srgb, var(--color-nav) 96%, transparent);
   box-shadow: 0 -5px 20px rgb(0 0 0 / 12%);
   backdrop-filter: blur(20px) saturate(130%);
+}
+
+.nav-emoji-icon {
+  display: block;
+  font-size: 1.3rem;
+  line-height: 1;
 }
 
 .bottom-navigation button {

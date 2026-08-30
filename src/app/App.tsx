@@ -6,7 +6,6 @@ import { FabMenu } from '../components/FabMenu';
 import { InstallPrompt } from '../components/InstallPrompt';
 import { ModeSwitch } from '../components/ModeSwitch';
 import { PersonPickerSheet } from '../components/PersonPickerSheet';
-import { SettingsSheet } from '../components/SettingsSheet';
 import { StartupScreen } from '../components/StartupScreen';
 import { UndoToast } from '../components/UndoToast';
 import { BackupSheet } from '../features/import-export/BackupSheet';
@@ -18,6 +17,7 @@ import { EntryFormSheet } from '../features/transactions/EntryFormSheet';
 import { useThemeEffect } from '../hooks/useThemeEffect';
 import type { SheetName } from '../store/app-store';
 import { useAppStore } from '../store/hooks';
+import type { ThemeMode } from '../types/domain';
 import type { PersistedPerson } from '../types/persistence';
 import { AppNavigationProvider } from './AppNavigationProvider';
 
@@ -36,7 +36,6 @@ interface NavigationSnapshot {
   entryId: string | null;
   expandedPersonId: string | null;
   personId: string | null;
-  settingsOpen: boolean;
   sheet: SheetName;
 }
 
@@ -54,8 +53,13 @@ function isAccHistoryState(value: unknown): value is AccHistoryState {
   return Boolean(value && typeof value === 'object' && (value as Partial<AccHistoryState>).acc);
 }
 
+function nextTheme(current: ThemeMode): ThemeMode {
+  const order: ThemeMode[] = ['dark', 'light', 'system'];
+  return order[(order.indexOf(current) + 1) % order.length]!;
+}
+
 function hasMeaningfulNavigationState(snapshot: NavigationSnapshot) {
-  return snapshot.sheet !== 'none' || snapshot.settingsOpen || snapshot.expandedPersonId !== null;
+  return snapshot.sheet !== 'none' || snapshot.expandedPersonId !== null;
 }
 
 export function App() {
@@ -87,7 +91,6 @@ export function App() {
   const deleteEntry = useAppStore((state) => state.deleteEntry);
   const toggleArchive = useAppStore((state) => state.toggleArchive);
   const [confirmation, setConfirmation] = useState<Confirmation | null>(null);
-  const [settingsOpen, setSettingsOpen] = useState(false);
   const [fabMenuOpen, setFabMenuOpen] = useState(false);
   const [entryPersonPickerOpen, setEntryPersonPickerOpen] = useState(false);
   const dirtyRef = useRef(false);
@@ -126,23 +129,17 @@ export function App() {
 
   const activeCount = people.filter((person) => !person.archived).length;
   const archivedCount = people.filter((person) => person.archived).length;
-  const activeDestination: AppDestination = settingsOpen
-    ? 'settings'
-    : sheet === 'statistics'
-      ? 'statistics'
-      : sheet === 'backup'
-        ? 'backup'
-        : 'home';
+  const activeDestination: AppDestination =
+    sheet === 'statistics' ? 'statistics' : sheet === 'backup' ? 'backup' : 'home';
 
   const navigationSnapshot = useMemo<NavigationSnapshot>(
     () => ({
       entryId: sheetEntryId,
       expandedPersonId,
       personId: sheetPersonId,
-      settingsOpen,
       sheet,
     }),
-    [expandedPersonId, settingsOpen, sheet, sheetEntryId, sheetPersonId],
+    [expandedPersonId, sheet, sheetEntryId, sheetPersonId],
   );
   const navigationSnapshotRef = useRef(navigationSnapshot);
 
@@ -152,7 +149,6 @@ export function App() {
 
   const applyNavigationSnapshot = useCallback(
     (snapshot: NavigationSnapshot) => {
-      setSettingsOpen(snapshot.settingsOpen);
       if (snapshot.sheet === 'none') closeSheet();
       else openSheet(snapshot.sheet, snapshot.personId, snapshot.entryId);
       setExpandedPerson(snapshot.expandedPersonId);
@@ -170,7 +166,6 @@ export function App() {
       window.history.back();
       return;
     }
-    setSettingsOpen(false);
     closeSheet();
     setExpandedPerson(null);
   }, [closeSheet, setExpandedPerson]);
@@ -351,8 +346,7 @@ export function App() {
 
   function navigate(destination: AppDestination) {
     if (destination === activeDestination) return;
-    setSettingsOpen(destination === 'settings');
-    if (destination === 'home' || destination === 'settings') closeSheet();
+    if (destination === 'home') closeSheet();
     if (destination === 'statistics') openSheet('statistics');
     if (destination === 'backup') openSheet('backup');
   }
@@ -427,7 +421,16 @@ export function App() {
           +
         </button>
       )}
-      {initialized && <BottomNavigation active={activeDestination} onNavigate={navigate} />}
+      {initialized && (
+        <BottomNavigation
+          active={activeDestination}
+          onCycleTheme={() => void setTheme(nextTheme(theme))}
+          onNavigate={navigate}
+          onTogglePrivacy={() => void setPrivacyMode(!privacyMode)}
+          privacyMode={privacyMode}
+          theme={theme}
+        />
+      )}
       {error && (
         <div className="error-banner" role="alert">
           <span>{error}</span>
@@ -444,15 +447,6 @@ export function App() {
       {sheet === 'salary-sync' && <SalarySyncSheet />}
       {sheet === 'statistics' && <StatisticsSheet />}
       {sheet === 'backup' && <BackupSheet />}
-      {settingsOpen && (
-        <SettingsSheet
-          onChangePrivacyMode={(next) => void setPrivacyMode(next)}
-          onChangeTheme={(next) => void setTheme(next)}
-          onClose={requestClose}
-          privacyMode={privacyMode}
-          theme={theme}
-        />
-      )}
       {fabMenuOpen && (
         <FabMenu
           onAddEntry={() => {

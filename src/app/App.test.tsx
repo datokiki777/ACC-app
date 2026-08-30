@@ -121,7 +121,8 @@ describe('ACC application', () => {
     );
     expect(within(navigation).getByRole('button', { name: 'Stats' })).toBeInTheDocument();
     expect(within(navigation).getByRole('button', { name: 'Backup' })).toBeInTheDocument();
-    expect(within(navigation).getByRole('button', { name: 'Settings' })).toBeInTheDocument();
+    expect(within(navigation).getByRole('button', { name: /theme/i })).toBeInTheDocument();
+    expect(within(navigation).getByRole('switch', { name: 'Hide amounts' })).toBeInTheDocument();
   });
 
   it('uses bottom navigation for existing screens and theme settings', async () => {
@@ -147,10 +148,7 @@ describe('ACC application', () => {
     expect(within(backup).getByRole('button', { name: 'Export Person PDF' })).toBeEnabled();
     await user.click(screen.getByRole('button', { name: 'Close' }));
 
-    await user.click(within(navigation).getByRole('button', { name: 'Settings' }));
-    const settings = screen.getByRole('dialog', { name: 'Settings' });
-    expect(settings).toBeVisible();
-    await user.click(within(settings).getByRole('button', { name: /Dark/ }));
+    await user.click(within(navigation).getByRole('button', { name: /theme/i }));
     expect(store.getState().theme).toBe('dark');
     expect(document.documentElement).toHaveAttribute('data-theme', 'dark');
   });
@@ -182,13 +180,7 @@ describe('ACC application', () => {
     });
     const navigation = screen.getByRole('navigation', { name: 'Primary navigation' });
 
-    await user.click(within(navigation).getByRole('button', { name: 'Settings' }));
-    const settingsDialog = screen.getByRole('dialog', { name: 'Settings' });
-    await user.click(within(settingsDialog).getByRole('switch', { name: 'Hide amounts' }));
-    pressBrowserBack();
-    await waitFor(() =>
-      expect(screen.queryByRole('dialog', { name: 'Settings' })).not.toBeInTheDocument(),
-    );
+    await user.click(within(navigation).getByRole('switch', { name: 'Hide amounts' }));
 
     const summary = await findPersonSummary('Private target');
     const balance = within(summary).getByText('40€');
@@ -198,7 +190,7 @@ describe('ACC application', () => {
     await waitFor(() => expect(balance).not.toHaveClass('money-masked'));
   });
 
-  it('uses browser Back to close sheets, Settings, and Backup', async () => {
+  it('uses browser Back to close sheets and Backup', async () => {
     const user = userEvent.setup();
     const store = renderApp();
     await waitFor(() => expect(store.getState().initialized).toBe(true));
@@ -217,13 +209,6 @@ describe('ACC application', () => {
     pressBrowserBack();
     await waitFor(() =>
       expect(screen.queryByRole('dialog', { name: 'Statistics' })).not.toBeInTheDocument(),
-    );
-
-    await user.click(within(navigation).getByRole('button', { name: 'Settings' }));
-    expect(screen.getByRole('dialog', { name: 'Settings' })).toBeVisible();
-    pressBrowserBack();
-    await waitFor(() =>
-      expect(screen.queryByRole('dialog', { name: 'Settings' })).not.toBeInTheDocument(),
     );
     expect(within(navigation).getByRole('button', { name: 'Home' })).toHaveAttribute(
       'aria-current',
@@ -383,18 +368,18 @@ describe('ACC application', () => {
     await waitFor(() => expect(store.getState().initialized).toBe(true));
 
     const navigation = screen.getByRole('navigation', { name: 'Primary navigation' });
-    await user.click(within(navigation).getByRole('button', { name: 'Settings' }));
-    const settings = screen.getByRole('dialog', { name: 'Settings' });
+    const themeButton = within(navigation).getByRole('button', { name: /theme/i });
 
-    await user.click(within(settings).getByRole('button', { name: 'Dark' }));
+    // Starts at 'system'; each tap cycles dark -> light -> system.
+    await user.click(themeButton);
     expect(document.documentElement).toHaveAttribute('data-theme', 'dark');
     expect(store.getState().theme).toBe('dark');
 
-    await user.click(within(settings).getByRole('button', { name: 'Light' }));
+    await user.click(within(navigation).getByRole('button', { name: /theme/i }));
     expect(document.documentElement).toHaveAttribute('data-theme', 'light');
     expect(store.getState().theme).toBe('light');
 
-    await user.click(within(settings).getByRole('button', { name: 'System' }));
+    await user.click(within(navigation).getByRole('button', { name: /theme/i }));
     expect(store.getState().theme).toBe('system');
   });
 

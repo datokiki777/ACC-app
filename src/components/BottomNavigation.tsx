@@ -1,18 +1,42 @@
-export type AppDestination = 'home' | 'statistics' | 'backup' | 'settings';
+import type { ThemeMode } from '../types/domain';
+
+export type AppDestination = 'home' | 'statistics' | 'backup';
 
 interface BottomNavigationProps {
   active: AppDestination;
   onNavigate: (destination: AppDestination) => void;
+  theme: ThemeMode;
+  onCycleTheme: () => void;
+  privacyMode: boolean;
+  onTogglePrivacy: () => void;
 }
 
 const items: Array<{ destination: AppDestination; label: string }> = [
   { destination: 'home', label: 'Home' },
   { destination: 'statistics', label: 'Stats' },
   { destination: 'backup', label: 'Backup' },
-  { destination: 'settings', label: 'Settings' },
 ];
 
-export function BottomNavigation({ active, onNavigate }: BottomNavigationProps) {
+const THEME_ICON: Record<ThemeMode, string> = {
+  dark: '🌙',
+  light: '☀️',
+  system: '🌗',
+};
+
+const THEME_LABEL: Record<ThemeMode, string> = {
+  dark: 'Dark theme',
+  light: 'Light theme',
+  system: 'System theme',
+};
+
+export function BottomNavigation({
+  active,
+  onNavigate,
+  theme,
+  onCycleTheme,
+  privacyMode,
+  onTogglePrivacy,
+}: BottomNavigationProps) {
   return (
     <nav aria-label="Primary navigation" className="bottom-navigation">
       {items.map((item) => (
@@ -27,6 +51,24 @@ export function BottomNavigation({ active, onNavigate }: BottomNavigationProps) 
           <span>{item.label}</span>
         </button>
       ))}
+      <button aria-label={THEME_LABEL[theme]} onClick={onCycleTheme} type="button">
+        <span aria-hidden="true" className="nav-emoji-icon">
+          {THEME_ICON[theme]}
+        </span>
+        <span>Theme</span>
+      </button>
+      <button
+        aria-checked={privacyMode}
+        aria-label="Hide amounts"
+        onClick={onTogglePrivacy}
+        role="switch"
+        type="button"
+      >
+        <span aria-hidden="true" className="nav-emoji-icon">
+          {privacyMode ? '🙈' : '👁️'}
+        </span>
+        <span>Hide</span>
+      </button>
     </nav>
   );
 }
@@ -54,10 +96,5 @@ function NavigationIcon({ destination }: { destination: AppDestination }) {
       </svg>
     );
   }
-  return (
-    <svg aria-hidden="true" viewBox="0 0 24 24">
-      <circle cx="12" cy="12" r="3" />
-      <path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1-2.8 2.8-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6v.2h-4V21a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1L4.2 17l.1-.1a1.7 1.7 0 0 0 .3-1.9A1.7 1.7 0 0 0 3 14H2.8v-4H3a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9L4.2 7 7 4.2l.1.1A1.7 1.7 0 0 0 9 4.6 1.7 1.7 0 0 0 10 3v-.2h4V3a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3l.1-.1L19.8 7l-.1.1a1.7 1.7 0 0 0-.3 1.9 1.7 1.7 0 0 0 1.6 1h.2v4H21a1.7 1.7 0 0 0-1.6 1Z" />
-    </svg>
-  );
+  return null;
 }
