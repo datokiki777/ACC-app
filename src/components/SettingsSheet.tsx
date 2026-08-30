@@ -9,6 +9,12 @@ interface SettingsSheetProps {
   onClose: () => void;
 }
 
+const THEME_OPTIONS: Array<{ value: ThemeMode; icon: string; label: string }> = [
+  { value: 'dark', icon: '🌙', label: 'Dark' },
+  { value: 'light', icon: '☀️', label: 'Light' },
+  { value: 'system', icon: '🌗', label: 'System' },
+];
+
 export function SettingsSheet({
   theme,
   onChangeTheme,
@@ -16,12 +22,6 @@ export function SettingsSheet({
   onChangePrivacyMode,
   onClose,
 }: SettingsSheetProps) {
-  const options: Array<{ value: ThemeMode; label: string }> = [
-    { value: 'system', label: 'System' },
-    { value: 'dark', label: 'Dark' },
-    { value: 'light', label: 'Light' },
-  ];
-
   return (
     <BottomSheet onClose={onClose} title="Settings">
       <section className="settings-section">
@@ -29,16 +29,17 @@ export function SettingsSheet({
           <span>Theme</span>
           <small>System follows your device appearance.</small>
         </div>
-        <div aria-label="Theme preference" className="settings-theme-segment" role="group">
-          {options.map((option) => (
+        <div aria-label="Theme preference" className="settings-icon-row" role="group">
+          {THEME_OPTIONS.map((option) => (
             <button
+              aria-label={option.label}
               aria-pressed={theme === option.value}
-              className={theme === option.value ? 'is-selected' : undefined}
+              className={`settings-icon-button ${theme === option.value ? 'is-selected' : ''}`}
               key={option.value}
               onClick={() => onChangeTheme(option.value)}
               type="button"
             >
-              {option.label}
+              <span aria-hidden="true">{option.icon}</span>
             </button>
           ))}
         </div>
@@ -52,12 +53,12 @@ export function SettingsSheet({
           <button
             aria-checked={privacyMode}
             aria-label="Hide amounts"
-            className={`settings-switch ${privacyMode ? 'is-on' : ''}`}
+            className={`settings-icon-button ${privacyMode ? 'is-selected' : ''}`}
             onClick={() => onChangePrivacyMode(!privacyMode)}
             role="switch"
             type="button"
           >
-            <span className="settings-switch-knob" />
+            <span aria-hidden="true">{privacyMode ? '🙈' : '👁️'}</span>
           </button>
         </div>
       </section>
