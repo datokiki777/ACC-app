@@ -788,6 +788,37 @@ describe('ACC application', () => {
     expect(within(card).queryByText('entry-0')).not.toBeInTheDocument();
   });
 
+  it('lets picking a Top Balances row filter the chart to that person, and toggling clears it', async () => {
+    const user = userEvent.setup();
+    const store = renderApp();
+    await waitFor(() => expect(store.getState().initialized).toBe(true));
+    await act(async () => {
+      const alex = await store.getState().addPerson(draft('Alex Balance'));
+      await store
+        .getState()
+        .addEntry(alex.id, { amount: 50, type: 'Gave', date: '2026-08-01', comment: '' });
+      const sam = await store.getState().addPerson(draft('Sam Balance'));
+      await store
+        .getState()
+        .addEntry(sam.id, { amount: 30, type: 'Gave', date: '2026-08-02', comment: '' });
+    });
+
+    const navigation = screen.getByRole('navigation', { name: 'Primary navigation' });
+    await user.click(within(navigation).getByRole('button', { name: 'Stats' }));
+    const statsDialog = screen.getByRole('dialog', { name: 'Statistics' });
+
+    const alexRow = within(statsDialog).getByRole('button', { name: /Alex Balance/ });
+    await user.click(alexRow);
+    expect(alexRow).toHaveClass('is-selected');
+    expect(within(statsDialog).getByRole('button', { name: /✕ Alex Balance/ })).toBeInTheDocument();
+
+    await user.click(alexRow);
+    expect(alexRow).not.toHaveClass('is-selected');
+    expect(
+      within(statsDialog).queryByRole('button', { name: /✕ Alex Balance/ }),
+    ).not.toBeInTheDocument();
+  });
+
   it('keeps payroll totals inside one summary card with only compact bottom actions', async () => {
     const user = userEvent.setup();
     const store = renderApp();
